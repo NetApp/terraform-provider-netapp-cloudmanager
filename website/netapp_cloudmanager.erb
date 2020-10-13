@@ -1,0 +1,47 @@
+<% wrap_layout :inner do %>
+  <% content_for :sidebar do %>
+    <div class="docs-sidebar hidden-print affix-top" role="complementary">
+      <ul class="nav docs-sidenav">
+        <li<%= sidebar_current("docs-home") %>>
+          <a href="/docs/providers/index.html">All Providers</a>
+        </li>
+
+        <li<%= sidebar_current("docs-netapp-cloudmanager-index") %>>
+          <a href="/docs/providers/netapp/netapp-cloudmanager/index.html">NetApp CVO Provider</a>
+        </li>
+
+        <li<%= sidebar_current("docs-netapp-cloudmanager-resource") %>>
+          <a href="#">Resources</a>
+          <ul class="nav nav-visible">
+            <li<%= sidebar_current("docs-netapp-cloudmanager-resource-occm") %>>
+              <a href="/docs/providers/netapp/netapp-cloudmanager/r/occm-aws.html">netapp_cloudmanager_connector_aws</a>
+            </li>
+            <li<%= sidebar_current("docs-netapp-cloudmanager-resource-occm-azure") %>>
+              <a href="/docs/providers/netapp/netapp-cloudmanager/r/occm-azure.html">netapp_loudmanager_connector_azure</a>
+            </li>
+            <li<%= sidebar_current("docs-netapp-cloudmanager-resource-occm-gcp") %>>
+              <a href="/docs/providers/netapp/netapp-cloudmanager/r/occm-gcp.html">netapp_loudmanager_connector_gcp</a>
+            </li>
+            <li<%= sidebar_current("docs-netapp-cloudmanager-resource-aws") %>>
+              <a href="/docs/providers/netapp/netapp-cloudmanager/r/aws.html">netapp_cloudmanager_cvo_aws</a>
+            </li>
+            <li<%= sidebar_current("docs-netapp-cloudmanager-resource-azure") %>>
+              <a href="/docs/providers/netapp/netapp-cloudmanager/r/azure.html">netapp_cloudmanager_cvo_azure</a>
+            </li>
+            <li<%= sidebar_current("docs-netapp-cloudmanager-resource-gcp") %>>
+              <a href="/docs/providers/netapp/netapp-cloudmanager/r/gcp.html">netapp_cloudmanager_cvo_gcp</a>
+            </li>
+            <li<%= sidebar_current("docs-netapp-cloudmanager-resource-aggregate") %>>
+              <a href="/docs/providers/netapp/netapp-cloudmanager/r/aggregate.html">netapp_cloudmanager_aggregate</a>
+            </li>
+            <li<%= sidebar_current("docs-netapp-cloudmanager-resource-volume") %>>
+              <a href="/docs/providers/netapp/netapp-cloudmanager/r/volume.html">netapp_cloudmanager_volume</a>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+  <% end %>
+
+  <%= yield %>
+<% end %>

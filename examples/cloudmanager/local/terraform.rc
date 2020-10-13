@@ -1,0 +1,9 @@
+provider_installation {
+  filesystem_mirror {
+    path    = "/tmp/terraform"
+    include = ["netapp.com/*/*"]
+  }
+  direct {
+    exclude = ["netapp.com/*/*"]
+  }
+}

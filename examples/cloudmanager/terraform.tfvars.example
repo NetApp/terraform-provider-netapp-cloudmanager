@@ -1,0 +1,4 @@
+# edit the `terraform.tfvars.example` file, populating the fields with the
+
+# CVO refresh token
+cloudmanager_refresh_token = "********"
