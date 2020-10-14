@@ -123,7 +123,7 @@ make build
 
 With Terraform 0.13 or newer, see the [sanity check](#sanity-check) section under **Walkthrough example**.
 
-With earlier version of Terraform, after
+With earlier versions of Terraform, after
 the build is complete, copy the `terraform-provider-netapp-cloudmanager` binary into
 the same path as your `terraform` binary, and re-run `terraform init`.
 
@@ -250,7 +250,7 @@ make build
 
 The build step will install the provider in the $GOPATH/bin directory.
 
-### Sanity check {#sanity-check}
+### Sanity check    {#sanity-check}
 
 #### Local installation - linux
 
