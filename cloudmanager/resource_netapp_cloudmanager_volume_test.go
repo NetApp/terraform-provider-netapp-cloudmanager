@@ -10,10 +10,11 @@ import (
 )
 
 func TestAccVolume_basic(t *testing.T) {
-	workingEnvironmentName := "justincluster"
-	awsHAWorkingEnvironmentName := "awsjustinclusters"
+	workingEnvironmentName := "awscluster"
+	awsHAWorkingEnvironmentName := "awstestclusters"
+	azureSNWorkingEnvironmentName := "azuretestcluster"
 	clientID := "Nw4Q2O1kdnLtvhwegGalFnodEHUfPJWh"
-	azureSNWorkingEnvironmentName := "azurejustincluster"
+	gcpVsaWorkingEnvironmentName := "gcpcluster"
 	var volume volumeResponse
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -62,6 +63,21 @@ func TestAccVolume_basic(t *testing.T) {
 				Config: testAccAzureVolumeConfigCreateIscsi(clientID, azureSNWorkingEnvironmentName),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckVolumeExists("netapp-cloudmanager_volume.azure-iscsi-volume-1", &volume)),
+			},
+			{
+				Config: testAccGCPVolumeConfigCreateNfs(clientID, gcpVsaWorkingEnvironmentName),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckVolumeExists("netapp-cloudmanager_volume.gcp-nfs-volume-1", &volume)),
+			},
+			{
+				Config: testAccGCPVolumeConfigCreateCifs(clientID, gcpVsaWorkingEnvironmentName),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckVolumeExists("netapp-cloudmanager_volume.gcp-cifs-volume-1", &volume)),
+			},
+			{
+				Config: testAccGCPVolumeConfigCreateIscsi(clientID, gcpVsaWorkingEnvironmentName),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckVolumeExists("netapp-cloudmanager_volume.gcp-iscsi-volume-1", &volume)),
 			},
 		},
 	})
@@ -150,7 +166,7 @@ func testAccVolumeConfigCreateWithName(clientID string, workingEnvironmentName s
 		enable_compression = true
 		enable_deduplication = true
 		snapshot_policy_name = "default"
-		export_policy_name = "export-svm_justincluster-acc_test_vol_2"
+		export_policy_name = "export-svm_awscluster-acc_test_vol_2"
 		export_policy_type = "custom"
 		export_policy_ip = ["10.30.0.0/16"]
 		export_policy_nfs_version = ["nfs3", "nfs4"]
@@ -171,7 +187,7 @@ func testAccVolumeConfigCreateWithCapacityTier(clientID string, workingEnvironme
 		enable_compression = true
 		enable_deduplication = true
 		snapshot_policy_name = "default"
-		export_policy_name = "export-svm_justincluster-acc_test_vol_3"
+		export_policy_name = "export-svm_awscluster-acc_test_vol_3"
 		export_policy_type = "custom"
 		export_policy_ip = ["10.30.0.0/16"]
 		export_policy_nfs_version = ["nfs3", "nfs4"]
@@ -196,7 +212,7 @@ func testAccHaVolumeConfigCreateWithName(clientID string, workingEnvironmentName
 		enable_deduplication = true
 		snapshot_policy_name = "default"
 		export_policy_type = "custom"
-		export_policy_name = "export-svm_awsjustinclusters-acc_ha_test_vol"
+		export_policy_name = "export-svm_awstestclusters-acc_ha_test_vol"
 		export_policy_ip = ["10.30.0.1/16"]
 		export_policy_nfs_version = ["nfs4"]
 		capacity_tier = "S3"
@@ -314,6 +330,70 @@ func testAccAzureVolumeConfigCreateIscsi(clientID string, workingEnvironmentName
 		igroups = ["test_acc_igroup"]
 		os_name = "linux"
 		provider_volume_type = "Premium_LRS"
+		client_id = "%s"
+		working_environment_name = "%s"
+	}`, clientID, workingEnvironmentName)
+}
+
+// =====================================================================================
+// GCP Tests
+func testAccGCPVolumeConfigCreateNfs(clientID string, workingEnvironmentName string) string {
+	return fmt.Sprintf(`
+	resource "netapp-cloudmanager_volume" "gcp-nfs-volume-1" {
+		provider = netapp-cloudmanager
+		name = "acc_test_gcp_vol_1"
+		volume_protocol = "nfs"
+		size = 10
+		unit = "GB"
+		enable_thin_provisioning = true
+		enable_compression = false
+		enable_deduplication = false
+		export_policy_type = "custom"
+		export_policy_ip = ["10.30.0.0/16"]
+		export_policy_nfs_version = ["nfs3", "nfs4"]
+		snapshot_policy_name = "default"
+		provider_volume_type = "pd-ssd"
+		client_id = "%s"
+		working_environment_name = "%s"
+	}`, clientID, workingEnvironmentName)
+}
+
+func testAccGCPVolumeConfigCreateCifs(clientID string, workingEnvironmentName string) string {
+	return fmt.Sprintf(`
+	resource "netapp-cloudmanager_volume" "gcp-cifs-volume-1" {
+		provider = netapp-cloudmanager
+		name = "acc_test_gcp_vol_2"
+		size = 10
+		unit = "GB"
+		volume_protocol = "cifs"
+		enable_thin_provisioning = true
+		enable_compression = true
+		enable_deduplication = true
+		snapshot_policy_name = "default"
+		share_name = "acc_test_gcp_vol_2_share"
+		permission = "full_control"
+		users = ["Everyone"]
+		client_id = "%s"
+		working_environment_name = "%s"
+		provider_volume_type = "pd-ssd"
+	}`, clientID, workingEnvironmentName)
+}
+
+func testAccGCPVolumeConfigCreateIscsi(clientID string, workingEnvironmentName string) string {
+	return fmt.Sprintf(`
+	resource "netapp-cloudmanager_volume" "gcp-iscsi-volume-1" {
+		provider = netapp-cloudmanager
+		name = "acc_test_gcp_vol_3"
+		volume_protocol = "iscsi"
+		size = 10
+		unit = "GB"
+		enable_thin_provisioning = true
+		enable_compression = false
+		enable_deduplication = false
+		snapshot_policy_name = "default"
+		igroups = ["test_acc_igroup"]
+		os_name = "linux"
+		provider_volume_type = "pd-ssd"
 		client_id = "%s"
 		working_environment_name = "%s"
 	}`, clientID, workingEnvironmentName)
