@@ -186,8 +186,11 @@ export GO_INSTALL_DIR=`pwd`/go_install
 mkdir $GO_INSTALL_DIR
 # otherwise, go recommends to use
 export GO_INSTALL_DIR=/usr/local
+```
 
+#### linux
 
+```
 curl -O https://dl.google.com/go/go1.15.2.linux-amd64.tar.gz
 tar -C $GO_INSTALL_DIR -xvf go1.15.2.linux-amd64.tar.gz
 
@@ -198,8 +201,22 @@ unzip terraform_0.13.4_linux_amd64.zip
 mv terraform $GO_INSTALL_DIR/go/bin
 ```
 
+#### mac
+
+```
+curl -O https://dl.google.com/go/go1.15.2.darwin-amd64.tar.gz
+tar -C $GO_INSTALL_DIR -xvf go1.15.2.darwin-amd64.tar.gz
+
+export PATH=$PATH:$GO_INSTALL_DIR/go/bin
+
+curl -O https://releases.hashicorp.com/terraform/0.13.4/terraform_0.13.4_darwin_amd64.zip
+unzip terraform_0.13.4_darwin_amd64.zip
+mv terraform $GO_INSTALL_DIR/go/bin
+```
+
 ### Installing dependencies
 
+We're using go.mod to manage dependencies, so there is not much to do.
 ```
 # make sure git is installed
 which git
@@ -207,14 +224,10 @@ which git
 export GOPATH=`pwd`
 ```
 
-The version in go/bin is a stable release.
-
 ### Cloning the NetApp provider repository and building the provider
 
 
 ```
-mkdir -p $GOPATH
-cd $GOPATH
 git clone https://github.com/NetApp/terraform-provider-netapp-cloudmanager.git
 cd terraform-provider-netapp-cloudmanager
 make build
@@ -225,9 +238,22 @@ The build step will install the provider in the $GOPATH/bin directory.
 
 ### Sanity check
 
+#### Local installation - linux
+
 ```
 mkdir -p /tmp/terraform/netapp.com/netapp/netapp-cloudmanager/20.10.0/linux_amd64
 cp $GOPATH/bin/terraform-provider-netapp-cloudmanager /tmp/terraform/netapp.com/netapp/netapp-cloudmanager/20.10.0/linux_amd64
+```
+
+#### Local installation - mac
+
+```
+mkdir -p /tmp/terraform/netapp.com/netapp/netapp-cloudmanager/20.10.0/darwin_amd64
+cp $GOPATH/bin/terraform-provider-netapp-cloudmanager /tmp/terraform/netapp.com/netapp/netapp-cloudmanager/20.10.0/darwin_amd64
+```
+
+#### Check the provider can be loaded
+```
 cd examples/cloudmanager/local
 export TF_CLI_CONFIG_FILE=`pwd`/terraform.rc
 terraform init
