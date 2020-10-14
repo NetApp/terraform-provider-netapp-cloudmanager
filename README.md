@@ -51,9 +51,8 @@ configuration for NetApp CVO resources.
 
 ### Controlling the provider version
 
-Note that you can also control the provider version. This requires the use of a
-`provider` block in your Terraform configuration if you have not added one
-already.
+Note that you can also control the provider version. This is controlled by a
+`required_providers` block in your Terraform configuration.
 
 The syntax is as follows:
 
