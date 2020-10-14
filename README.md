@@ -29,7 +29,7 @@ run.
 
 Terraform 0.13 introduces a registry, and you can use directly the provider without
 building it yourself.
-See https://registry.terraform.io/providers/NetApp/netapp-cloumanager
+See https://registry.terraform.io/providers/NetApp/netapp-cloudmanager
 
 If you want to build it, see [the section below](#building-the-provider).
 
@@ -47,7 +47,7 @@ Check the provider documentation for details on
 entering your connection information and how to get started with writing
 configuration for NetApp CVO resources.
 
-[tf-netapp-cloudmanager-docs](website/docs/index.html.markdown)
+[tf-netapp-cloudmanager-docs]: website/docs/index.html.markdown
 
 ### Controlling the provider version
 
@@ -154,7 +154,7 @@ You can then use a .json file to expose your credentials.
 
 Most of the tests in this provider require a comprehensive list of environment
 variables to run. See the individual `*_test.go` files in the
-[`cloudmanager/`](netapp_cloudmanager/) directory for more details. The next section also
+[`cloudmanager/`](cloudmanager/) directory for more details. The next section also
 describes how you can manage a configuration file of the test environment
 variables.
 
