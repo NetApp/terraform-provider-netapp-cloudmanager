@@ -117,6 +117,7 @@ build the provider.
 cd $GOPATH/terraform-provider-netapp-cloudmanager
 make build
 ```
+Note: go install will move the binary to $GOPATH/bin
 
 ## Installing the Local Plugin
 
