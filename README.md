@@ -1,7 +1,7 @@
-# Terraform Provider for NetApp Cloud Volumes ONTAP for AWS, GCP and ANF
+# Terraform Provider for NetApp Cloud Volumes ONTAP for AWS, GCP and Azure
 
-This is the repository for the Terraform Provider for NetApp Cloud Volumes ONTAP (CVO) for AWS, GCP and ANF.  The Provider can be used
-with Terraform to work with Cloud Volumes ONTAP for AWS, GCP and ANF resources.
+This is the repository for the Terraform Provider for NetApp Cloud Volumes ONTAP (CVO) for AWS, GCP and Azure.  The Provider can be used
+with Terraform to work with Cloud Volumes ONTAP for AWS, GCP and Azure resources.
 
 For general information about Terraform, visit the [official
 website][tf-website] and the [GitHub project page][tf-github].
@@ -13,7 +13,7 @@ The provider plugin was developed by NetApp.
 
 # Naming Conventions
 
-The APIs for NetApp Cloud Volumes ONTAP for AWS, GCP and ANF do not require resource names to be unique.  They are considered
+The APIs for NetApp Cloud Volumes ONTAP for AWS, GCP and Azure do not require resource names to be unique.  They are considered
 as 'labels' and resources are uniquely identified by 'ids'.  However these ids are not
 user friendly, and as they are generated on the fly, they make it difficult to track
 resources and automate.
@@ -59,8 +59,8 @@ The syntax is as follows:
 ```hcl
 terraform {
   required_providers {
-    netapp-gcp = {
-      source = "NetApp/netapp-gcp"
+    netapp-cloudmanager = {
+      source = "NetApp/netapp-cloudmanager"
       version = "20.10.0"
     }
   }
@@ -145,7 +145,7 @@ See [Building the Provider](#building-the-provider) for details on building the 
 
 # Testing the Provider
 
-**NOTE:** Testing the provider for NetApp Cloud Volumes ONTAP for AWS, GCP and ANF is currently a complex operation as it
+**NOTE:** Testing the provider for NetApp Cloud Volumes ONTAP for AWS, GCP and Azure is currently a complex operation as it
 requires having a NetApp CVO subscription in CVO to test against.
 You can then use a .json file to expose your credentials.
 
