@@ -24,18 +24,25 @@ conflicts if the rule is not respected outside of Terraform.
 
 # Using the Provider
 
-The current version of this provider requires Terraform 0.12 or higher to
+The current version of this provider requires Terraform 0.13 or higher to
 run.
 
-You will need to build the provider before being able to use it
-(see [the section below](#building-the-provider)).
+Terraform 0.13 introduces a registry, and you can use directly the provider without
+building it yourself.
+See https://registry.terraform.io/providers/NetApp/netapp-cloumanager
+
+If you want to build it, see [the section below](#building-the-provider).
 
 Note that you need to run `terraform init` to fetch the provider before
 deploying.
 
 ## Provider Documentation
 
-<TBD> The provider is documented [here][tf-netapp-cloudmanager-docs].
+The documentation is available at:
+https://registry.terraform.io/providers/NetApp/netapp-cloudmanager/latest/docs
+
+The provider is also documented [here][tf-netapp-cloudmanager-docs].
+
 Check the provider documentation for details on
 entering your connection information and how to get started with writing
 configuration for NetApp CVO resources.
@@ -51,15 +58,19 @@ already.
 The syntax is as follows:
 
 ```hcl
-provider "netapp-cloudmanager" {
-  version = "~> 20.10.0"
-  ...
+terraform {
+  required_providers {
+    netapp-gcp = {
+      source = "NetApp/netapp-gcp"
+      version = "20.10.0"
+    }
+  }
 }
 ```
 
 [Read more][provider-vc] on provider version control.
 
-[provider-vc]: https://www.terraform.io/docs/configuration/providers.html#provider-versions
+[provider-vc]: https://www.terraform.io/docs/configuration/provider-requirements.html#requiring-providers
 
 # Building The Provider
 
@@ -110,7 +121,10 @@ make build
 
 ## Installing the Local Plugin
 
-After the build is complete, copy the `terraform-provider-netapp-cloudmanager` binary into
+With Terraform 0.13 or newer, see the [sanity check](#sanity-check) section under **Walkthrough example**.
+
+With earlier version of Terraform, after
+the build is complete, copy the `terraform-provider-netapp-cloudmanager` binary into
 the same path as your `terraform` binary, and re-run `terraform init`.
 
 After this, your project-local `.terraform/plugins/ARCH/lock.json` (where `ARCH`
@@ -236,7 +250,7 @@ make build
 
 The build step will install the provider in the $GOPATH/bin directory.
 
-### Sanity check
+### Sanity check {#sanity-check}
 
 #### Local installation - linux
 
