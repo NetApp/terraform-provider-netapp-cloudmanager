@@ -250,7 +250,7 @@ make build
 
 The build step will install the provider in the $GOPATH/bin directory.
 
-### Sanity check    {#sanity-check}
+### Sanity check
 
 #### Local installation - linux
 
