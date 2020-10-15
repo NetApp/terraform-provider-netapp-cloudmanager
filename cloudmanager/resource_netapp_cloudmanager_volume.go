@@ -266,7 +266,7 @@ func resourceCVOVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 	volume.EnableDeduplication = d.Get("enable_deduplication").(bool)
 	volume.Size.Size = d.Get("size").(float64)
 	volume.Size.Unit = d.Get("unit").(string)
-	volume_protocol := d.Get("volume_protocol").(string)
+	volumeProtocol := d.Get("volume_protocol").(string)
 	if v, ok := d.GetOk("export_policy_name"); ok {
 		volume.ExportPolicyInfo.Name = v.(string)
 	}
@@ -303,7 +303,7 @@ func resourceCVOVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 	if v, ok := d.GetOk("iops"); ok {
 		volume.Iops = v.(int)
 	}
-	if volume_protocol == "cifs" {
+	if volumeProtocol == "cifs" {
 		exist, err := client.checkCifsExists(volume.WorkingEnvironmentID, volume.SvmName)
 		if err != nil {
 			return err
@@ -324,7 +324,7 @@ func resourceCVOVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 			}
 			volume.ShareInfo.AccessControl.Users = users
 		}
-	} else if volume_protocol == "iscsi" {
+	} else if volumeProtocol == "iscsi" {
 		isNewIgroup, _, err := createIscsiVolumeHelper(d, meta)
 		if err != nil {
 			return err
@@ -698,8 +698,8 @@ func resourceVolumeCustomizeDiff(diff *schema.ResourceDiff, v interface{}) error
 			return fmt.Errorf("volume type can not be changed")
 		}
 	}
-	provider_volume_type := diff.Get("provider_volume_type")
-	if _, ok := diff.GetOk("iops"); !ok && provider_volume_type == "io1" {
+	providerVolumeType := diff.Get("provider_volume_type")
+	if _, ok := diff.GetOk("iops"); !ok && providerVolumeType == "io1" {
 		return fmt.Errorf("iops is required when provider_volume_type is io1")
 	}
 	capacityTier := diff.Get("capacity_tier")
@@ -715,7 +715,7 @@ func createIscsiVolumeHelper(d *schema.ResourceData, meta interface{}) (bool, bo
 	igroup := igroup{}
 
 	var workingEnvironmentType string
-	var workingEnvironmentId string
+	var workingEnvironmentID string
 	var isNewIgroup bool
 	var isNewInitiator bool
 	var svm string
@@ -723,32 +723,32 @@ func createIscsiVolumeHelper(d *schema.ResourceData, meta interface{}) (bool, bo
 		igroup.IgroupName = v.(string)
 	}
 	if v, ok := d.GetOk("working_environment_id"); ok {
-		igroup.WorkingEnvironmentId = v.(string)
-		workingEnvironmentId = v.(string)
-		we_info, err := client.getWorkingEnvironmentInfo(v.(string))
+		igroup.WorkingEnvironmentID = v.(string)
+		workingEnvironmentID = v.(string)
+		workingEnvDetail, err := client.getWorkingEnvironmentInfo(v.(string))
 		if err != nil {
 			return false, false, err
 		}
-		workingEnvironmentType = we_info.WorkingEnvironmentType
-		we_info, err = client.findWorkingEnvironmentByName(we_info.Name)
+		workingEnvironmentType = workingEnvDetail.WorkingEnvironmentType
+		workingEnvDetail, err = client.findWorkingEnvironmentByName(workingEnvDetail.Name)
 		if err != nil {
 			return false, false, err
 		}
 		if svm == "" {
-			svm = we_info.SvmName
+			svm = workingEnvDetail.SvmName
 		}
 		igroup.SvmName = svm
 	} else if v, ok := d.GetOk("working_environment_name"); ok {
-		we_info, err := client.findWorkingEnvironmentByName(v.(string))
+		workingEnvDetail, err := client.findWorkingEnvironmentByName(v.(string))
 		if err != nil {
 			return false, false, err
 		}
-		igroup.WorkingEnvironmentId = we_info.PublicID
+		igroup.WorkingEnvironmentID = workingEnvDetail.PublicID
 
-		workingEnvironmentId = we_info.PublicID
-		workingEnvironmentType = we_info.WorkingEnvironmentType
+		workingEnvironmentID = workingEnvDetail.PublicID
+		workingEnvironmentType = workingEnvDetail.WorkingEnvironmentType
 		if svm == "" {
-			svm = we_info.SvmName
+			svm = workingEnvDetail.SvmName
 		}
 		igroup.SvmName = svm
 	} else {
@@ -781,7 +781,7 @@ func createIscsiVolumeHelper(d *schema.ResourceData, meta interface{}) (bool, bo
 			initiators = expandInitiator(v.(*schema.Set))
 		}
 		getAll := initiator{}
-		getAll.WorkingEnvironmentId = workingEnvironmentId
+		getAll.WorkingEnvironmentID = workingEnvironmentID
 		getAll.WorkingEnvironmentType = workingEnvironmentType
 		res, err := client.getInitiator(getAll)
 		if err != nil {
