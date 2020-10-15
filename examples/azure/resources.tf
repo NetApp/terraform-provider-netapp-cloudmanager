@@ -2,6 +2,16 @@
 
 provider "azurerm" {
   features {}
+  skip_provider_registration = true
+}
+
+terraform {
+  required_providers {
+    netapp-cloudmanager = {
+      source = "NetApp/netapp-cloudmanager"
+      version = "20.10.0"
+    }
+  }
 }
 
 resource "azurerm_resource_group" "occm-rg" {
@@ -28,13 +38,11 @@ resource "netapp-cloudmanager_connector_azure" "cm-azure" {
   admin_username = "vmadmin"
 }
 
-
 data "azurerm_virtual_machine" "occm-vm" {
   depends_on = [netapp-cloudmanager_connector_azure.cm-azure]
   name                = "CMTerraform"
   resource_group_name = "CMTerraform"
 }
-
 
 resource "azurerm_role_definition" "occm-role" {
   role_definition_id = "12345678-0000-0000-b9d7-123456789012"
@@ -162,7 +170,6 @@ resource "netapp-cloudmanager_cvo_azure" "cvo-azure" {
   subnet_id = "Subnet1"
   vnet_id = "Vnet1"
   vnet_resource_group = "rg_westus"
-#  cidr = "10.0.0.0/16"
   data_encryption_type = "AZURE"
   azure_tag {
               tag_key = "abcd"
@@ -173,7 +180,7 @@ resource "netapp-cloudmanager_cvo_azure" "cvo-azure" {
               tag_value = "YYY"
             }
   storage_type = "Premium_LRS"
-  svm_password = "P@ssword!"
+  svm_password = "********"
   client_id = netapp-cloudmanager_connector_azure.cm-azure.client_id
   workspace_id = "workspace-xxxxxx"
   capacity_tier = "Blob"
@@ -200,12 +207,11 @@ resource "netapp-cloudmanager_cvo_azure" "cvo-azure-ha" {
               tag_value = "YYY"
             }
   storage_type = "Premium_LRS"
-  svm_password = "P@ssword!"
+  svm_password = "********"
   client_id = netapp-cloudmanager_connector_azure.cm-azure.client_id
   workspace_id = "workspace-xxxxxx"
   capacity_tier = "Blob"
   writing_speed_state = "NORMAL"
   is_ha = true
   license_type = "azure-ha-cot-standard-paygo"
-  
 }
