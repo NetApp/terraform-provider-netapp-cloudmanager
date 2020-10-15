@@ -30,8 +30,8 @@ resource "netapp-cloudmanager_connector_azure" "cl-occm-azure" {
   proxy_password = "test"
   associate_public_ip_address = true
   account_id = "account-moKEW1b5"
-  admin_password = "Netapp123456"
-  admin_username = "bsuhas"
+  admin_password = "********"
+  admin_username = "********"
 }
 
 resource "netapp-cloudmanager_connector_gcp" "cl-occm-gcp" {

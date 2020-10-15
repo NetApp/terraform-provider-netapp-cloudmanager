@@ -1,3 +1,13 @@
+
+terraform {
+  required_providers {
+    netapp-cloudmanager = {
+      source = "NetApp/netapp-cloudmanager"
+      version = "20.10.0"
+    }
+  }
+}
+
 # Specify CVO resources
 
 resource "netapp-cloudmanager_connector_aws" "cm-aws" {
@@ -28,7 +38,7 @@ resource "netapp-cloudmanager_cvo_aws" "cvo-aws" {
               tag_key = "xxx"
               tag_value = "YYY"
             }
-  svm_password = "P@ssword1"
+  svm_password = "********"
   client_id = netapp-cloudmanager_connector_aws.cm-aws.client_id 
 }
 

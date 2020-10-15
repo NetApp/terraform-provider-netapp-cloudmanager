@@ -1,5 +1,13 @@
 # Specify CVO resources
 
+terraform {
+  required_providers {
+    netapp-cloudmanager = {
+      source = "NetApp/netapp-cloudmanager"
+      version = "20.10.0"
+    }
+  }
+}
 
 resource "netapp-cloudmanager_connector_gcp" "cm-gcp" {
   provider = netapp-cloudmanager
@@ -12,7 +20,6 @@ resource "netapp-cloudmanager_connector_gcp" "cm-gcp" {
   account_id = "account-xxxxxxx"
 }
 
-
 resource "netapp-cloudmanager_cvo_gcp" "cvo-gcp" {
   provider = netapp-cloudmanager
   name = "terraformcvogcp"
@@ -20,7 +27,7 @@ resource "netapp-cloudmanager_cvo_gcp" "cvo-gcp" {
   zone = "us-east1-b"
   subnet_id = "default"
   gcp_service_account = "fabric-pool@project-id.iam.gserviceaccount.com"
-  svm_password = "netapp1!"
+  svm_password = "********"
   client_id = netapp-cloudmanager_connector_gcp.cm-gcp.client_id 
   workspace_id = "workspace-xxxxxx"
 }
