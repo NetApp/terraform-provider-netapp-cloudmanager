@@ -39,7 +39,7 @@ deploying.
 ## Provider Documentation
 
 The documentation is available at:
-https://registry.terraform.io/providers/NetApp/netapp-cloudmanager/latest/docs
+https://registry.terraform.io/providers/NetApp/netapp-cloudmanager/latest/docs
 
 The provider is also documented [here][tf-netapp-cloudmanager-docs].
 
