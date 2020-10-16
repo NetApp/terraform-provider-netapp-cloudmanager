@@ -126,7 +126,7 @@ type iscsiInfo struct {
 type initiator struct {
 	AliasName              string `structs:"aliasName,omitempty"`
 	Iqn                    string `structs:"iqn,omitempty"`
-	WorkingEnvironmentId   string `structs:"workingEnvironmentId,omitempty"`
+	WorkingEnvironmentID   string `structs:"workingEnvironmentId,omitempty"`
 	SvmName                string `structs:"svmName,omitempty"`
 	WorkingEnvironmentType string `structs:"workingEnvironmentType,omitempty"`
 }
@@ -263,7 +263,7 @@ func (c *Client) quoteVolume(request quoteRequest) (map[string]interface{}, erro
 
 func (c *Client) createInitiator(request initiator) error {
 	hostType := "CloudManagerHost"
-	baseURL, _, err := c.getAPIRoot(request.WorkingEnvironmentId)
+	baseURL, _, err := c.getAPIRoot(request.WorkingEnvironmentID)
 	if err != nil {
 		return err
 	}
@@ -283,7 +283,7 @@ func (c *Client) createInitiator(request initiator) error {
 
 func (c *Client) getInitiator(request initiator) ([]initiator, error) {
 	hostType := "CloudManagerHost"
-	baseURL, _, err := c.getAPIRoot(request.WorkingEnvironmentId)
+	baseURL, _, err := c.getAPIRoot(request.WorkingEnvironmentID)
 	var result []initiator
 	if err != nil {
 		return result, err
@@ -311,19 +311,19 @@ type igroup struct {
 	PortsetName            string   `json:"portsetName"`
 	IgroupType             string   `json:"igroupType"`
 	Initiators             []string `json:"initiators"`
-	WorkingEnvironmentId   string   `structs:"workingEnvironmentId"`
+	WorkingEnvironmentID   string   `structs:"workingEnvironmentId"`
 	SvmName                string   `structs:"svmName"`
 	WorkingEnvironmentType string   `structs:"workingEnvironmentType,omitempty"`
 }
 
 func (c *Client) getIgroups(request igroup) ([]igroup, error) {
 	hostType := "CloudManagerHost"
-	baseURL, _, err := c.getAPIRoot(request.WorkingEnvironmentId)
+	baseURL, _, err := c.getAPIRoot(request.WorkingEnvironmentID)
 	var result []igroup
 	if err != nil {
 		return result, err
 	}
-	baseURL = fmt.Sprintf("%s/volumes/igroups/%s/%s", baseURL, request.WorkingEnvironmentId, request.SvmName)
+	baseURL = fmt.Sprintf("%s/volumes/igroups/%s/%s", baseURL, request.WorkingEnvironmentID, request.SvmName)
 	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
 	if err != nil {
 		log.Print("getIgroups request failed ", statusCode)
