@@ -233,11 +233,14 @@ func (c *Client) createCVOAzure(cvoDetails createCVOAzureDetails) (cvoResult, er
 	}
 
 	var baseURL string
+	var creationWaitTime int
 
 	if cvoDetails.IsHA == false {
 		baseURL = "/occm/api/azure/vsa/working-environments"
+		creationWaitTime = 60
 	} else if cvoDetails.IsHA == true {
 		baseURL = "/occm/api/azure/ha/working-environments"
+		creationWaitTime = 90
 	}
 
 	log.Print(baseURL)
@@ -256,7 +259,7 @@ func (c *Client) createCVOAzure(cvoDetails createCVOAzureDetails) (cvoResult, er
 		return cvoResult{}, responseError
 	}
 
-	err = c.waitOnCompletion(onCloudRequestID, "CVO", "create", 60, 60)
+	err = c.waitOnCompletion(onCloudRequestID, "CVO", "create", creationWaitTime, 60)
 	if err != nil {
 		return cvoResult{}, err
 	}
