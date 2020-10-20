@@ -31,6 +31,8 @@ resource "netapp-cloudmanager_connector_azure" "cm-azure" {
   company = "NetApp"
   resource_group = "CMTerraform"
   vnet_resource_group = "rg_westus"
+  network_security_group_name = "OCCM_SG"
+  network_security_resource_group = "rg_westus"
   subnet_id = "Subnet1"
   vnet_id = "Vnet1"
   account_id = "account-xxxxxxx"

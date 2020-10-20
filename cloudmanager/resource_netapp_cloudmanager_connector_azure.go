@@ -53,6 +53,22 @@ func resourceOCCMAzure() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"network_security_resource_group": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"virtual_machine_size": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Default:  "Standard_D2s_v3",
+			},
+			"network_security_group_name": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
 			"company": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -120,8 +136,14 @@ func resourceOCCMAzureCreate(d *schema.ResourceData, meta interface{}) error {
 	occmDetails.Company = d.Get("company").(string)
 	occmDetails.AdminUsername = d.Get("admin_username").(string)
 	occmDetails.AdminPassword = d.Get("admin_password").(string)
+	occmDetails.VirtualMachineSize = d.Get("virtual_machine_size").(string)
+	occmDetails.NetworkSecurityGroupName = d.Get("network_security_group_name").(string)
 	if o, ok := d.GetOk("vnet_resource_group"); ok {
 		occmDetails.VnetResourceGroup = o.(string)
+	}
+
+	if o, ok := d.GetOk("network_security_resource_group"); ok {
+		occmDetails.NetworkSecurityResourceGroup = o.(string)
 	}
 
 	if o, ok := d.GetOk("proxy_url"); ok {

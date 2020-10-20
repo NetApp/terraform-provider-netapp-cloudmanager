@@ -8,6 +8,12 @@ func (c *Client) callParameters() string {
         "virtualMachineName": {
             "value": "string"
         },
+        "virtualMachineSize": {
+            "value": "string"
+        },
+        "networkSecurityGroupName": {
+            "value": "string"
+        },
         "adminUsername": {
             "value": "string"
         },
@@ -28,7 +34,6 @@ func (c *Client) callParameters() string {
         }
     }`
 }
-
 func (c *Client) callTemplate() string {
 	return `{
         "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
@@ -41,6 +46,9 @@ func (c *Client) callTemplate() string {
             "virtualMachineName": {
                 "type": "string"
             },
+            "virtualMachineSize":{
+                "type": "string"
+            },
             "adminUsername": {
                 "type": "string"
             },
@@ -48,8 +56,7 @@ func (c *Client) callTemplate() string {
                 "type": "string"
             },
             "networkSecurityGroupName": {
-                "type": "string",
-                "defaultValue": "[concat(parameters('virtualMachineName'),'-nsg')]"
+                "type": "string"
             },
             "adminPassword": {
                 "type": "securestring"
@@ -76,8 +83,6 @@ func (c *Client) callTemplate() string {
             "publicIpAddressType": "Dynamic",
             "publicIpAddressSku": "Basic",
             "msiExtensionName": "ManagedIdentityExtensionForLinux",
-            "virtualMachineSize": "Standard_D2s_v3",
-            "occmNSG": "[concat(parameters('virtualMachineName'),'-nsg')]",
             "occmOffer": "[if(equals(parameters('environment'), 'stage'), 'netapp-oncommand-cloud-manager-staging-preview', 'netapp-oncommand-cloud-manager')]"
         },
         "resources": [
@@ -98,7 +103,7 @@ func (c *Client) callTemplate() string {
                         "customData": "[base64(parameters('customData'))]"
                     },
                     "hardwareProfile": {
-                        "vmSize": "[variables('virtualMachineSize')]"
+                        "vmSize": "[parameters('virtualMachineSize')]"
                     },
                     "storageProfile": {
                         "imageReference": {
@@ -190,7 +195,7 @@ func (c *Client) callTemplate() string {
                         }
                     ],
                     "networkSecurityGroup": {
-                        "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroupName'))]"
+                        "id": "[parameters('networkSecurityGroupName')]"
                     }
                 }
             },
@@ -204,62 +209,6 @@ func (c *Client) callTemplate() string {
                 },
                 "sku": {
                     "name": "[variables('publicIpAddressSku')]"
-                }
-            },
-            {
-                "name": "[parameters('networkSecurityGroupName')]",
-                "condition": "[equals(parameters('networkSecurityGroupName'),variables('occmNSG'))]",
-                "type": "Microsoft.Network/networkSecurityGroups",
-                "apiVersion": "2018-01-01",
-                "location": "[parameters('location')]",
-                "properties": {
-                    "securityRules": [
-                        {
-                            "name": "http",
-                            "properties": {
-                                "priority": 1010,
-                                "protocol": "TCP",
-                                "access": "Allow",
-                                "direction": "Inbound",
-                                "sourceApplicationSecurityGroups": [],
-                                "destinationApplicationSecurityGroups": [],
-                                "sourceAddressPrefix": "*",
-                                "sourcePortRange": "*",
-                                "destinationAddressPrefix": "*",
-                                "destinationPortRange": "80"
-                            }
-                        },
-                        {
-                            "name": "https",
-                            "properties": {
-                                "priority": 1020,
-                                "protocol": "TCP",
-                                "access": "Allow",
-                                "direction": "Inbound",
-                                "sourceApplicationSecurityGroups": [],
-                                "destinationApplicationSecurityGroups": [],
-                                "sourceAddressPrefix": "*",
-                                "sourcePortRange": "*",
-                                "destinationAddressPrefix": "*",
-                                "destinationPortRange": "443"
-                            }
-                        },
-                        {
-                            "name": "ssh",
-                            "properties": {
-                                "priority": 1030,
-                                "protocol": "TCP",
-                                "access": "Allow",
-                                "direction": "Inbound",
-                                "sourceApplicationSecurityGroups": [],
-                                "destinationApplicationSecurityGroups": [],
-                                "sourceAddressPrefix": "*",
-                                "sourcePortRange": "*",
-                                "destinationAddressPrefix": "*",
-                                "destinationPortRange": "22"
-                            }
-                        }
-                    ]
                 }
             }
         ],

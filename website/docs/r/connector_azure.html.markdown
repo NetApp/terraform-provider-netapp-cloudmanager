@@ -33,6 +33,7 @@ resource "netapp-cloudmanager_connector_azure" "cl-occm-azure" {
   resource_group = "rg_westus"
   subnet_id = "Subnet1"
   vnet_id = "Vnet1"
+  network_security_group_name = "OCCM_SG"
   associate_public_ip_address = true
   account_id = "account-ABCNJGB0X"
   admin_password = "P@ssword123456"
@@ -51,9 +52,12 @@ The following arguments are supported:
 * `subnet_id` - (Required) The name of the subnet for the virtual machine.
 * `subscription_id` - (Required) The ID of the Azure subscription.
 * `vnet_id` - (Required) The name of the virtual network.
+* `network_security_group_name` - (Required) The name of the security group for the instance.
 * `admin_username` - (Required) The user name for the Connector.
 * `admin_password` - (Required) The password for the Connector.
 * `vnet_resource_group` - (Optional) The resource group in Azure associated with the virtual network. If not provided, it’s assumed that the VNet is within the previously specified resource group.
+* `network_security_resource_group` - (Optional) The resource group in Azure associated with the security group. If not provided, it’s assumed that the security group is within the previously specified resource group.
+* `virtual_machine_size` - (Optional) The virtual machine type. (for example, Standard_D2s_v3). At least 4 CPU and 16 GB of memory are required.
 * `proxy_url` - (Optional) The proxy URL, if using a proxy to connect to the internet.
 * `proxy_user_name` - (Optional) The proxy user name, if using a proxy to connect to the internet.
 * `proxy_password` - (Optional) The proxy password, if using a proxy to connect to the internet.
