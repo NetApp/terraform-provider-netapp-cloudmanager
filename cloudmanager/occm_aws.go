@@ -21,34 +21,37 @@ type createUserData struct {
 
 // createOCCMDetails the users input for creating a occm
 type createOCCMDetails struct {
-	Name                     string
-	GCPProject               string
-	Company                  string
-	InstanceID               string
-	Region                   string
-	Location                 string
-	Zone                     string
-	AMI                      string
-	KeyName                  string
-	InstanceType             string
-	IamInstanceProfileName   string
-	SecurityGroupID          string
-	SubnetID                 string
-	ProxyURL                 string
-	ProxyUserName            string
-	ProxyPassword            string
-	ResourceGroup            string
-	SubscriptionID           string
-	MachineType              string
-	ServiceAccountEmail      string
-	GCPCommonSuffixName      string
-	VnetID                   string
-	VnetResourceGroup        string
-	AdminUsername            string
-	AdminPassword            string
-	AssociatePublicIPAddress *bool
-	AssociatePublicIP        bool
-	FirewallTags             bool
+	Name                         string
+	GCPProject                   string
+	Company                      string
+	InstanceID                   string
+	Region                       string
+	Location                     string
+	Zone                         string
+	AMI                          string
+	KeyName                      string
+	InstanceType                 string
+	IamInstanceProfileName       string
+	SecurityGroupID              string
+	SubnetID                     string
+	ProxyURL                     string
+	ProxyUserName                string
+	ProxyPassword                string
+	ResourceGroup                string
+	SubscriptionID               string
+	MachineType                  string
+	ServiceAccountEmail          string
+	GCPCommonSuffixName          string
+	VnetID                       string
+	VnetResourceGroup            string
+	AdminUsername                string
+	AdminPassword                string
+	VirtualMachineSize           string
+	NetworkSecurityGroupName     string
+	NetworkSecurityResourceGroup string
+	AssociatePublicIPAddress     *bool
+	AssociatePublicIP            bool
+	FirewallTags                 bool
 }
 
 // deleteOCCMDetails the users input for deleting a occm

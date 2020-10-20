@@ -196,6 +196,7 @@ func (c *Client) CallDeployAzureVM(occmDetails createOCCMDetails) (string, error
 	}
 
 	var vnetID string
+	var networkSecurityGroupName string
 
 	if occmDetails.VnetResourceGroup != "" {
 		vnetID = fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s", occmDetails.SubscriptionID, occmDetails.VnetResourceGroup, occmDetails.VnetID)
@@ -203,10 +204,24 @@ func (c *Client) CallDeployAzureVM(occmDetails createOCCMDetails) (string, error
 		vnetID = fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s", occmDetails.SubscriptionID, occmDetails.ResourceGroup, occmDetails.VnetID)
 	}
 
+	if occmDetails.NetworkSecurityResourceGroup != "" {
+		networkSecurityGroupName = fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/networkSecurityGroups/%s", occmDetails.SubscriptionID, occmDetails.NetworkSecurityResourceGroup, occmDetails.NetworkSecurityGroupName)
+	} else {
+		networkSecurityGroupName = fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/networkSecurityGroups/%s", occmDetails.SubscriptionID, occmDetails.ResourceGroup, occmDetails.NetworkSecurityGroupName)
+	}
+
 	subnetID := fmt.Sprintf("%s/subnets/%s", vnetID, occmDetails.SubnetID)
 
 	(*params)["virtualNetworkId"] = map[string]string{
 		"value": vnetID,
+	}
+
+	(*params)["networkSecurityGroupName"] = map[string]string{
+		"value": networkSecurityGroupName,
+	}
+
+	(*params)["virtualMachineSize"] = map[string]string{
+		"value": occmDetails.VirtualMachineSize,
 	}
 
 	(*params)["subnetId"] = map[string]string{
