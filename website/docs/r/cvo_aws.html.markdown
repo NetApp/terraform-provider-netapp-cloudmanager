@@ -106,6 +106,7 @@ The following arguments are supported:
 * `enable_monitoring` - (Optional) Enable the Monitoring service on the working environment [true, false]. The default is false.
 * `is_ha` - (Optional) Indicate whether the working environment is an HA pair or not [true, false]. The default is false.
 * `failover_mode` - (Optional) For HA, the failover mode for the HA pair: ['PrivateIP', 'FloatingIP']. 'PrivateIP' is for a single availability zone and 'FloatingIP' is for multiple availability zones.
+* `mediator_assign_public_ip` - (Optional) bool option to assign public IP. The default is 'true'.
 * `node1_subnet_id` - (Optional) For HA, the subnet ID of the first node.
 * `node2_subnet_id` - (Optional) For HA, the subnet ID of the second node.
 * `mediator_subnet_id` - (Optional) For HA, the subnet ID of the mediator.
