@@ -108,7 +108,8 @@ type tenantResult struct {
 
 // cvoStatusResult the users input for creating a cvo
 type cvoStatusResult struct {
-	Status int `json:"status"`
+	Status int    `json:"status"`
+	Error  string `json:"error"`
 }
 
 func (c *Client) getTenant() (string, error) {
