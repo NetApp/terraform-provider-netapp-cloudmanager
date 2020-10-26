@@ -24,7 +24,7 @@ resource "netapp-cloudmanager_cvo_gcp" "cl-cvo-gcp" {
   svm_password = "netapp1!"
   client_id = netapp-cloudmanager_connector_gcp.cm-gcp.client_id
   workspace_id = "workspace-IDz6Nnwl"
-  gcp_lable {
+  gcp_label {
         label_key = "abcd"
         label_value = "ABCD"
       }
@@ -45,6 +45,7 @@ The following arguments are supported:
 * `data_encryption_type` - (Optional) The type of data encryption to use for the working environment: ['GCP', 'NONE']. The default is 'GCP'.
 * `gcp_volume_type` - (Optional) The type of the storage for the first data aggregate: ['pd-standard', 'pd-ssd']. The default is 'pd-ssd'
 * `subnet_id` - (Optional) The name of the subnet for Cloud Volumes ONTAP. The default is: 'default'.
+* `network_project_id` - (Optional) The project id in GCP associated with the Subnet. If not provided, it’s assumed that the Subnet is within the previously specified project id.
 * `vpc_id` - (Optional) The name of the VPC.
 * `gcp_volume_size` - (Optional) The GCP volume size for the first data aggregate. For GB, the unit can be: [100 or 500]. For TB, the unit can be: [1,2,4,8]. The default is '1' .
 * `gcp_volume_size_unit` - (Optional) ['GB' or 'TB']. The default is 'TB'.
@@ -59,7 +60,7 @@ The following arguments are supported:
 * `writing_speed_state` - (Optional) The write speed setting for Cloud Volumes ONTAP: ['NORMAL','HIGH']. The default is 'NORMAL'. This argument is not relevant for HA pairs.
 * `firewall_rule` - (Optional) The name of the firewall rule for Cloud Volumes ONTAP. If not provided, Cloud Manager generates the rule.
 
-The `gcp_lable` block supports:
+The `gcp_label` block supports:
 * `label_key` - (Required) The key of the tag.
 * `label_value` - (Required) The tag value.
 

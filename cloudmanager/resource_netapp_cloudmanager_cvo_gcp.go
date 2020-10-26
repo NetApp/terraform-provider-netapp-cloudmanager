@@ -97,6 +97,11 @@ func resourceCVOGCP() *schema.Resource {
 				ForceNew: true,
 				Default:  "default",
 			},
+			"network_project_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"project_id": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -202,14 +207,25 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 	cvoDetails.Project = d.Get("project_id").(string)
 	cvoDetails.WritingSpeedState = d.Get("writing_speed_state").(string)
 	cvoDetails.VsaMetadata.InstanceType = d.Get("instance_type").(string)
-	cvoDetails.SubnetID = fmt.Sprintf("projects/%s/regions/%s/subnetworks/%s", cvoDetails.Project, cvoDetails.Region[0:len(cvoDetails.Region)-2], d.Get("subnet_id").(string))
-	cvoDetails.SubnetPath = cvoDetails.SubnetID
+	subnetID := d.Get("subnet_id").(string)
 	if c, ok := d.GetOk("gcp_label"); ok {
 		labels := c.(*schema.Set)
 		if labels.Len() > 0 {
 			cvoDetails.GCPLabels = expandGCPLabels(labels)
 		}
 	}
+
+	var networkProjectID string
+	if c, ok := d.GetOk("network_project_id"); ok {
+		networkProjectID = c.(string)
+	}
+
+	if networkProjectID != "" {
+		cvoDetails.SubnetID = fmt.Sprintf("projects/%s/regions/%s/subnetworks/%s", networkProjectID, cvoDetails.Region[0:len(cvoDetails.Region)-2], subnetID)
+	} else {
+		cvoDetails.SubnetID = fmt.Sprintf("projects/%s/regions/%s/subnetworks/%s", cvoDetails.Project, cvoDetails.Region[0:len(cvoDetails.Region)-2], subnetID)
+	}
+	cvoDetails.SubnetPath = cvoDetails.SubnetID
 
 	if c, ok := d.GetOk("firewall_rule"); ok {
 		cvoDetails.FirewallRule = c.(string)
