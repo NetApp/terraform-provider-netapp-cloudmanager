@@ -24,7 +24,7 @@ resource "netapp-cloudmanager_cvo_gcp" "cl-cvo-gcp" {
   svm_password = "netapp1!"
   client_id = netapp-cloudmanager_connector_gcp.cm-gcp.client_id
   workspace_id = "workspace-IDz6Nnwl"
-  gcp_lable {
+  gcp_label {
         label_key = "abcd"
         label_value = "ABCD"
       }
@@ -59,7 +59,7 @@ The following arguments are supported:
 * `writing_speed_state` - (Optional) The write speed setting for Cloud Volumes ONTAP: ['NORMAL','HIGH']. The default is 'NORMAL'. This argument is not relevant for HA pairs.
 * `firewall_rule` - (Optional) The name of the firewall rule for Cloud Volumes ONTAP. If not provided, Cloud Manager generates the rule.
 
-The `gcp_lable` block supports:
+The `gcp_label` block supports:
 * `label_key` - (Required) The key of the tag.
 * `label_value` - (Required) The tag value.
 
