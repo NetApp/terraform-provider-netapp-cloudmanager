@@ -42,7 +42,7 @@ func apiResponseChecker(statusCode int, response []byte, funcName string) error 
 
 }
 
-func (c *Client) checkTaskStatus(id string) (int, error) {
+func (c *Client) checkTaskStatus(id string) (int, string, error) {
 
 	log.Printf("checkTaskStatus: %s", id)
 
@@ -61,7 +61,7 @@ func (c *Client) checkTaskStatus(id string) (int, error) {
 				networkRetries--
 			} else {
 				log.Print("checkTaskStatus request failed ", code)
-				return 0, err
+				return 0, "", err
 			}
 		} else {
 			statusCode = code
@@ -72,28 +72,28 @@ func (c *Client) checkTaskStatus(id string) (int, error) {
 
 	responseError := apiResponseChecker(statusCode, response, "checkTaskStatus")
 	if responseError != nil {
-		return 0, responseError
+		return 0, "", responseError
 	}
 
 	var result cvoStatusResult
 	if err := json.Unmarshal(response, &result); err != nil {
 		log.Print("Failed to unmarshall response from checkTaskStatus ", err)
-		return 0, err
+		return 0, "", err
 	}
 
-	return result.Status, nil
+	return result.Status, result.Error, nil
 }
 
 func (c *Client) waitOnCompletion(id string, actionName string, task string, retries int, waitInterval int) error {
 	for {
-		cvoStatus, err := c.checkTaskStatus(id)
+		cvoStatus, failureErrorMessage, err := c.checkTaskStatus(id)
 		if err != nil {
 			return err
 		}
 		if cvoStatus == 1 {
 			return nil
 		} else if cvoStatus == -1 {
-			return fmt.Errorf("Failed to %s %s", task, actionName)
+			return fmt.Errorf("Failed to %s %s, error: %s", task, actionName, failureErrorMessage)
 		} else if cvoStatus == 0 {
 			if retries == 0 {
 				log.Print("Taking too long to ", task, actionName)

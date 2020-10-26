@@ -212,6 +212,12 @@ func resourceCVOAWS() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"PrivateIP", "FloatingIP"}, false),
 			},
+			"mediator_assign_public_ip": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+				Default:  true,
+			},
 			"node1_subnet_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -354,7 +360,7 @@ func resourceCVOAWSCreate(d *schema.ResourceData, meta interface{}) error {
 		cvoDetails.HAParams.Node2SubnetID = d.Get("node2_subnet_id").(string)
 		cvoDetails.HAParams.MediatorSubnetID = d.Get("mediator_subnet_id").(string)
 		cvoDetails.HAParams.MediatorKeyPairName = d.Get("mediator_key_pair_name").(string)
-		cvoDetails.HAParams.MediatorAssignPublicIP = true
+		cvoDetails.HAParams.MediatorAssignPublicIP = d.Get("mediator_assign_public_ip").(bool)
 		cvoDetails.HAParams.ClusterFloatingIP = d.Get("cluster_floating_ip").(string)
 		cvoDetails.HAParams.DataFloatingIP = d.Get("data_floating_ip").(string)
 		cvoDetails.HAParams.DataFloatingIP2 = d.Get("data_floating_ip2").(string)
