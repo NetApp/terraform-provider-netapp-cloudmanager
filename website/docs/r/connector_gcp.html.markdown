@@ -44,6 +44,7 @@ The following arguments are supported:
 * `service_account_email` - (Required) The email of the service_account for the connector instance. This service account is used to allow the Connector to create Cloud Volume ONTAP.
 * `service_account_path` - (Required) The local path of the service_account JSON file for GCP authorization purposes. This service account is used to create the Connector in GCP.
 * `subnet_id` - (Optional) The name of the subnet for the virtual machine. The default value is "Default"
+* `network_project_id` - (Optional) The project id in GCP associated with the Subnet. If not provided, it’s assumed that the Subnet is within the previously specified project id.
 * `machine_type` - (Optional) The machine_type for the Connector VM. The default value is "n1-standard-4"
 * `firewall_tags` - (Optional) Indicates whether to add firewall_tags to the connector VM (HTTP and HTTP). The default is "true".
 * `associate_public_ip_address` - (Optional) Indicates whether to associate a public IP address to the virtual machine. The default is "true"

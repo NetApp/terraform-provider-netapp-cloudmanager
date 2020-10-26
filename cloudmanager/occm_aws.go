@@ -34,6 +34,7 @@ type createOCCMDetails struct {
 	IamInstanceProfileName       string
 	SecurityGroupID              string
 	SubnetID                     string
+	NetworkProjectID             string
 	ProxyURL                     string
 	ProxyUserName                string
 	ProxyPassword                string

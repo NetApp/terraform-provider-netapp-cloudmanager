@@ -55,6 +55,11 @@ func resourceOCCMGCP() *schema.Resource {
 				Default:  "default",
 				ForceNew: true,
 			},
+			"network_project_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"firewall_tags": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -121,6 +126,10 @@ func resourceOCCMGCPCreate(d *schema.ResourceData, meta interface{}) error {
 	occmDetails.FirewallTags = d.Get("firewall_tags").(bool)
 	occmDetails.AssociatePublicIP = d.Get("associate_public_ip").(bool)
 	occmDetails.Company = d.Get("company").(string)
+
+	if o, ok := d.GetOk("network_project_id"); ok {
+		occmDetails.NetworkProjectID = o.(string)
+	}
 
 	if o, ok := d.GetOk("proxy_url"); ok {
 		occmDetails.ProxyURL = o.(string)

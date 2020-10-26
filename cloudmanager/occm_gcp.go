@@ -122,14 +122,25 @@ func (c *Client) deployGCPVM(occmDetails createOCCMDetails) (OCCMMResult, error)
 		accessConfig = ` []`
 	}
 
-	c.GCPDeploymentTemplate = fmt.Sprintf(`{
-		"name": "%s%s",
-		"target": {
-		"config": {
-		"content": "resources:\n- name: %s-vm\n  properties:\n%s    disks:\n    - autoDelete: true\n      boot: true\n      deviceName: %s-vm-disk-boot\n      name: %s-vm-disk-boot\n      source: \"$(ref.%s-vm-disk-boot.selfLink)\"\n      type: PERSISTENT\n    machineType: zones/%s/machineTypes/%s\n    metadata:\n      items:\n      - key: serial-port-enable\n        value: 1\n      - key: customData\n        value: %s\n    networkInterfaces:\n    - accessConfigs:%s\n      kind: compute#networkInterface\n      subnetwork: regions/%s/subnetworks/%s\n    serviceAccounts:\n    - email: %s\n      scopes:\n      %s\n    zone: %s\n  type: compute.v1.instance\n  metadata:\n    dependsOn:\n    - %s-vm-disk-boot\n- name: %s-vm-disk-boot\n  properties:\n    name: %s-vm-disk-boot\n    sizeGb: 100\n    sourceImage: projects/%s/global/images/family/%s\n    type: zones/%s/diskTypes/pd-ssd\n    zone: %s\n  type: compute.v1.disks"
+	if occmDetails.NetworkProjectID != "" {
+		c.GCPDeploymentTemplate = fmt.Sprintf(`{
+			"name": "%s%s",
+			"target": {
+			"config": {
+			"content": "resources:\n- name: %s-vm\n  properties:\n%s    disks:\n    - autoDelete: true\n      boot: true\n      deviceName: %s-vm-disk-boot\n      name: %s-vm-disk-boot\n      source: \"$(ref.%s-vm-disk-boot.selfLink)\"\n      type: PERSISTENT\n    machineType: zones/%s/machineTypes/%s\n    metadata:\n      items:\n      - key: serial-port-enable\n        value: 1\n      - key: customData\n        value: %s\n    networkInterfaces:\n    - accessConfigs:%s\n      kind: compute#networkInterface\n      subnetwork: projects/%s/regions/%s/subnetworks/%s\n    serviceAccounts:\n    - email: %s\n      scopes:\n      %s\n    zone: %s\n  type: compute.v1.instance\n  metadata:\n    dependsOn:\n    - %s-vm-disk-boot\n- name: %s-vm-disk-boot\n  properties:\n    name: %s-vm-disk-boot\n    sizeGb: 100\n    sourceImage: projects/%s/global/images/family/%s\n    type: zones/%s/diskTypes/pd-ssd\n    zone: %s\n  type: compute.v1.disks"
+			}
 		}
+		}`, occmDetails.Name, occmDetails.GCPCommonSuffixName, occmDetails.Name, tags, occmDetails.Name, occmDetails.Name, occmDetails.Name, occmDetails.Zone, occmDetails.MachineType, gcpCustomData, accessConfig, c.Project, occmDetails.Region, occmDetails.NetworkProjectID, occmDetails.ServiceAccountEmail, gcpSaScopes, occmDetails.Zone, occmDetails.Name, occmDetails.Name, occmDetails.Name, c.GCPImageProject, c.GCPImageFamily, occmDetails.Zone, occmDetails.Zone)
+	} else {
+		c.GCPDeploymentTemplate = fmt.Sprintf(`{
+			"name": "%s%s",
+			"target": {
+			"config": {
+			"content": "resources:\n- name: %s-vm\n  properties:\n%s    disks:\n    - autoDelete: true\n      boot: true\n      deviceName: %s-vm-disk-boot\n      name: %s-vm-disk-boot\n      source: \"$(ref.%s-vm-disk-boot.selfLink)\"\n      type: PERSISTENT\n    machineType: zones/%s/machineTypes/%s\n    metadata:\n      items:\n      - key: serial-port-enable\n        value: 1\n      - key: customData\n        value: %s\n    networkInterfaces:\n    - accessConfigs:%s\n      kind: compute#networkInterface\n      subnetwork: projects/%s/regions/%s/subnetworks/%s\n    serviceAccounts:\n    - email: %s\n      scopes:\n      %s\n    zone: %s\n  type: compute.v1.instance\n  metadata:\n    dependsOn:\n    - %s-vm-disk-boot\n- name: %s-vm-disk-boot\n  properties:\n    name: %s-vm-disk-boot\n    sizeGb: 100\n    sourceImage: projects/%s/global/images/family/%s\n    type: zones/%s/diskTypes/pd-ssd\n    zone: %s\n  type: compute.v1.disks"
+			}
+		}
+		}`, occmDetails.Name, occmDetails.GCPCommonSuffixName, occmDetails.Name, tags, occmDetails.Name, occmDetails.Name, occmDetails.Name, occmDetails.Zone, occmDetails.MachineType, gcpCustomData, accessConfig, c.Project, occmDetails.Region, occmDetails.SubnetID, occmDetails.ServiceAccountEmail, gcpSaScopes, occmDetails.Zone, occmDetails.Name, occmDetails.Name, occmDetails.Name, c.GCPImageProject, c.GCPImageFamily, occmDetails.Zone, occmDetails.Zone)
 	}
-	}`, occmDetails.Name, occmDetails.GCPCommonSuffixName, occmDetails.Name, tags, occmDetails.Name, occmDetails.Name, occmDetails.Name, occmDetails.Zone, occmDetails.MachineType, gcpCustomData, accessConfig, occmDetails.Region, occmDetails.SubnetID, occmDetails.ServiceAccountEmail, gcpSaScopes, occmDetails.Zone, occmDetails.Name, occmDetails.Name, occmDetails.Name, c.GCPImageProject, c.GCPImageFamily, occmDetails.Zone, occmDetails.Zone)
 
 	baseURL := fmt.Sprintf("/deploymentmanager/v2/projects/%s/global/deployments", occmDetails.GCPProject)
 	hostType := "GCPDeploymentManager"
