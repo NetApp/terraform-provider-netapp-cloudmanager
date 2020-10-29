@@ -175,6 +175,7 @@ func resourceCVOVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 	var svm string
 	var workingEnvironmentType string
 	var cloudProvider string
+	var createAggregateifNotExists bool
 	volume := volumeRequest{}
 	quote := quoteRequest{}
 	// quote volume
@@ -185,12 +186,16 @@ func resourceCVOVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 	quote.ProviderVolumeType = d.Get("provider_volume_type").(string)
 	quote.EnableDeduplication = d.Get("enable_deduplication").(bool)
 	quote.EnableThinProvisioning = d.Get("enable_thin_provisioning").(bool)
+	quote.EnableCompression = d.Get("enable_compression").(bool)
 	quote.VerifyNameUniqueness = true // hard code to always true
 	if v, ok := d.GetOk("iops"); ok {
 		quote.Iops = v.(int)
 	}
 	if v, ok := d.GetOk("aggregate_name"); ok {
 		quote.AggregateName = v.(string)
+		createAggregateifNotExists = false
+	} else {
+		createAggregateifNotExists = true
 	}
 	if v, ok := d.GetOk("svm_name"); ok {
 		svm = v.(string)
@@ -362,7 +367,7 @@ func resourceCVOVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 		}
 	}
 	volume.WorkingEnvironmentType = workingEnvironmentType
-	err = client.createVolume(volume)
+	err = client.createVolume(volume, createAggregateifNotExists)
 	if err != nil {
 		log.Print("Error creating volume")
 		return err
