@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strconv"
 
 	"github.com/fatih/structs"
 )
@@ -131,12 +132,12 @@ type initiator struct {
 	WorkingEnvironmentType string `structs:"workingEnvironmentType,omitempty"`
 }
 
-func (c *Client) createVolume(vol volumeRequest) error {
+func (c *Client) createVolume(vol volumeRequest, createAggregateIfNotFound bool) error {
 	baseURL, _, err := c.getAPIRoot(vol.WorkingEnvironmentID)
 	if err != nil {
 		return err
 	}
-	baseURL = fmt.Sprintf("%s/volumes?createAggregateIfNotFound=true", baseURL)
+	baseURL = fmt.Sprintf("%s/volumes?createAggregateIfNotFound=%s", baseURL, strconv.FormatBool(createAggregateIfNotFound))
 	hostType := "CloudManagerHost"
 	param := structs.Map(vol)
 	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("POST", baseURL, param, c.Token, hostType)
