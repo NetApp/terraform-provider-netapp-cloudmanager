@@ -78,7 +78,7 @@ The following arguments are supported:
 
 * `name` - (Required) The name of the Cloud Volumes ONTAP working environment.
 * `region` - (Required) The region where the working environment will be created.
-* `subnet_id` - (Required) The subnet id where the working environment will be created.
+* `subnet_id` - (Optional) The subnet id where the working environment will be created. Required when single mode only.
 * `svm_password` - (Required) The admin password for Cloud Volumes ONTAP.
 * `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
 * `vpc_id` - (Optional) The VPC ID where the working environment will be created. If this argument isn't provided, the VPC will be calculated by using the provided subnet ID.
@@ -92,7 +92,7 @@ The following arguments are supported:
 * `use_latest_version` - (Optional) Indicates whether to use the latest available ONTAP version. The default is 'true'.
 * `license_type` - (Optional) The type of license to use. For single node: ['cot-explore-paygo','cot-standard-paygo', 'cot-premium-paygo', 'cot-premium-byol']. For HA: ['ha-cot-explore-paygo','ha-cot-standard-paygo','ha-cot-premium-paygo','ha-cot-premium-byol']. The default is 'cot-standard-paygo'.
 * `instance_type` - (Optional) The instance type to use, which depends on the license type: Explore:['m5.xlarge'], Standard:['m5.2xlarge','r5.xlarge'], Premium:['m5.4xlarge','r5.2xlarge','c4.8xlarge'], BYOL: all instance types defined for PayGo. For more supported instance types, refer to Cloud Volumes ONTAP Release Notes. The default is 'm5.2xlarge'.
-* `platform_serial_number` - (Optional) The serial number for the cluster. This is required when using one of these: ['cot-premium-byol' or 'ha-cot-premium-byol'].
+* `platform_serial_number` - (Optional) The serial number for the cluster. This is required when using 'cot-premium-byol'.
 * `capacity_tier` - (Optional) Whether to enable data tiering for the first data aggregate: ['S3','NONE']. The default is 'S3'.
 * `tier_level` - (Optional) The tiering level when 'capacity_tier' is set to 'S3' ['normal','ia','ia-single','intelligent']. The default is 'normal'.
 * `nss_account` - (Optional) The NetApp Support Site account ID to use with this Cloud Volumes ONTAP system. If the license type is BYOL and an NSS account isn't provided, Cloud Manager tries to use the first existing NSS account.
@@ -107,6 +107,8 @@ The following arguments are supported:
 * `is_ha` - (Optional) Indicate whether the working environment is an HA pair or not [true, false]. The default is false.
 * `failover_mode` - (Optional) For HA, the failover mode for the HA pair: ['PrivateIP', 'FloatingIP']. 'PrivateIP' is for a single availability zone and 'FloatingIP' is for multiple availability zones.
 * `mediator_assign_public_ip` - (Optional) bool option to assign public IP. The default is 'true'.
+* `platform_serial_number_node1` - (Optional) For HA BYOL, the serial number for the first node. This is required when using 'ha-cot-premium-byol'.
+* `platform_serial_number_node2` - (Optional) For HA BYOL, the serial number for the second node. This is required when using 'ha-cot-premium-byol'.
 * `node1_subnet_id` - (Optional) For HA, the subnet ID of the first node.
 * `node2_subnet_id` - (Optional) For HA, the subnet ID of the second node.
 * `mediator_subnet_id` - (Optional) For HA, the subnet ID of the mediator.
