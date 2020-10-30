@@ -93,7 +93,7 @@ func resourceCVOAWS() *schema.Resource {
 			},
 			"subnet_id": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
 				ForceNew: true,
 			},
 			"vpc_id": {
@@ -206,6 +206,16 @@ func resourceCVOAWS() *schema.Resource {
 				ForceNew: true,
 				Default:  false,
 			},
+			"platform_serial_number_node1": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"platform_serial_number_node2": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"failover_mode": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -285,7 +295,6 @@ func resourceCVOAWSCreate(d *schema.ResourceData, meta interface{}) error {
 	cvoDetails.Name = d.Get("name").(string)
 	cvoDetails.Region = d.Get("region").(string)
 	cvoDetails.DataEncryptionType = d.Get("data_encryption_type").(string)
-	cvoDetails.SubnetID = d.Get("subnet_id").(string)
 	cvoDetails.WorkspaceID = d.Get("workspace_id").(string)
 	cvoDetails.EbsVolumeType = d.Get("ebs_volume_type").(string)
 	cvoDetails.SvmPassword = d.Get("svm_password").(string)
@@ -368,6 +377,17 @@ func resourceCVOAWSCreate(d *schema.ResourceData, meta interface{}) error {
 		routeTableIds := d.Get("route_table_ids")
 		for _, routeTableID := range routeTableIds.([]interface{}) {
 			cvoDetails.HAParams.RouteTableIds = append(cvoDetails.HAParams.RouteTableIds, routeTableID.(string))
+		}
+		if c, ok := d.GetOk("platform_serial_number_node1"); ok {
+			cvoDetails.HAParams.PlatformSerialNumberNode1 = c.(string)
+		}
+
+		if c, ok := d.GetOk("platform_serial_number_node2"); ok {
+			cvoDetails.HAParams.PlatformSerialNumberNode2 = c.(string)
+		}
+	} else {
+		if c, ok := d.GetOk("subnet_id"); ok {
+			cvoDetails.SubnetID = c.(string)
 		}
 	}
 

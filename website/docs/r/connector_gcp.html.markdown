@@ -47,7 +47,7 @@ The following arguments are supported:
 * `network_project_id` - (Optional) The project id in GCP associated with the Subnet. If not provided, it’s assumed that the Subnet is within the previously specified project id.
 * `machine_type` - (Optional) The machine_type for the Connector VM. The default value is "n1-standard-4"
 * `firewall_tags` - (Optional) Indicates whether to add firewall_tags to the connector VM (HTTP and HTTP). The default is "true".
-* `associate_public_ip_address` - (Optional) Indicates whether to associate a public IP address to the virtual machine. The default is "true"
+* `associate_public_ip` - (Optional) Indicates whether to associate a public IP address to the virtual machine. The default is "true"
 * `proxy_user_name` - (Optional) The proxy user name, if using a proxy to connect to the internet.
 * `proxy_password` - (Optional) The proxy password, if using a proxy to connect to the internet.
 * `account_id` - (Optional) The NetApp account ID that the Connector will be associated with. If not provided, Cloud Manager uses the first account. If no account exists, Cloud Manager creates a new account. You can find the account ID in the account tab of Cloud Manager at [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
