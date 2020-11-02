@@ -233,14 +233,28 @@ func (c *Client) createCVOAWS(cvoDetails createCVOAWSDetails) (cvoResult, error)
 		cvoDetails.WorkspaceID = tenantID
 	}
 
-	if cvoDetails.NssAccount == "" && !strings.HasPrefix(cvoDetails.VsaMetadata.PlatformSerialNumber, "Eval-") && (cvoDetails.VsaMetadata.LicenseType == "cot-premium-byol" || cvoDetails.VsaMetadata.LicenseType == "ha-cot-premium-byol") {
-		nssAccount, err := c.getNSS()
-		if err != nil {
-			log.Print("getNSS request failed ", err)
-			return cvoResult{}, err
+	if cvoDetails.NssAccount == "" {
+		if cvoDetails.VsaMetadata.PlatformSerialNumber != "" {
+			if !strings.HasPrefix(cvoDetails.VsaMetadata.PlatformSerialNumber, "Eval-") && cvoDetails.VsaMetadata.LicenseType == "cot-premium-byol" {
+				nssAccount, err := c.getNSS()
+				if err != nil {
+					log.Print("getNSS request failed ", err)
+					return cvoResult{}, err
+				}
+				log.Print("getNSS result ", nssAccount)
+				cvoDetails.NssAccount = nssAccount
+			}
+		} else if cvoDetails.HAParams.PlatformSerialNumberNode1 != "" && cvoDetails.HAParams.PlatformSerialNumberNode2 != "" {
+			if !strings.HasPrefix(cvoDetails.HAParams.PlatformSerialNumberNode1, "Eval-") && !strings.HasPrefix(cvoDetails.HAParams.PlatformSerialNumberNode2, "Eval-") && cvoDetails.VsaMetadata.LicenseType == "ha-cot-premium-byol" {
+				nssAccount, err := c.getNSS()
+				if err != nil {
+					log.Print("getNSS request failed ", err)
+					return cvoResult{}, err
+				}
+				log.Print("getNSS result ", nssAccount)
+				cvoDetails.NssAccount = nssAccount
+			}
 		}
-		log.Print("getNSS result ", nssAccount)
-		cvoDetails.NssAccount = nssAccount
 	}
 
 	if cvoDetails.VpcID == "" {
