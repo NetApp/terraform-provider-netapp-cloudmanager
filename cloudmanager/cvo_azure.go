@@ -110,6 +110,10 @@ func (c *Client) getNSS() (string, error) {
 
 	log.Print("getNSS ", result)
 
+	if len(result.NssAccounts) == 0 {
+		return "", fmt.Errorf("could not find any NSS account")
+	}
+
 	return result.NssAccounts[0].PublicID, nil
 }
 
