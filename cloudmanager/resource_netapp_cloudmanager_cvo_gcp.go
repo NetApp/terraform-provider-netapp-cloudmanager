@@ -173,6 +173,87 @@ func resourceCVOGCP() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"is_ha": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+				Default:  false,
+			},
+			"node1_zone": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"node2_zone": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"mediator_zone": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"vpc0_node_and_data_connectivity": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"vpc1_cluster_connectivity": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"vpc2_ha_connectivity": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"vpc3_data_replication": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"subnet0_node_and_data_connectivity": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"subnet1_cluster_connectivity": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"subnet2_ha_connectivity": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"subnet3_data_replication": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"vpc0_firewall_rule_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"vpc1_firewall_rule_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"vpc2_firewall_rule_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"vpc3_firewall_rule_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"client_id": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -247,6 +328,64 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 		cvoDetails.SerialNumber = c.(string)
 	}
 
+	cvoDetails.IsHA = d.Get("is_ha").(bool)
+
+	if cvoDetails.IsHA == true {
+		if c, ok := d.GetOk("node1_zone"); ok {
+			cvoDetails.HAParams.Node1Zone = c.(string)
+		}
+		if c, ok := d.GetOk("node2_zone"); ok {
+			cvoDetails.HAParams.Node2Zone = c.(string)
+		}
+		if c, ok := d.GetOk("mediator_zone"); ok {
+			cvoDetails.HAParams.MediatorZone = c.(string)
+		}
+		if c, ok := d.GetOk("vpc0_node_and_data_connectivity"); ok {
+			if networkProjectID != "" {
+				cvoDetails.HAParams.VPC0NodeAndDataConnectivity = fmt.Sprintf("https://www.googleapis.com/compute/v1/projects/%s/global/networks/%s", networkProjectID, c.(string))
+			} else {
+				cvoDetails.HAParams.VPC0NodeAndDataConnectivity = fmt.Sprintf("https://www.googleapis.com/compute/v1/projects/%s/global/networks/%s", cvoDetails.Project, c.(string))
+			}
+		}
+		if c, ok := d.GetOk("vpc1_cluster_connectivity"); ok {
+			cvoDetails.HAParams.VPC1ClusterConnectivity = fmt.Sprintf("https://www.googleapis.com/compute/v1/projects/%s/global/networks/%s", cvoDetails.Project, c.(string))
+		}
+		if c, ok := d.GetOk("vpc2_ha_connectivity"); ok {
+			cvoDetails.HAParams.VPC2HAConnectivity = fmt.Sprintf("https://www.googleapis.com/compute/v1/projects/%s/global/networks/%s", cvoDetails.Project, c.(string))
+		}
+		if c, ok := d.GetOk("vpc3_data_replication"); ok {
+			cvoDetails.HAParams.VPC3DataReplication = fmt.Sprintf("https://www.googleapis.com/compute/v1/projects/%s/global/networks/%s", cvoDetails.Project, c.(string))
+		}
+		if c, ok := d.GetOk("subnet0_node_and_data_connectivity"); ok {
+			if networkProjectID != "" {
+				cvoDetails.HAParams.Subnet0NodeAndDataConnectivity = fmt.Sprintf("https://www.googleapis.com/compute/v1/projects/%s/regions/%s/subnetworks/%s", networkProjectID, cvoDetails.Region[0:len(cvoDetails.Region)-2], c.(string))
+			} else {
+				cvoDetails.HAParams.Subnet0NodeAndDataConnectivity = fmt.Sprintf("https://www.googleapis.com/compute/v1/projects/%s/regions/%s/subnetworks/%s", cvoDetails.Project, cvoDetails.Region[0:len(cvoDetails.Region)-2], c.(string))
+			}
+		}
+		if c, ok := d.GetOk("subnet1_cluster_connectivity"); ok {
+			cvoDetails.HAParams.Subnet1ClusterConnectivity = fmt.Sprintf("https://www.googleapis.com/compute/v1/projects/%s/regions/%s/subnetworks/%s", cvoDetails.Project, cvoDetails.Region[0:len(cvoDetails.Region)-2], c.(string))
+		}
+		if c, ok := d.GetOk("subnet2_ha_connectivity"); ok {
+			cvoDetails.HAParams.Subnet2HAConnectivity = fmt.Sprintf("https://www.googleapis.com/compute/v1/projects/%s/regions/%s/subnetworks/%s", cvoDetails.Project, cvoDetails.Region[0:len(cvoDetails.Region)-2], c.(string))
+		}
+		if c, ok := d.GetOk("subnet3_data_replication"); ok {
+			cvoDetails.HAParams.Subnet3DataReplication = fmt.Sprintf("https://www.googleapis.com/compute/v1/projects/%s/regions/%s/subnetworks/%s", cvoDetails.Project, cvoDetails.Region[0:len(cvoDetails.Region)-2], c.(string))
+		}
+		if c, ok := d.GetOk("vpc0_firewall_rule_name"); ok {
+			cvoDetails.HAParams.VPC0FirewallRuleName = c.(string)
+		}
+		if c, ok := d.GetOk("vpc1_firewall_rule_name"); ok {
+			cvoDetails.HAParams.VPC1FirewallRuleName = c.(string)
+		}
+		if c, ok := d.GetOk("vpc2_firewall_rule_name"); ok {
+			cvoDetails.HAParams.VPC2FirewallRuleName = c.(string)
+		}
+		if c, ok := d.GetOk("vpc3_firewall_rule_name"); ok {
+			cvoDetails.HAParams.VPC3FirewallRuleName = c.(string)
+		}
+	}
+
 	err := validateCVOGCPParams(cvoDetails)
 	if err != nil {
 		log.Print("Error validating parameters")
@@ -295,7 +434,9 @@ func resourceCVOGCPDelete(d *schema.ResourceData, meta interface{}) error {
 		client.ClientID = c.(string)
 	}
 
-	deleteErr := client.deleteCVOGCP(id)
+	isHA := d.Get("is_ha").(bool)
+
+	deleteErr := client.deleteCVOGCP(id, isHA)
 	if deleteErr != nil {
 		log.Print("Error deleting cvo")
 		return deleteErr

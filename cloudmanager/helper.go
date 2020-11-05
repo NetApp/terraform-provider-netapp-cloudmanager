@@ -249,3 +249,25 @@ func (c *Client) getAPIRoot(workingEnvironmentID string) (string, string, error)
 	log.Printf("API root = %s", baseURL)
 	return baseURL, workingEnvDetail.CloudProviderName, nil
 }
+
+func (c *Client) getAPIRootForWorkingEnvironment(isHA bool, workingEnvironmentID string) string {
+
+	var baseURL string
+
+	if workingEnvironmentID == "" {
+		if isHA == true {
+			baseURL = "/occm/api/gcp/ha/working-environments"
+		} else {
+			baseURL = "/occm/api/gcp/vsa/working-environments"
+		}
+	} else {
+		if isHA == true {
+			baseURL = fmt.Sprintf("/occm/api/gcp/ha/working-environments/%s", workingEnvironmentID)
+		} else {
+			baseURL = fmt.Sprintf("/occm/api/gcp/vsa/working-environments/%s", workingEnvironmentID)
+		}
+	}
+
+	log.Printf("API root = %s", baseURL)
+	return baseURL
+}
