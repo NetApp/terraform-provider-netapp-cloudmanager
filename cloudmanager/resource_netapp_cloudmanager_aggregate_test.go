@@ -28,6 +28,13 @@ func TestAccAggregate_basic(t *testing.T) {
 					testAccCheckAggregateExists("netapp-cloudmanager_aggregate.cl-aggregate2", &aggregate),
 				),
 			},
+			{
+				Config: testAccAggregateConfigUpdateAggregate(),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAggregateExists("netapp-cloudmanager_aggregate.cl-aggregate2", &aggregate),
+					resource.TestCheckResourceAttr("netapp-cloudmanager_aggregate.cl-aggregate2", "number_of_disks", "2"),
+				),
+			},
 		},
 	})
 }
@@ -127,6 +134,21 @@ func testAccAggregateConfigCreateByWorkingEnvironmentName() string {
 		client_id = "Nw4Q2O1kdnLtvhwegGalFnodEHUfPJWh"
 		working_environment_name = "testAWS"
 		number_of_disks = 1
+	  	disk_size_size = 100
+	  	disk_size_unit = "GB"
+	}
+  `)
+}
+
+func testAccAggregateConfigUpdateAggregate() string {
+	return fmt.Sprintf(`
+	resource "netapp-cloudmanager_aggregate" "cl-aggregate2" {
+		provider = netapp-cloudmanager
+		name = "acc_test_aggr_2"
+		provider_volume_type = "gp2"
+		client_id = "Nw4Q2O1kdnLtvhwegGalFnodEHUfPJWh"
+		working_environment_name = "testAWS"
+		number_of_disks = 2
 	  	disk_size_size = 100
 	  	disk_size_unit = "GB"
 	}

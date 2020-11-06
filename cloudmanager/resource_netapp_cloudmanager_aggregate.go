@@ -14,6 +14,7 @@ func resourceAggregate() *schema.Resource {
 		Read:   resourceAggregateRead,
 		Delete: resourceAggregateDelete,
 		Exists: resourceAggregateExists,
+		Update: resourceAggregateUpdate,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -42,7 +43,6 @@ func resourceAggregate() *schema.Resource {
 			"number_of_disks": {
 				Type:     schema.TypeInt,
 				Required: true,
-				ForceNew: true,
 			},
 			"disk_size_size": {
 				Type:     schema.TypeInt,
@@ -224,12 +224,50 @@ func resourceAggregateDelete(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
+func resourceAggregateUpdate(d *schema.ResourceData, meta interface{}) error {
+	log.Printf("Updating Aggregate: %#v", d)
+	client := meta.(*Client)
+	client.ClientID = d.Get("client_id").(string)
+	request := updateAggregateRequest{}
+
+	if a, ok := d.GetOk("working_environment_id"); ok {
+		request.WorkingEnvironmentID = a.(string)
+	} else if a, ok = d.GetOk("working_environment_name"); ok {
+		workingEnvDetail, err := client.findWorkingEnvironmentByName(a.(string))
+		if err != nil {
+			return fmt.Errorf("Cannot find working environment by working_environment_name %s", a.(string))
+		}
+		request.WorkingEnvironmentID = workingEnvDetail.PublicID
+	} else {
+		return fmt.Errorf("Cannot find working environment by working_enviroment_id or working_environment_name")
+	}
+
+	request.Name = d.Get("name").(string)
+
+	if d.HasChange("number_of_disks") {
+		currentNumber, expectNumber := d.GetChange("number_of_disks")
+		if expectNumber.(int) > currentNumber.(int) {
+			request.NumberOfDisks = expectNumber.(int) - currentNumber.(int)
+		} else {
+			d.Set("number_of_disks", currentNumber)
+			return fmt.Errorf("Aggregate: number_of_disks cannot be reduced")
+		}
+	}
+	updateErr := client.updateAggregate(request)
+	if updateErr != nil {
+		return updateErr
+	}
+
+	log.Printf("Updated aggregate; %v", request.Name)
+
+	return resourceAggregateRead(d, meta)
+}
+
 func resourceAggregateExists(d *schema.ResourceData, meta interface{}) (bool, error) {
 	log.Printf("Checking existence of Aggregate: %#v", d)
 	client := meta.(*Client)
 
 	client.ClientID = d.Get("client_id").(string)
-	id := d.Get("name").(string)
 	aggregate := aggregateRequest{}
 	if a, ok := d.GetOk("working_environment_id"); ok {
 		aggregate.WorkingEnvironmentID = a.(string)
@@ -243,6 +281,7 @@ func resourceAggregateExists(d *schema.ResourceData, meta interface{}) (bool, er
 		return false, fmt.Errorf("Cannot find working environment by working_enviroment_id or working_environment_name")
 	}
 
+	id := d.Id()
 	res, err := client.getAggregate(aggregate, id)
 	if err != nil {
 		log.Print("Error getting aggregate")

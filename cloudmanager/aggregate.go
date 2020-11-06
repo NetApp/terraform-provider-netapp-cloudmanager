@@ -97,6 +97,12 @@ type deleteAggregateRequest struct {
 	Name                 string `structs:"name"`
 }
 
+type updateAggregateRequest struct {
+	WorkingEnvironmentID string `structs:"workingEnvironmentId"`
+	Name                 string `structs:"name"`
+	NumberOfDisks        int    `structs:"numberOfDisks"`
+}
+
 // get aggregate by workingEnvironmentId+aggregate name
 func (c *Client) getAggregate(request aggregateRequest, name string) (aggregateResult, error) {
 	log.Printf("getAggregate %s...", name)
@@ -165,7 +171,7 @@ func (c *Client) createAggregate(request *createAggregateRequest) (aggregateResu
 
 	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("POST", baseURL, params, c.Token, hostType)
 	if err != nil {
-		log.Print("CreateAggregate request failed")
+		log.Print("createAggregate request failed")
 		return aggregateResult{}, err
 	}
 
@@ -192,7 +198,7 @@ func (c *Client) createAggregate(request *createAggregateRequest) (aggregateResu
 
 // delete aggregate
 func (c *Client) deleteAggregate(request deleteAggregateRequest) error {
-	log.Print("deleteAggregate... ")
+	log.Print("On deleteAggregate... ")
 	hostType := "CloudManagerHost"
 
 	var baseURL string
@@ -207,7 +213,7 @@ func (c *Client) deleteAggregate(request deleteAggregateRequest) error {
 
 	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("DELETE", baseURL, nil, c.Token, hostType)
 	if err != nil {
-		log.Print("DeleteAggregate request failed")
+		log.Print("deleteAggregate request failed")
 		return err
 	}
 
@@ -218,6 +224,40 @@ func (c *Client) deleteAggregate(request deleteAggregateRequest) error {
 
 	log.Print("Wait for aggregate deletion.")
 	err = c.waitOnCompletion(onCloudRequestID, "Aggregate", "delete", 10, 60)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *Client) updateAggregate(request updateAggregateRequest) error {
+	log.Print("updateAggregate... ")
+	params := structs.Map(request)
+	hostType := "CloudManagerHost"
+
+	var baseURL string
+	rootURL, _, err := c.getAPIRoot(request.WorkingEnvironmentID)
+
+	if err != nil {
+		log.Print("updateAggregate: Cannot get API root.")
+		return err
+	}
+	baseURL = fmt.Sprintf("%s/aggregates/%s/%s/disks", rootURL, request.WorkingEnvironmentID, request.Name)
+
+	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("POST", baseURL, params, c.Token, hostType)
+	if err != nil {
+		log.Print("updateAggregate request failed")
+		return err
+	}
+
+	responseError := apiResponseChecker(statusCode, response, "updateAggregate")
+	if responseError != nil {
+		return responseError
+	}
+
+	log.Print("Wait for aggregate update.")
+	err = c.waitOnCompletion(onCloudRequestID, "Aggregate", "update", 10, 60)
 	if err != nil {
 		return err
 	}
