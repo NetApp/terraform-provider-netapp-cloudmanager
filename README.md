@@ -262,8 +262,8 @@ cp $GOPATH/bin/terraform-provider-netapp-cloudmanager /tmp/terraform/netapp.com/
 #### Local installation - mac
 
 ```
-mkdir -p /tmp/terraform/netapp.com/netapp/netapp-cloudmanager/20.10.0/darwin_amd64
-cp $GOPATH/bin/terraform-provider-netapp-cloudmanager /tmp/terraform/netapp.com/netapp/netapp-cloudmanager/20.10.0/darwin_amd64
+mkdir -p ~/.terraform.d/plug-in/netapp.com/netapp/netapp-cloudmanager/20.10.0/darwin_amd64
+cp $GOPATH/bin/terraform-provider-netapp-cloudmanager ~/.terraform.d/plug-in/netapp.com/netapp/netapp-cloudmanager/20.10.0/darwin_amd64
 ```
 
 #### Check the provider can be loaded

@@ -59,6 +59,22 @@ The following arguments are supported:
 * `nss_account` - (Optional) The NetApp Support Site account ID to use with this Cloud Volumes ONTAP system. If the license type is BYOL and an NSS account isn't provided, Cloud Manager tries to use the first existing NSS account.
 * `writing_speed_state` - (Optional) The write speed setting for Cloud Volumes ONTAP: ['NORMAL','HIGH']. The default is 'NORMAL'. This argument is not relevant for HA pairs.
 * `firewall_rule` - (Optional) The name of the firewall rule for Cloud Volumes ONTAP. If not provided, Cloud Manager generates the rule.
+* `is_ha` - (Optional) Indicate whether the working environment is an HA pair or not [true, false]. The default is false.
+* `node1_zone` - (Optional)  Zone for node 1.
+* `node2_zone` - (Optional) Zone for node 2.
+* `mediator_zone` - (Optional) Zone for mediator.
+* `vpc0_node_and_data_connectivity` - (Optional) VPC path for nic1, required for node and data connectivity. If using shared VPC, netwrok_project_id must be provided.
+* `vpc1_cluster_connectivity` - (Optional) VPC path for nic2, required for cluster connectivity.
+* `vpc2_ha_connectivity` - (Optional) VPC path for nic3, required for HA connectivity.
+* `vpc3_data_replication` - (Optional) VPC path for nic4, required for data replication.
+* `subnet0_node_and_data_connectivity` - (Optional) Subnet path for nic1, requered for node and data connectivity. If using shared VPC, netwrok_project_id must be provided.
+* `subnet1_cluster_connectivity` - (Optional) Subnet path for nic2, required for cluster connectivity.
+* `subnet2_ha_connectivity` - (Optional) Subnet path for nic3, required for HA connectivity.
+* `subnet3_data_replication` - (Optional) Subnet path for nic4, required for data replication.
+* `vpc0_firewall_rule_name` - (Optional) Firewall rule name for vpc1.
+* `vpc1_firewall_rule_name` - (Optional) Firewall rule name for vpc2.
+* `vpc2_firewall_rule_name` - (Optional) Firewall rule name for vpc3.
+* `vpc3_firewall_rule_name` - (Optional) Firewall rule name for vpc4.
 
 The `gcp_label` block supports:
 * `label_key` - (Required) The key of the tag.

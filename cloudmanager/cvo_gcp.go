@@ -11,7 +11,7 @@ import (
 )
 
 // GCPLicenseTypes is the GCP License types
-var GCPLicenseTypes = []string{"gcp-cot-standard-paygo", "gcp-cot-explore-paygo", "gcp-cot-premium-paygo", "gcp-cot-premium-byol"}
+var GCPLicenseTypes = []string{"gcp-cot-standard-paygo", "gcp-cot-explore-paygo", "gcp-cot-premium-paygo", "gcp-cot-premium-byol", "gcp-ha-cot-standard-paygo", "gcp-ha-cot-premium-paygo", "gcp-ha-cot-explore-paygo", "gcp-ha-cot-premium-byol"}
 
 // createCVOGCPDetails the users input for creating a CVO
 type createCVOGCPDetails struct {
@@ -35,12 +35,33 @@ type createCVOGCPDetails struct {
 	SerialNumber       string      `structs:"serialNumber,omitempty"`
 	GCPLabels          []gcpLabels `structs:"gcpLabels,omitempty"`
 	FirewallRule       string      `structs:"firewallRule,omitempty"`
+	IsHA               bool
+	HAParams           haParamsGCP `structs:"haParams,omitempty"`
 }
 
 // gcpLabels the input for requesting a CVO
 type gcpLabels struct {
 	LabelKey   string `structs:"labelKey"`
 	LabelValue string `structs:"labelValue,omitempty"`
+}
+
+// haParamsGCP the input for requesting a CVO
+type haParamsGCP struct {
+	Node1Zone                      string `structs:"node1Zone,omitempty"`
+	Node2Zone                      string `structs:"node2Zone,omitempty"`
+	MediatorZone                   string `structs:"mediatorZone,omitempty"`
+	VPC0NodeAndDataConnectivity    string `structs:"vpc0NodeAndDataConnectivity,omitempty"`
+	VPC1ClusterConnectivity        string `structs:"vpc1ClusterConnectivity,omitempty"`
+	VPC2HAConnectivity             string `structs:"vpc2HAConnectivity,omitempty"`
+	VPC3DataReplication            string `structs:"vpc3DataReplication,omitempty"`
+	Subnet0NodeAndDataConnectivity string `structs:"subnet0NodeAndDataConnectivity,omitempty"`
+	Subnet1ClusterConnectivity     string `structs:"subnet1ClusterConnectivity,omitempty"`
+	Subnet2HAConnectivity          string `structs:"subnet2HAConnectivity,omitempty"`
+	Subnet3DataReplication         string `structs:"subnet3DataReplication,omitempty"`
+	VPC0FirewallRuleName           string `structs:"vpc0FirewallRuleName,omitempty"`
+	VPC1FirewallRuleName           string `structs:"vpc1FirewallRuleName,omitempty"`
+	VPC2FirewallRuleName           string `structs:"vpc2FirewallRuleName,omitempty"`
+	VPC3FirewallRuleName           string `structs:"vpc3FirewallRuleName,omitempty"`
 }
 
 func (c *Client) createCVOGCP(cvoDetails createCVOGCPDetails) (cvoResult, error) {
@@ -74,7 +95,7 @@ func (c *Client) createCVOGCP(cvoDetails createCVOGCPDetails) (cvoResult, error)
 		cvoDetails.NssAccount = nssAccount
 	}
 
-	baseURL := "/occm/api/gcp/vsa/working-environments"
+	baseURL := c.getAPIRootForWorkingEnvironment(cvoDetails.IsHA, "")
 
 	hostType := "CloudManagerHost"
 	params := structs.Map(cvoDetails)
@@ -104,7 +125,7 @@ func (c *Client) createCVOGCP(cvoDetails createCVOGCPDetails) (cvoResult, error)
 	return result, nil
 }
 
-func (c *Client) deleteCVOGCP(id string) error {
+func (c *Client) deleteCVOGCP(id string, isHA bool) error {
 
 	log.Print("deleteCVO")
 
@@ -115,7 +136,7 @@ func (c *Client) deleteCVOGCP(id string) error {
 	}
 	c.Token = accessTokenResult.Token
 
-	baseURL := fmt.Sprintf("/occm/api/gcp/vsa/working-environments/%s", id)
+	baseURL := c.getAPIRootForWorkingEnvironment(isHA, id)
 
 	hostType := "CloudManagerHost"
 
