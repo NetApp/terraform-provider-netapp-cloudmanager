@@ -136,30 +136,16 @@ func resourceCVOCIFSCreate(d *schema.ResourceData, meta interface{}) error {
 			cifs.OrganizationalUnit = v.(string)
 		}
 	}
-	if v, ok := d.GetOk("working_environment_id"); ok {
-		cifs.WorkingEnvironmentID = v.(string)
-		workingEnvDetail, err := client.getWorkingEnvironmentInfo(v.(string))
-		if err != nil {
-			return nil
-		}
-		cifs.WorkingEnvironmentType = workingEnvDetail.WorkingEnvironmentType
-		workingEnvDetail, err = client.findWorkingEnvironmentByName(workingEnvDetail.Name)
-		if err != nil {
-			return err
-		}
-		cifs.SvmName = workingEnvDetail.SvmName
-	} else if v, ok := d.GetOk("working_environment_name"); ok {
-		workingEnvDetail, err := client.findWorkingEnvironmentByName(v.(string))
-		if err != nil {
-			return nil
-		}
-		cifs.WorkingEnvironmentID = workingEnvDetail.PublicID
-		cifs.SvmName = workingEnvDetail.SvmName
-		cifs.WorkingEnvironmentType = workingEnvDetail.WorkingEnvironmentType
-	} else {
-		return fmt.Errorf("either working_environment_id or working_environment_name is required")
+
+	workingEnvDetail, err := client.getWorkingEnvironmentDetail(d)
+	if err != nil {
+		return nil
 	}
-	err := client.createCIFS(cifs)
+	cifs.WorkingEnvironmentID = workingEnvDetail.PublicID
+	cifs.WorkingEnvironmentType = workingEnvDetail.WorkingEnvironmentType
+	cifs.SvmName = workingEnvDetail.SvmName
+
+	err = client.createCIFS(cifs)
 	if err != nil {
 		log.Print("Error creating cifs")
 		return err
@@ -179,29 +165,15 @@ func resourceCVOCIFSRead(d *schema.ResourceData, meta interface{}) error {
 	if cifs.isWorkgroup {
 		return nil
 	}
-	if v, ok := d.GetOk("working_environment_id"); ok {
-		cifs.WorkingEnvironmentID = v.(string)
-		workingEnvDetail, err := client.getWorkingEnvironmentInfo(v.(string))
-		if err != nil {
-			return nil
-		}
-		cifs.WorkingEnvironmentType = workingEnvDetail.WorkingEnvironmentType
-		workingEnvDetail, err = client.findWorkingEnvironmentByName(workingEnvDetail.Name)
-		if err != nil {
-			return err
-		}
-		cifs.SvmName = workingEnvDetail.SvmName
-	} else if v, ok := d.GetOk("working_environment_name"); ok {
-		workingEnvDetail, err := client.findWorkingEnvironmentByName(v.(string))
-		if err != nil {
-			return nil
-		}
-		cifs.WorkingEnvironmentID = workingEnvDetail.PublicID
-		cifs.SvmName = workingEnvDetail.SvmName
-		cifs.WorkingEnvironmentType = workingEnvDetail.WorkingEnvironmentType
-	} else {
-		return fmt.Errorf("either working_environment_id or working_environment_name is required")
+
+	workingEnvDetail, err := client.getWorkingEnvironmentDetail(d)
+	if err != nil {
+		return nil
 	}
+	cifs.WorkingEnvironmentID = workingEnvDetail.PublicID
+	cifs.WorkingEnvironmentType = workingEnvDetail.WorkingEnvironmentType
+	cifs.SvmName = workingEnvDetail.SvmName
+
 	res, err := client.getCIFS(cifs)
 	if err != nil {
 		log.Print("Error reading cifs")
@@ -234,30 +206,16 @@ func resourceCVOCIFSDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Client)
 	client.ClientID = d.Get("client_id").(string)
 	cifs := cifsRequest{}
-	if v, ok := d.GetOk("working_environment_id"); ok {
-		cifs.WorkingEnvironmentID = v.(string)
-		workingEnvDetail, err := client.getWorkingEnvironmentInfo(v.(string))
-		if err != nil {
-			return nil
-		}
-		cifs.WorkingEnvironmentType = workingEnvDetail.WorkingEnvironmentType
-		workingEnvDetail, err = client.findWorkingEnvironmentByName(workingEnvDetail.Name)
-		if err != nil {
-			return err
-		}
-		cifs.SvmName = workingEnvDetail.SvmName
-	} else if v, ok := d.GetOk("working_environment_name"); ok {
-		workingEnvDetail, err := client.findWorkingEnvironmentByName(v.(string))
-		if err != nil {
-			return nil
-		}
-		cifs.WorkingEnvironmentID = workingEnvDetail.PublicID
-		cifs.SvmName = workingEnvDetail.SvmName
-		cifs.WorkingEnvironmentType = workingEnvDetail.WorkingEnvironmentType
-	} else {
-		return fmt.Errorf("either working_environment_id or working_environment_name is required")
+
+	workingEnvDetail, err := client.getWorkingEnvironmentDetail(d)
+	if err != nil {
+		return nil
 	}
-	err := client.deleteCIFS(cifs)
+	cifs.WorkingEnvironmentID = workingEnvDetail.PublicID
+	cifs.WorkingEnvironmentType = workingEnvDetail.WorkingEnvironmentType
+	cifs.SvmName = workingEnvDetail.SvmName
+
+	err = client.deleteCIFS(cifs)
 	if err != nil {
 		log.Print("Error deleting cifs")
 		return err
@@ -270,29 +228,15 @@ func resourceCVOCIFSExists(d *schema.ResourceData, meta interface{}) (bool, erro
 	client := meta.(*Client)
 	client.ClientID = d.Get("client_id").(string)
 	cifs := cifsRequest{}
-	if v, ok := d.GetOk("working_environment_id"); ok {
-		cifs.WorkingEnvironmentID = v.(string)
-		workingEnvDetail, err := client.getWorkingEnvironmentInfo(v.(string))
-		if err != nil {
-			return false, nil
-		}
-		cifs.WorkingEnvironmentType = workingEnvDetail.WorkingEnvironmentType
-		workingEnvDetail, err = client.findWorkingEnvironmentByName(workingEnvDetail.Name)
-		if err != nil {
-			return false, err
-		}
-		cifs.SvmName = workingEnvDetail.SvmName
-	} else if v, ok := d.GetOk("working_environment_name"); ok {
-		workingEnvDetail, err := client.findWorkingEnvironmentByName(v.(string))
-		if err != nil {
-			return false, nil
-		}
-		cifs.WorkingEnvironmentID = workingEnvDetail.PublicID
-		cifs.SvmName = workingEnvDetail.SvmName
-		cifs.WorkingEnvironmentType = workingEnvDetail.WorkingEnvironmentType
-	} else {
-		return false, fmt.Errorf("either working_environment_id or working_environment_name is required")
+
+	workingEnvDetail, err := client.getWorkingEnvironmentDetail(d)
+	if err != nil {
+		return false, nil
 	}
+	cifs.WorkingEnvironmentID = workingEnvDetail.PublicID
+	cifs.WorkingEnvironmentType = workingEnvDetail.WorkingEnvironmentType
+	cifs.SvmName = workingEnvDetail.SvmName
+
 	res, err := client.getCIFS(cifs)
 	if err != nil {
 		log.Print("Error reading cifs")
