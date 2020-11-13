@@ -104,6 +104,7 @@ The following arguments are supported:
 * `backup_volumes_to_cbs` - (Optional) Automatically enable back up of all volumes to S3 [true, false]. The default is false.
 * `enable_compliance` - (Optional) Enable the Cloud Compliance service on the working environment [true, false]. The default is false.
 * `enable_monitoring` - (Optional) Enable the Monitoring service on the working environment [true, false]. The default is false.
+* `optimized_network_utilization` - (Optional) Use optimized network utilization [true, false]. The default is true.
 * `is_ha` - (Optional) Indicate whether the working environment is an HA pair or not [true, false]. The default is false.
 * `failover_mode` - (Optional) For HA, the failover mode for the HA pair: ['PrivateIP', 'FloatingIP']. 'PrivateIP' is for a single availability zone and 'FloatingIP' is for multiple availability zones.
 * `mediator_assign_public_ip` - (Optional) bool option to assign public IP. The default is 'true'.
