@@ -75,6 +75,7 @@ func (c *Client) CallAWSInstanceCreate(occmDetails createOCCMDetails) (string, e
 			{
 				DeviceName: aws.String("/dev/sda1"),
 				Ebs: &ec2.EbsBlockDevice{
+					Encrypted:  aws.Bool(true),
 					VolumeSize: aws.Int64(100),
 					VolumeType: aws.String("gp2"),
 				},

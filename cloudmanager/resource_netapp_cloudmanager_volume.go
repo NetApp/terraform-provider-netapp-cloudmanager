@@ -200,41 +200,21 @@ func resourceCVOVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 	if v, ok := d.GetOk("svm_name"); ok {
 		svm = v.(string)
 	}
-	if v, ok := d.GetOk("working_environment_id"); ok {
-		volume.WorkingEnvironmentID = v.(string)
-		quote.WorkingEnvironmentID = v.(string)
-		weInfo, err := client.getWorkingEnvironmentInfo(v.(string))
-		if err != nil {
-			return nil
-		}
-		workingEnvironmentType = weInfo.WorkingEnvironmentType
-		weInfo, err = client.findWorkingEnvironmentByName(weInfo.Name)
-		if err != nil {
-			return err
-		}
-		if svm == "" {
-			svm = weInfo.SvmName
-		}
-		quote.SvmName = svm
-		volume.SvmName = svm
-		cloudProvider = strings.ToLower(weInfo.CloudProviderName)
-	} else if v, ok := d.GetOk("working_environment_name"); ok {
-		weInfo, err := client.findWorkingEnvironmentByName(v.(string))
-		if err != nil {
-			return nil
-		}
-		if svm == "" {
-			svm = weInfo.SvmName
-		}
-		volume.WorkingEnvironmentID = weInfo.PublicID
-		quote.WorkingEnvironmentID = weInfo.PublicID
-		quote.SvmName = svm
-		volume.SvmName = svm
-		workingEnvironmentType = weInfo.WorkingEnvironmentType
-		cloudProvider = strings.ToLower(weInfo.CloudProviderName)
-	} else {
-		return fmt.Errorf("either working_environment_id or working_environment_name is required")
+
+	weInfo, err := client.getWorkingEnvironmentDetail(d)
+	if err != nil {
+		return fmt.Errorf("Cannot find working environment")
 	}
+	volume.WorkingEnvironmentID = weInfo.PublicID
+	quote.WorkingEnvironmentID = weInfo.PublicID
+	volume.WorkingEnvironmentType = weInfo.WorkingEnvironmentType
+	if svm == "" {
+		svm = weInfo.SvmName
+	}
+	volume.SvmName = svm
+	quote.SvmName = svm
+	workingEnvironmentType = weInfo.WorkingEnvironmentType
+	cloudProvider = strings.ToLower(weInfo.CloudProviderName)
 	quote.WorkingEnvironmentType = workingEnvironmentType
 	volume.WorkingEnvironmentType = workingEnvironmentType
 	if v, ok := d.GetOk("capacity_tier"); ok {
@@ -397,35 +377,18 @@ func resourceCVOVolumeRead(d *schema.ResourceData, meta interface{}) error {
 	if v, ok := d.GetOk("svm_name"); ok {
 		svm = v.(string)
 	}
-	if v, ok := d.GetOk("working_environment_id"); ok {
-		volume.WorkingEnvironmentID = v.(string)
-		weInfo, err := client.getWorkingEnvironmentInfo(v.(string))
-		if err != nil {
-			return nil
-		}
-		volume.WorkingEnvironmentType = weInfo.WorkingEnvironmentType
-		weInfo, err = client.findWorkingEnvironmentByName(weInfo.Name)
-		if err != nil {
-			return err
-		}
-		if svm == "" {
-			svm = weInfo.SvmName
-		}
-		volume.SvmName = svm
-	} else if v, ok := d.GetOk("working_environment_name"); ok {
-		weInfo, err := client.findWorkingEnvironmentByName(v.(string))
-		if err != nil {
-			return nil
-		}
-		volume.WorkingEnvironmentID = weInfo.PublicID
-		volume.WorkingEnvironmentType = weInfo.WorkingEnvironmentType
-		if svm == "" {
-			svm = weInfo.SvmName
-		}
-		volume.SvmName = svm
-	} else {
-		return fmt.Errorf("either working_environment_id or working_environment_name is required")
+
+	weInfo, err := client.getWorkingEnvironmentDetail(d)
+	if err != nil {
+		return fmt.Errorf("Cannot find working environment")
 	}
+	volume.WorkingEnvironmentID = weInfo.PublicID
+	volume.WorkingEnvironmentType = weInfo.WorkingEnvironmentType
+	if svm == "" {
+		svm = weInfo.SvmName
+	}
+	volume.SvmName = svm
+
 	res, err := client.getVolume(volume)
 	if err != nil {
 		log.Print("Error reading volume")
@@ -518,39 +481,21 @@ func resourceCVOVolumeDelete(d *schema.ResourceData, meta interface{}) error {
 	if v, ok := d.GetOk("svm_name"); ok {
 		svm = v.(string)
 	}
-	if v, ok := d.GetOk("working_environment_id"); ok {
-		volume.WorkingEnvironmentID = v.(string)
-		weInfo, err := client.getWorkingEnvironmentInfo(v.(string))
-		if err != nil {
-			return err
-		}
-		volume.WorkingEnvironmentType = weInfo.WorkingEnvironmentType
-		weInfo, err = client.findWorkingEnvironmentByName(weInfo.Name)
-		if err != nil {
-			return err
-		}
-		if svm == "" {
-			svm = weInfo.SvmName
-		}
-		volume.SvmName = svm
-	} else if v, ok := d.GetOk("working_environment_name"); ok {
-		weInfo, err := client.findWorkingEnvironmentByName(v.(string))
-		if err != nil {
-			return nil
-		}
-		volume.WorkingEnvironmentID = weInfo.PublicID
-		volume.WorkingEnvironmentType = weInfo.WorkingEnvironmentType
-		if svm == "" {
-			svm = weInfo.SvmName
-		}
-		volume.SvmName = svm
-	} else {
-		return fmt.Errorf("either working_environment_id or working_environment_name is required")
+
+	weInfo, err := client.getWorkingEnvironmentDetail(d)
+	if err != nil {
+		return fmt.Errorf("Cannot find working environment")
 	}
+	volume.WorkingEnvironmentID = weInfo.PublicID
+	volume.WorkingEnvironmentType = weInfo.WorkingEnvironmentType
+	if svm == "" {
+		svm = weInfo.SvmName
+	}
+	volume.SvmName = svm
 
 	volume.Name = d.Get("name").(string)
 
-	err := client.deleteVolume(volume)
+	err = client.deleteVolume(volume)
 	if err != nil {
 		log.Print("Error deleting volume")
 		return err
@@ -565,23 +510,14 @@ func resourceCVOVolumeExists(d *schema.ResourceData, meta interface{}) (bool, er
 	volume := volumeRequest{}
 	volume.Name = d.Get("name").(string)
 	volume.ID = d.Id()
-	if v, ok := d.GetOk("working_environment_id"); ok {
-		volume.WorkingEnvironmentID = v.(string)
-		weInfo, err := client.getWorkingEnvironmentInfo(v.(string))
-		if err != nil {
-			return false, err
-		}
-		volume.WorkingEnvironmentType = weInfo.WorkingEnvironmentType
-	} else if v, ok := d.GetOk("working_environment_name"); ok {
-		weInfo, err := client.findWorkingEnvironmentByName(v.(string))
-		if err != nil {
-			return false, err
-		}
-		volume.WorkingEnvironmentID = weInfo.PublicID
-		volume.WorkingEnvironmentType = weInfo.WorkingEnvironmentType
-	} else {
-		return false, fmt.Errorf("either working_environment_id or working_environment_name is required")
+
+	weInfo, err := client.getWorkingEnvironmentDetail(d)
+	if err != nil {
+		return false, fmt.Errorf("Cannot find working environment")
 	}
+	volume.WorkingEnvironmentID = weInfo.PublicID
+	volume.WorkingEnvironmentType = weInfo.WorkingEnvironmentType
+
 	res, err := client.getVolumeByID(volume)
 	if err != nil {
 		log.Print("Error reading volume")
@@ -610,35 +546,18 @@ func resourceCVOVolumeUpdate(d *schema.ResourceData, meta interface{}) error {
 		}
 		volume.ExportPolicyInfo.Ips = ips
 	}
-	if v, ok := d.GetOk("working_environment_id"); ok {
-		volume.WorkingEnvironmentID = v.(string)
-		weInfo, err := client.getWorkingEnvironmentInfo(v.(string))
-		if err != nil {
-			return err
-		}
-		volume.WorkingEnvironmentType = weInfo.WorkingEnvironmentType
-		weInfo, err = client.findWorkingEnvironmentByName(weInfo.Name)
-		if err != nil {
-			return err
-		}
-		if svm == "" {
-			svm = weInfo.SvmName
-		}
-		volume.SvmName = svm
-	} else if v, ok := d.GetOk("working_environment_name"); ok {
-		weInfo, err := client.findWorkingEnvironmentByName(v.(string))
-		if err != nil {
-			return err
-		}
-		volume.WorkingEnvironmentID = weInfo.PublicID
-		volume.WorkingEnvironmentType = weInfo.WorkingEnvironmentType
-		if svm == "" {
-			svm = weInfo.SvmName
-		}
-		volume.SvmName = svm
-	} else {
-		return fmt.Errorf("either working_environment_id or working_environment_name is required")
+
+	weInfo, err := client.getWorkingEnvironmentDetail(d)
+	if err != nil {
+		return fmt.Errorf("Cannot find working environment")
 	}
+	volume.WorkingEnvironmentID = weInfo.PublicID
+	volume.WorkingEnvironmentType = weInfo.WorkingEnvironmentType
+	if svm == "" {
+		svm = weInfo.SvmName
+	}
+	volume.SvmName = svm
+
 	if d.HasChange("export_policy_name") {
 		volume.ExportPolicyInfo.Name = d.Get("export_policy_name").(string)
 	}
@@ -658,7 +577,7 @@ func resourceCVOVolumeUpdate(d *schema.ResourceData, meta interface{}) error {
 		}
 		volume.ShareInfoUpdate.AccessControlList[0].Users = users
 	}
-	err := client.updateVolume(volume)
+	err = client.updateVolume(volume)
 	if err != nil {
 		log.Print("Error updating volume")
 		return err
@@ -727,38 +646,19 @@ func createIscsiVolumeHelper(d *schema.ResourceData, meta interface{}) (bool, bo
 	if v, ok := d.GetOk("igroup_name"); ok {
 		igroup.IgroupName = v.(string)
 	}
-	if v, ok := d.GetOk("working_environment_id"); ok {
-		igroup.WorkingEnvironmentID = v.(string)
-		workingEnvironmentID = v.(string)
-		workingEnvDetail, err := client.getWorkingEnvironmentInfo(v.(string))
-		if err != nil {
-			return false, false, err
-		}
-		workingEnvironmentType = workingEnvDetail.WorkingEnvironmentType
-		workingEnvDetail, err = client.findWorkingEnvironmentByName(workingEnvDetail.Name)
-		if err != nil {
-			return false, false, err
-		}
-		if svm == "" {
-			svm = workingEnvDetail.SvmName
-		}
-		igroup.SvmName = svm
-	} else if v, ok := d.GetOk("working_environment_name"); ok {
-		workingEnvDetail, err := client.findWorkingEnvironmentByName(v.(string))
-		if err != nil {
-			return false, false, err
-		}
-		igroup.WorkingEnvironmentID = workingEnvDetail.PublicID
 
-		workingEnvironmentID = workingEnvDetail.PublicID
-		workingEnvironmentType = workingEnvDetail.WorkingEnvironmentType
-		if svm == "" {
-			svm = workingEnvDetail.SvmName
-		}
-		igroup.SvmName = svm
-	} else {
-		return false, false, fmt.Errorf("either working_environment_id or working_environment_name is required")
+	workingEnvDetail, err := client.getWorkingEnvironmentDetail(d)
+	if err != nil {
+		return false, false, fmt.Errorf("Cannot find working environment")
 	}
+	igroup.WorkingEnvironmentID = workingEnvDetail.PublicID
+	workingEnvironmentID = workingEnvDetail.PublicID
+	workingEnvironmentType = workingEnvDetail.WorkingEnvironmentType
+	if svm == "" {
+		svm = workingEnvDetail.SvmName
+	}
+	igroup.SvmName = svm
+
 	igroup.WorkingEnvironmentType = workingEnvironmentType
 	res, err := client.getIgroups(igroup)
 	if err != nil {

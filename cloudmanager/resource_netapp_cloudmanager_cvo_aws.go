@@ -176,6 +176,12 @@ func resourceCVOAWS() *schema.Resource {
 				ForceNew: true,
 				Default:  false,
 			},
+			"optimized_network_utilization": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+				Default:  true,
+			},
 			"kms_key_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -303,7 +309,7 @@ func resourceCVOAWSCreate(d *schema.ResourceData, meta interface{}) error {
 		cvoDetails.CapacityTier = capacityTier
 		cvoDetails.TierLevel = d.Get("tier_level").(string)
 	}
-	cvoDetails.OptimizedNetworkUtilization = true
+	cvoDetails.OptimizedNetworkUtilization = d.Get("optimized_network_utilization").(bool)
 	cvoDetails.InstanceTenancy = d.Get("instance_tenancy").(string)
 	cvoDetails.BackupVolumesToCbs = d.Get("backup_volumes_to_cbs").(bool)
 	cvoDetails.EnableCompliance = d.Get("enable_compliance").(bool)

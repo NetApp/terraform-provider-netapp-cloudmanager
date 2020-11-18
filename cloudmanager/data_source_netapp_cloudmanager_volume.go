@@ -153,6 +153,10 @@ func dataSourceCVOVolume() *schema.Resource {
 					},
 				},
 			},
+			"mount_point": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -163,103 +167,115 @@ func dataSourceCVOVolumeRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Client)
 	client.ClientID = d.Get("client_id").(string)
 	volume := volumeRequest{}
-	if v, ok := d.GetOk("working_environment_id"); ok {
-		volume.WorkingEnvironmentID = v.(string)
-		weInfo, err := client.getWorkingEnvironmentInfo(v.(string))
-		if err != nil {
-			return nil
-		}
-		volume.WorkingEnvironmentType = weInfo.WorkingEnvironmentType
-		weInfo, err = client.findWorkingEnvironmentByName(weInfo.Name)
-		if err != nil {
-			return err
-		}
-		volume.SvmName = weInfo.SvmName
-	} else if v, ok := d.GetOk("working_environment_name"); ok {
-		weInfo, err := client.findWorkingEnvironmentByName(v.(string))
-		if err != nil {
-			return nil
-		}
-		volume.WorkingEnvironmentID = weInfo.PublicID
-		volume.SvmName = weInfo.SvmName
-		volume.WorkingEnvironmentType = weInfo.WorkingEnvironmentType
-	} else {
-		return fmt.Errorf("either working_environment_id or working_environment_name is required")
+	weInfo, err := client.getWorkingEnvironmentDetail(d)
+	if err != nil {
+		return fmt.Errorf("Cannot find working environment")
 	}
+	volume.WorkingEnvironmentID = weInfo.PublicID
+	volume.WorkingEnvironmentType = weInfo.WorkingEnvironmentType
+	volume.SvmName = weInfo.SvmName
 	res, err := client.getVolume(volume)
 	if err != nil {
 		log.Print("Error reading volume")
 		return err
 	}
 	for _, volume := range res {
-		d.SetId(volume.ID)
-		if _, ok := d.GetOk("aggregate_name"); ok {
-			d.Set("aggregate_name", volume.AggregateName)
-		}
-		if _, ok := d.GetOk("snapshot_policy_name"); ok {
-			d.Set("snapshot_policy_name", volume.SnapshotPolicyName)
-		}
-		if _, ok := d.GetOk("enable_thin_provisioning"); ok {
-			d.Set("enable_thin_provisioning", volume.EnableThinProvisioning)
-		}
-		if _, ok := d.GetOk("enable_deduplication"); ok {
-			d.Set("enable_deduplication", volume.EnableDeduplication)
-		}
-		if _, ok := d.GetOk("enable_compression"); ok {
-			d.Set("enable_compression", volume.EnableCompression)
-		}
-		if _, ok := d.GetOk("export_policy_ip"); ok {
-			d.Set("export_policy_ip", volume.ExportPolicyInfo.Ips)
-		}
-		if _, ok := d.GetOk("export_policy_nfs_version"); ok {
-			d.Set("export_policy_nfs_version", volume.ExportPolicyInfo.NfsVersion)
-		}
-		if _, ok := d.GetOk("export_policy_type"); ok {
-			d.Set("export_policy_type", volume.ExportPolicyInfo.PolicyType)
-		}
-		if _, ok := d.GetOk("provider_volume_type"); ok {
-			d.Set("provider_volume_type", volume.ProviderVolumeType)
-		}
-		if _, ok := d.GetOk("capacity_tier"); ok {
-			d.Set("capacity_tier", volume.CapacityTier)
-		}
-		if _, ok := d.GetOk("tiering_policy"); ok {
-			d.Set("tiering_policy", volume.TieringPolicy)
-		}
-		if _, ok := d.GetOk("export_policy_name"); ok {
-			d.Set("export_policy_name", volume.ExportPolicyInfo.Name)
-		}
-		if d.Get("unit") != "GB" {
-			d.Set("size", convertSizeUnit(volume.Size.Size, volume.Size.Unit, d.Get("unit").(string)))
-			d.Set("unit", d.Get("unit").(string))
-		} else {
-			d.Set("size", volume.Size.Size)
-			d.Set("unit", volume.Size.Unit)
-		}
-		if d.Get("volume_protocol") == "cifs" {
-			if _, ok := d.GetOk("share_name"); ok {
-				if len(volume.ShareInfo) > 0 {
-					d.Set("share_name", volume.ShareInfo[0].ShareName)
-				}
+		if volume.Name == d.Get("name").(string) {
+			d.SetId(volume.ID)
+			err = d.Set("aggregate_name", volume.AggregateName)
+			if err != nil {
+				return fmt.Errorf("Error setting aggregate_name: %s", err.Error())
 			}
-			if _, ok := d.GetOk("permission"); ok {
-				if len(volume.ShareInfo) > 0 {
-					if len(volume.ShareInfo[0].AccessControlList) > 0 {
-						d.Set("permission", volume.ShareInfo[0].AccessControlList[0].Permission)
+			err = d.Set("snapshot_policy_name", volume.SnapshotPolicyName)
+			if err != nil {
+				return fmt.Errorf("Error setting snapshot_policy_name: %s", err.Error())
+			}
+			err = d.Set("enable_thin_provisioning", volume.EnableThinProvisioning)
+			if err != nil {
+				return fmt.Errorf("Error setting enable_thin_provisioning: %s", err.Error())
+			}
+			err = d.Set("enable_deduplication", volume.EnableDeduplication)
+			if err != nil {
+				return fmt.Errorf("Error setting enable_deduplication: %s", err.Error())
+			}
+			err = d.Set("enable_compression", volume.EnableCompression)
+			if err != nil {
+				return fmt.Errorf("Error setting enable_compression: %s", err.Error())
+			}
+			err = d.Set("provider_volume_type", volume.ProviderVolumeType)
+			if err != nil {
+				return fmt.Errorf("Error setting provider_volume_type: %s", err.Error())
+			}
+			err = d.Set("capacity_tier", volume.CapacityTier)
+			if err != nil {
+				return fmt.Errorf("Error setting capacity_tier: %s", err.Error())
+			}
+			err = d.Set("tiering_policy", volume.TieringPolicy)
+			if err != nil {
+				return fmt.Errorf("Error setting tiering_policy: %s", err.Error())
+			}
+			err = d.Set("size", convertSizeUnit(volume.Size.Size, volume.Size.Unit, "GB"))
+			if err != nil {
+				return fmt.Errorf("Error setting size: %s", err.Error())
+			}
+			err = d.Set("unit", volume.Size.Unit)
+			if err != nil {
+				return fmt.Errorf("Error setting unit: %s", err.Error())
+			}
+			if len(volume.ShareInfo) > 0 {
+				err = d.Set("share_name", volume.ShareInfo[0].ShareName)
+				if err != nil {
+					return fmt.Errorf("Error setting share_name: %s", err.Error())
+				}
+				if len(volume.ShareInfo[0].AccessControlList) > 0 {
+					err = d.Set("permission", volume.ShareInfo[0].AccessControlList[0].Permission)
+					if err != nil {
+						return fmt.Errorf("Error setting permission: %s", err.Error())
 					}
 				}
-			}
-			if _, ok := d.GetOk("users"); ok {
-				if len(volume.ShareInfo) > 0 {
-					if len(volume.ShareInfo[0].AccessControlList) > 0 {
-						d.Set("users", volume.ShareInfo[0].AccessControlList[0].Users)
+				if len(volume.ShareInfo[0].AccessControlList) > 0 {
+					err = d.Set("users", volume.ShareInfo[0].AccessControlList[0].Users)
+					if err != nil {
+						return fmt.Errorf("Error setting users: %s", err.Error())
 					}
 				}
+				err = d.Set("volume_protocol", "cifs")
+				if err != nil {
+					return fmt.Errorf("Error setting volume_protocol: %s", err.Error())
+				}
+			} else if volume.IscsiEnabled == true {
+				err = d.Set("volume_protocol", "iscsi")
+				if err != nil {
+					return fmt.Errorf("Error setting volume_protocol: %s", err.Error())
+				}
+			} else {
+				err = d.Set("volume_protocol", "nfs")
+				if err != nil {
+					return fmt.Errorf("Error setting volume_protocol: %s", err.Error())
+				}
+				err = d.Set("export_policy_name", volume.ExportPolicyInfo.Name)
+				if err != nil {
+					return fmt.Errorf("Error setting export_policy_name: %s", err.Error())
+				}
+				err = d.Set("export_policy_ip", volume.ExportPolicyInfo.Ips)
+				if err != nil {
+					return fmt.Errorf("Error setting export_policy_ip: %s", err.Error())
+				}
+				err = d.Set("export_policy_nfs_version", volume.ExportPolicyInfo.NfsVersion)
+				if err != nil {
+					return fmt.Errorf("Error setting export_policy_nfs_version: %s", err.Error())
+				}
+				err = d.Set("export_policy_type", volume.ExportPolicyInfo.PolicyType)
+				if err != nil {
+					return fmt.Errorf("Error setting export_policy_type: %s", err.Error())
+				}
+				err = d.Set("mount_point", volume.MountPoint)
+				if err != nil {
+					return fmt.Errorf("Error setting mount_point: %s", err.Error())
+				}
 			}
+			return nil
 		}
-		return nil
-
 	}
-
 	return fmt.Errorf("Error reading volume: volume doesn't exist")
 }

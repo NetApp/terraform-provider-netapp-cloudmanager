@@ -51,6 +51,8 @@ type volumeResponse struct {
 	ProviderVolumeType     string              `json:"providerVolumeType"`
 	Iops                   int                 `json:"iops"`
 	ShareInfo              []shareInfoResponse `json:"shareInfo"`
+	MountPoint             string              `json:"mountPoint"`
+	IscsiEnabled           bool                `json:"iscsiEnabled"`
 }
 
 type exportPolicyInfo struct {
@@ -369,6 +371,9 @@ func (c *Client) checkCifsExists(workingEnvironmentID string, svm string) (bool,
 }
 
 func convertSizeUnit(size float64, from string, to string) float64 {
+	if from == "GB" && to == "GB" {
+		return size
+	}
 	if from == "GB" && to == "TB" {
 		size = size / 1024
 	}

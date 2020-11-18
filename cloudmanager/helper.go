@@ -6,6 +6,8 @@ import (
 	"log"
 	"strings"
 	"time"
+
+	"github.com/hashicorp/terraform/helper/schema"
 )
 
 type apiErrorResponse struct {
@@ -270,4 +272,27 @@ func (c *Client) getAPIRootForWorkingEnvironment(isHA bool, workingEnvironmentID
 
 	log.Printf("API root = %s", baseURL)
 	return baseURL
+}
+
+// read working environemnt information and return the details
+func (c *Client) getWorkingEnvironmentDetail(d *schema.ResourceData) (workingEnvironmentInfo, error) {
+	var workingEnvDetail workingEnvironmentInfo
+	var err error
+
+	if a, ok := d.GetOk("working_environment_id"); ok {
+		WorkingEnvironmentID := a.(string)
+		workingEnvDetail, err = c.getWorkingEnvironmentInfo(WorkingEnvironmentID)
+		if err != nil {
+			return workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by working_environment_id %s", WorkingEnvironmentID)
+		}
+	} else if a, ok = d.GetOk("working_environment_name"); ok {
+		workingEnvDetail, err = c.findWorkingEnvironmentByName(a.(string))
+		if err != nil {
+			return workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by working_environment_name %s", a.(string))
+		}
+		log.Printf("Get environment id %v by %v", workingEnvDetail.PublicID, a.(string))
+	} else {
+		return workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by working_enviroment_id or working_environment_name")
+	}
+	return workingEnvDetail, nil
 }
