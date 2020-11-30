@@ -106,7 +106,7 @@ type placementRequest struct {
 
 // extraRequest structure for the proxy credentials
 type extraRequest struct {
-	Proxy proxyRequest `json:"proxy"`
+	Proxy proxyRequest `structs:"proxy,omitempty"`
 }
 
 // proxyRequest the user input for using proxy credentials
