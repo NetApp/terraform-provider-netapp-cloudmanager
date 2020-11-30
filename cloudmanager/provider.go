@@ -34,10 +34,12 @@ func Provider() terraform.ResourceProvider {
 			"netapp-cloudmanager_aggregate":       resourceAggregate(),
 			"netapp-cloudmanager_volume":          resourceCVOVolume(),
 			"netapp-cloudmanager_cifs_server":     resourceCVOCIFS(),
+			"netapp-cloudmanager_nss_account":     resourceCVONssAccount(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"netapp-cloudmanager_cifs_server": dataSourceCVOCIFS(),
 			"netapp-cloudmanager_volume":      dataSourceCVOVolume(),
+			"netapp-cloudmanager_nss_account": dataSourceCVONssAccount(),
 		},
 
 		ConfigureFunc: providerConfigure,

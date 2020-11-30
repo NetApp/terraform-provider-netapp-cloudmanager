@@ -53,13 +53,15 @@ The following arguments are supported:
 * `use_latest_version` - (Optional) Indicates whether to use the latest available ONTAP version. The default is 'true'.
 * `license_type` - (Optional) The type of license to use. For single node: ['gcp-cot-explore-paygo', 'gcp-cot-standard-paygo', 'gcp-cot-premium-paygo', 'gcp-cot-premium-byol']. The default is 'gcp-cot-standard-paygo'.
 * `instance_type` - (Optional) The type of instance to use, which depends on the license type you choose: Explore:['custom-4-16384'], Standard:['n1-standard-8'], Premium:['n1-standard-32'], BYOL: all instance types defined for PayGo. For more supported instance types, refer to Cloud Volumes ONTAP Release Notes. default is 'n1-standard-8' .
-* `platform_serial_number` - (Optional) The serial number for the system. Required when using 'gcp-cot-premium-byol'.
+* `serial_number` - (Optional) The serial number for the system. Required when using 'gcp-cot-premium-byol'.
 * `capacity_tier` - (Optional) Indicates the type of data tiering to use: ['cloudStorage', 'NONE']. The default is 'cloudStorage'.
 * `tier_level` - (Optional) In case capacity_tier is cloudStorage, this argument indicates the tiering level: ['standard', 'nearline', 'coldline']. The default is: 'standard'.
 * `nss_account` - (Optional) The NetApp Support Site account ID to use with this Cloud Volumes ONTAP system. If the license type is BYOL and an NSS account isn't provided, Cloud Manager tries to use the first existing NSS account.
 * `writing_speed_state` - (Optional) The write speed setting for Cloud Volumes ONTAP: ['NORMAL','HIGH']. The default is 'NORMAL'. This argument is not relevant for HA pairs.
 * `firewall_rule` - (Optional) The name of the firewall rule for Cloud Volumes ONTAP. If not provided, Cloud Manager generates the rule.
 * `is_ha` - (Optional) Indicate whether the working environment is an HA pair or not [true, false]. The default is false.
+* `platform_serial_number_node1` - (Optional) For HA BYOL, the serial number for the first node.
+* `platform_serial_number_node2` - (Optional) For HA BYOL, the serial number for the second node.
 * `node1_zone` - (Optional)  Zone for node 1.
 * `node2_zone` - (Optional) Zone for node 2.
 * `mediator_zone` - (Optional) Zone for mediator.

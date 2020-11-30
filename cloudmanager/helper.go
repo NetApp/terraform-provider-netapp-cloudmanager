@@ -110,6 +110,7 @@ func (c *Client) waitOnCompletion(id string, actionName string, task string, ret
 }
 
 // get working environment information by working environment id
+// response: publicId, name, isHA, cloudProvider, workingEnvironmentType
 func (c *Client) getWorkingEnvironmentInfo(id string) (workingEnvironmentInfo, error) {
 	baseURL := fmt.Sprintf("/occm/api/working-environments/%s", id)
 	hostType := "CloudManagerHost"
@@ -152,7 +153,6 @@ func findWE(name string, weList []workingEnvironmentInfo) (workingEnvironmentInf
 }
 
 func (c *Client) findWorkingEnvironmentByName(name string) (workingEnvironmentInfo, error) {
-
 	// check working environment exists or not
 	baseURL := fmt.Sprintf("/occm/api/working-environments/exists/%s", name)
 	hostType := "CloudManagerHost"
@@ -215,6 +215,18 @@ func (c *Client) findWorkingEnvironmentByName(name string) (workingEnvironmentIn
 	log.Printf("Cannot find the working environment %s", name)
 
 	return workingEnvironmentInfo{}, err
+}
+
+func (c *Client) findWorkingEnvironmentByID(id string) (workingEnvironmentInfo, error) {
+	workingEnvInfo, err := c.getWorkingEnvironmentInfo(id)
+	if err != nil {
+		return workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by working_environment_id %s", id)
+	}
+	workingEnvDetail, err := c.findWorkingEnvironmentByName(workingEnvInfo.Name)
+	if err != nil {
+		return workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by working_environment_name %s", workingEnvInfo.Name)
+	}
+	return workingEnvDetail, nil
 }
 
 func (c *Client) getAPIRoot(workingEnvironmentID string) (string, string, error) {
@@ -281,7 +293,7 @@ func (c *Client) getWorkingEnvironmentDetail(d *schema.ResourceData) (workingEnv
 
 	if a, ok := d.GetOk("working_environment_id"); ok {
 		WorkingEnvironmentID := a.(string)
-		workingEnvDetail, err = c.getWorkingEnvironmentInfo(WorkingEnvironmentID)
+		workingEnvDetail, err = c.findWorkingEnvironmentByID(WorkingEnvironmentID)
 		if err != nil {
 			return workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by working_environment_id %s", WorkingEnvironmentID)
 		}

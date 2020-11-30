@@ -47,6 +47,8 @@ type gcpLabels struct {
 
 // haParamsGCP the input for requesting a CVO
 type haParamsGCP struct {
+	PlatformSerialNumberNode1      string `structs:"platformSerialNumberNode1,omitempty"`
+	PlatformSerialNumberNode2      string `structs:"platformSerialNumberNode2,omitempty"`
 	Node1Zone                      string `structs:"node1Zone,omitempty"`
 	Node2Zone                      string `structs:"node2Zone,omitempty"`
 	MediatorZone                   string `structs:"mediatorZone,omitempty"`
@@ -85,7 +87,7 @@ func (c *Client) createCVOGCP(cvoDetails createCVOGCPDetails) (cvoResult, error)
 		cvoDetails.WorkspaceID = tenantID
 	}
 
-	if cvoDetails.NssAccount == "" && cvoDetails.VsaMetadata.LicenseType == "gcp-cot-premium-byol" && !strings.HasPrefix(cvoDetails.SerialNumber, "Eval-") {
+	if cvoDetails.NssAccount == "" && (cvoDetails.VsaMetadata.LicenseType == "gcp-cot-premium-byol" || cvoDetails.VsaMetadata.LicenseType == "gcp-ha-cot-premium-byol") && !strings.HasPrefix(cvoDetails.SerialNumber, "Eval-") {
 		nssAccount, err := c.getNSS()
 		if err != nil {
 			log.Print("getNSS request failed ", err)
@@ -177,6 +179,16 @@ func expandGCPLabels(set *schema.Set) []gcpLabels {
 func validateCVOGCPParams(cvoDetails createCVOGCPDetails) error {
 	if cvoDetails.VsaMetadata.UseLatestVersion == true && cvoDetails.VsaMetadata.OntapVersion != "latest" {
 		return fmt.Errorf("ontap_version parameter not required when having use_latest_version as true")
+	}
+
+	if cvoDetails.IsHA == true && cvoDetails.VsaMetadata.LicenseType == "gcp-ha-cot-premium-byol" {
+		if cvoDetails.HAParams.PlatformSerialNumberNode1 == "" || cvoDetails.HAParams.PlatformSerialNumberNode2 == "" {
+			return fmt.Errorf("both platform_serial_number_node1 and platform_serial_number_node2 parameters are required when having ha type as true and license_type as gcp-ha-cot-premium-byol")
+		}
+	}
+
+	if cvoDetails.IsHA == false && (cvoDetails.HAParams.PlatformSerialNumberNode1 != "" || cvoDetails.HAParams.PlatformSerialNumberNode2 != "") {
+		return fmt.Errorf("both platform_serial_number_node1 and platform_serial_number_node2 parameters are only required when having ha type as true and license_type as gcp-ha-cot-premium-byol")
 	}
 
 	if cvoDetails.VsaMetadata.LicenseType == "gcp-cot-premium-byol" {

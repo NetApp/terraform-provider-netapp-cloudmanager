@@ -179,6 +179,16 @@ func resourceCVOGCP() *schema.Resource {
 				ForceNew: true,
 				Default:  false,
 			},
+			"platform_serial_number_node1": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"platform_serial_number_node2": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"node1_zone": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -277,8 +287,11 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 	cvoDetails.WorkspaceID = d.Get("workspace_id").(string)
 	cvoDetails.GCPVolumeType = d.Get("gcp_volume_type").(string)
 	cvoDetails.SvmPassword = d.Get("svm_password").(string)
-	cvoDetails.CapacityTier = d.Get("capacity_tier").(string)
-	cvoDetails.TierLevel = d.Get("tier_level").(string)
+	capacityTier := d.Get("capacity_tier").(string)
+	if capacityTier == "cloudStorage" {
+		cvoDetails.CapacityTier = capacityTier
+		cvoDetails.TierLevel = d.Get("tier_level").(string)
+	}
 	cvoDetails.GCPVolumeSize.Size = d.Get("gcp_volume_size").(int)
 	cvoDetails.GCPVolumeSize.Unit = d.Get("gcp_volume_size_unit").(string)
 	cvoDetails.VsaMetadata.OntapVersion = d.Get("ontap_version").(string)
@@ -331,6 +344,12 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 	cvoDetails.IsHA = d.Get("is_ha").(bool)
 
 	if cvoDetails.IsHA == true {
+		if c, ok := d.GetOk("platform_serial_number_node1"); ok {
+			cvoDetails.HAParams.PlatformSerialNumberNode1 = c.(string)
+		}
+		if c, ok := d.GetOk("platform_serial_number_node2"); ok {
+			cvoDetails.HAParams.PlatformSerialNumberNode2 = c.(string)
+		}
 		if c, ok := d.GetOk("node1_zone"); ok {
 			cvoDetails.HAParams.Node1Zone = c.(string)
 		}
