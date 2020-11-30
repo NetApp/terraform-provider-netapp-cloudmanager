@@ -66,6 +66,7 @@ resource "netapp-cloudmanager_cvo_aws" "cvo-aws" {
   data_floating_ip2 = "2.1.1.3"
   svm_floating_ip = "2.1.1.4"
   route_table_ids = ["rt-1","rt-2"]
+  license_type = "ha-cot-standard-paygo"
 }
 ```
 

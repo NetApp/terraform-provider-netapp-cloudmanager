@@ -277,8 +277,11 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 	cvoDetails.WorkspaceID = d.Get("workspace_id").(string)
 	cvoDetails.GCPVolumeType = d.Get("gcp_volume_type").(string)
 	cvoDetails.SvmPassword = d.Get("svm_password").(string)
-	cvoDetails.CapacityTier = d.Get("capacity_tier").(string)
-	cvoDetails.TierLevel = d.Get("tier_level").(string)
+	capacityTier := d.Get("capacity_tier").(string)
+	if capacityTier == "cloudStorage" {
+		cvoDetails.CapacityTier = capacityTier
+		cvoDetails.TierLevel = d.Get("tier_level").(string)
+	}
 	cvoDetails.GCPVolumeSize.Size = d.Get("gcp_volume_size").(int)
 	cvoDetails.GCPVolumeSize.Unit = d.Get("gcp_volume_size_unit").(string)
 	cvoDetails.VsaMetadata.OntapVersion = d.Get("ontap_version").(string)
