@@ -7,11 +7,8 @@ require (
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.3
 	github.com/aws/aws-sdk-go v1.35.5
 	github.com/fatih/structs v1.1.0
-	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79 // indirect
 	github.com/hashicorp/terraform v0.13.4
-	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
 	github.com/sirupsen/logrus v1.7.0
 	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43
 	golang.org/x/tools v0.0.0-20201008025239-9df69603baec // indirect
-	k8s.io/client-go v11.0.0+incompatible // indirect
 )
