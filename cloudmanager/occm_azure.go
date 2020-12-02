@@ -36,7 +36,7 @@ func (c *Client) getCustomData(registerAgentTOService registerAgentTOServiceRequ
 	c.ClientID = userDataRespone.ClientID
 	c.AccountID = userDataRespone.AccountID
 
-	userData := "{\n\t\"instanceName\": \"" + userDataRespone.Name + "\",\n\t\"company\": \"" + userDataRespone.Company + "\",\n\t\"clientId\": \"" + userDataRespone.ClientID + "\",\n\t\"clientSecret\": \"" + userDataRespone.ClientSecret + "\",\n\t\"systemId\": \"" + userDataRespone.UUID + "\",\n\t\"tenancyAccountId\": \"" + userDataRespone.AccountID + "\"\n}"
+	userData := "{\n\t\"instanceName\": \"" + userDataRespone.Name + "\",\n\t\"company\": \"" + userDataRespone.Company + "\",\n\t\"clientId\": \"" + userDataRespone.ClientID + "\",\n\t\"clientSecret\": \"" + userDataRespone.ClientSecret + "\",\n\t\"systemId\": \"" + userDataRespone.UUID + "\",\n\t\"tenancyAccountId\": \"" + userDataRespone.AccountID + "\",\n\t\"proxySettings\": {\n\t\"proxyPassword\": \"" + userDataRespone.ProxySettings.ProxyPassword + "\",\n\t\"proxyUserName\": \"" + userDataRespone.ProxySettings.ProxyUserName + "\",\n\t\"proxyUrl\": \"" + userDataRespone.ProxySettings.ProxyURL + "\"\n}\n}"
 	log.Print("userData ", userData)
 
 	return userData, nil
