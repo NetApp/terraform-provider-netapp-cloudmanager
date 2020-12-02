@@ -42,7 +42,7 @@ func (c *Client) getCustomDataForGCP(registerAgentTOService registerAgentTOServi
 	c.ClientID = userDataRespone.ClientID
 	c.AccountID = userDataRespone.AccountID
 
-	userData := fmt.Sprintf(`{"instanceName":"%s","company":"%s","clientId":"%s","clientSecret":"%s","systemId":"%s","tenancyAccountId":"%s"}`, userDataRespone.Name, userDataRespone.Company, userDataRespone.ClientID, userDataRespone.ClientSecret, userDataRespone.UUID, userDataRespone.AccountID)
+	userData := fmt.Sprintf(`{"instanceName":"%s","company":"%s","clientId":"%s","clientSecret":"%s","systemId":"%s","tenancyAccountId":"%s","proxySettings":{"proxyPassword":"%s","proxyUserName":"%s","proxyUrl":"%s"}}`, userDataRespone.Name, userDataRespone.Company, userDataRespone.ClientID, userDataRespone.ClientSecret, userDataRespone.UUID, userDataRespone.AccountID, userDataRespone.ProxySettings.ProxyPassword, userDataRespone.ProxySettings.ProxyUserName, userDataRespone.ProxySettings.ProxyURL)
 	log.Print("userData ", userData)
 
 	return userData, nil
