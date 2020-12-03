@@ -174,6 +174,8 @@ func dataSourceCVOVolumeRead(d *schema.ResourceData, meta interface{}) error {
 	volume.WorkingEnvironmentID = weInfo.PublicID
 	volume.WorkingEnvironmentType = weInfo.WorkingEnvironmentType
 	volume.SvmName = weInfo.SvmName
+	d.Set("working_environment_id", volume.WorkingEnvironmentID)
+	d.Set("svm_name", volume.SvmName)
 	res, err := client.getVolume(volume)
 	if err != nil {
 		log.Print("Error reading volume")
