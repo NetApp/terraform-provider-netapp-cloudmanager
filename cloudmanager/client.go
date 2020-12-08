@@ -67,8 +67,11 @@ func (c *Client) CallAWSInstanceCreate(occmDetails createOCCMDetails) (string, e
 	svc := ec2.New(sess)
 
 	var securityGroupIds []*string
-	securityGroupIds = append(securityGroupIds, aws.String(occmDetails.SecurityGroupID))
-
+	split := strings.Split(occmDetails.SecurityGroupID, ",")
+	for _, sgid := range split {
+		securityGroupIds = append(securityGroupIds, aws.String(sgid))
+	}
+	
 	// Specify the details of the instance that you want to create.
 	runInstancesInput := &ec2.RunInstancesInput{
 		BlockDeviceMappings: []*ec2.BlockDeviceMapping{
@@ -89,6 +92,7 @@ func (c *Client) CallAWSInstanceCreate(occmDetails createOCCMDetails) (string, e
 		MinCount:     aws.Int64(1),
 		MaxCount:     aws.Int64(1),
 		KeyName:      aws.String(occmDetails.KeyName),
+		DisableApiTermination: aws.Bool(*occmDetails.EnableTerminationProtection),
 		TagSpecifications: []*ec2.TagSpecification{
 			{
 				ResourceType: aws.String("instance"),
