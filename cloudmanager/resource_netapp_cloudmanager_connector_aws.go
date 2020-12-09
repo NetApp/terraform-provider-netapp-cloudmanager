@@ -90,6 +90,12 @@ func resourceOCCMAWS() *schema.Resource {
 				Computed: true,
 				ForceNew: true,
 			},
+			"enable_termination_protection": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+				Default:  false,
+			},
 			"associate_public_ip_address": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -138,6 +144,11 @@ func resourceOCCMAWSCreate(d *schema.ResourceData, meta interface{}) error {
 	if o, ok := d.GetOkExists("associate_public_ip_address"); ok {
 		associatePublicIPAddress := o.(bool)
 		occmDetails.AssociatePublicIPAddress = &associatePublicIPAddress
+	}
+  
+  	if o, ok := d.GetOkExists("enable_termination_protection"); ok {
+		enableTerminationProtection := o.(bool)
+		occmDetails.EnableTerminationProtection = &enableTerminationProtection
 	}
 
 	res, err := client.createOCCM(occmDetails)

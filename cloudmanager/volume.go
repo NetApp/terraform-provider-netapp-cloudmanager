@@ -167,11 +167,14 @@ func (c *Client) deleteVolume(vol volumeRequest) error {
 	baseURL = fmt.Sprintf("%s/volumes/%s/%s/%s", baseURL, vol.WorkingEnvironmentID, vol.SvmName, vol.Name)
 	hostType := "CloudManagerHost"
 
-	statusCode, response, _, err := c.CallAPIMethod("DELETE", baseURL, nil, c.Token, hostType)
+	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("DELETE", baseURL, nil, c.Token, hostType)
 	responseError := apiResponseChecker(statusCode, response, "deleteVolume")
 	if responseError != nil {
 		return responseError
 	}
+  
+  	log.Print("Wait for volume deletion.")
+	err = c.waitOnCompletion(onCloudRequestID, "volume", "delete", 10, 60)
 	if err != nil {
 		log.Print("deleteVolume request failed ", statusCode)
 		return err
