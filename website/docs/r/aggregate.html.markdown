@@ -1,7 +1,7 @@
 ---
 layout: "netapp_cloudmanager"
 page_title: "NetApp_CloudManager: netapp_cloudmanager_aggregate"
-sidebar_current: "docs-netapp-cloudmanager-resource-aws"
+sidebar_current: "docs-netapp-cloudmanager-resource-aggregate"
 description: |-
   Provides a netapp-cloudmanager_aggregate resource. This can be used to create a new aggregate on Cloud Volumes ONTAP.
 ---

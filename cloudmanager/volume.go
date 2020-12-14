@@ -75,6 +75,7 @@ type quoteRequest struct {
 	EnableThinProvisioning bool             `structs:"enableThinProvisioning"`
 	EnableCompression      bool             `structs:"enableCompression"`
 	EnableDeduplication    bool             `structs:"enableDeduplication"`
+	ReplicationFlow        bool             `structs:"replicationFlow"`
 	ExportPolicyInfo       exportPolicyInfo `structs:"exportPolicyInfo,omitempty"`
 	SnapshotPolicyName     string           `structs:"snapshotPolicyName"`
 	Name                   string           `structs:"name"`
