@@ -308,3 +308,43 @@ func (c *Client) getWorkingEnvironmentDetail(d *schema.ResourceData) (workingEnv
 	}
 	return workingEnvDetail, nil
 }
+
+// read working environemnt information and return the details
+func (c *Client) getWorkingEnvironmentDetailForSnapMirror(d *schema.ResourceData) (workingEnvironmentInfo, workingEnvironmentInfo, error) {
+	var sourceWorkingEnvDetail workingEnvironmentInfo
+	var destWorkingEnvDetail workingEnvironmentInfo
+	var err error
+
+	if a, ok := d.GetOk("source_working_environment_id"); ok {
+		WorkingEnvironmentID := a.(string)
+		sourceWorkingEnvDetail, err = c.findWorkingEnvironmentByID(WorkingEnvironmentID)
+		if err != nil {
+			return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by source_working_environment_id %s", WorkingEnvironmentID)
+		}
+	} else if a, ok = d.GetOk("source_working_environment_name"); ok {
+		sourceWorkingEnvDetail, err = c.findWorkingEnvironmentByName(a.(string))
+		if err != nil {
+			return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by source_working_environment_name %s", a.(string))
+		}
+		log.Printf("Get environment id %v by %v", sourceWorkingEnvDetail.PublicID, a.(string))
+	} else {
+		return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by source_working_environment_id or source_working_environment_name")
+	}
+
+	if a, ok := d.GetOk("destination_working_environment_id"); ok {
+		WorkingEnvironmentID := a.(string)
+		destWorkingEnvDetail, err = c.findWorkingEnvironmentByID(WorkingEnvironmentID)
+		if err != nil {
+			return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by destination_working_environment_id %s", WorkingEnvironmentID)
+		}
+	} else if a, ok = d.GetOk("destination_working_environment_name"); ok {
+		destWorkingEnvDetail, err = c.findWorkingEnvironmentByName(a.(string))
+		if err != nil {
+			return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by destination_working_environment_name %s", a.(string))
+		}
+		log.Printf("Get environment id %v by %v", destWorkingEnvDetail.PublicID, a.(string))
+	} else {
+		return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by destination_working_environment_id or destination_working_environment_name")
+	}
+	return sourceWorkingEnvDetail, destWorkingEnvDetail, nil
+}
