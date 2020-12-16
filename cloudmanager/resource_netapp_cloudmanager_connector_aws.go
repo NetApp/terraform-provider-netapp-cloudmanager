@@ -102,6 +102,25 @@ func resourceOCCMAWS() *schema.Resource {
 				ForceNew: true,
 				Default:  true,
 			},
+			"aws_tag": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				ForceNew: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"tag_key": {
+							Type:     schema.TypeString,
+							Required: true,
+							ForceNew: true,
+						},
+						"tag_value": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -145,10 +164,17 @@ func resourceOCCMAWSCreate(d *schema.ResourceData, meta interface{}) error {
 		associatePublicIPAddress := o.(bool)
 		occmDetails.AssociatePublicIPAddress = &associatePublicIPAddress
 	}
-  
-  	if o, ok := d.GetOkExists("enable_termination_protection"); ok {
+
+	if o, ok := d.GetOkExists("enable_termination_protection"); ok {
 		enableTerminationProtection := o.(bool)
 		occmDetails.EnableTerminationProtection = &enableTerminationProtection
+	}
+
+	if o, ok := d.GetOk("aws_tag"); ok {
+		tags := o.(*schema.Set)
+		if tags.Len() > 0 {
+			occmDetails.AwsTags = expandAWSTags(tags)
+		}
 	}
 
 	res, err := client.createOCCM(occmDetails)

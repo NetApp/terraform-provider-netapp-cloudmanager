@@ -71,7 +71,30 @@ func (c *Client) CallAWSInstanceCreate(occmDetails createOCCMDetails) (string, e
 	for _, sgid := range split {
 		securityGroupIds = append(securityGroupIds, aws.String(sgid))
 	}
-	
+
+	tags := []*ec2.Tag{}
+	tag := &ec2.Tag{
+		Key:   aws.String("Name"),
+		Value: aws.String(occmDetails.Name),
+	}
+	tags = append(tags, tag)
+
+	tag = &ec2.Tag{
+		Key:   aws.String("OCCMInstance"),
+		Value: aws.String("true"),
+	}
+	tags = append(tags, tag)
+
+	if len(occmDetails.AwsTags) > 0 {
+		for _, awsTag := range occmDetails.AwsTags {
+			tag := &ec2.Tag{
+				Key:   aws.String(awsTag.TagKey),
+				Value: aws.String(awsTag.TagValue),
+			}
+			tags = append(tags, tag)
+		}
+	}
+
 	// Specify the details of the instance that you want to create.
 	runInstancesInput := &ec2.RunInstancesInput{
 		BlockDeviceMappings: []*ec2.BlockDeviceMapping{
@@ -87,25 +110,16 @@ func (c *Client) CallAWSInstanceCreate(occmDetails createOCCMDetails) (string, e
 		IamInstanceProfile: &ec2.IamInstanceProfileSpecification{
 			Name: aws.String(occmDetails.IamInstanceProfileName),
 		},
-		ImageId:      aws.String(occmDetails.AMI),
-		InstanceType: aws.String(occmDetails.InstanceType),
-		MinCount:     aws.Int64(1),
-		MaxCount:     aws.Int64(1),
-		KeyName:      aws.String(occmDetails.KeyName),
+		ImageId:               aws.String(occmDetails.AMI),
+		InstanceType:          aws.String(occmDetails.InstanceType),
+		MinCount:              aws.Int64(1),
+		MaxCount:              aws.Int64(1),
+		KeyName:               aws.String(occmDetails.KeyName),
 		DisableApiTermination: aws.Bool(*occmDetails.EnableTerminationProtection),
 		TagSpecifications: []*ec2.TagSpecification{
 			{
 				ResourceType: aws.String("instance"),
-				Tags: []*ec2.Tag{
-					{
-						Key:   aws.String("Name"),
-						Value: aws.String(occmDetails.Name),
-					},
-					{
-						Key:   aws.String("OCCMInstance"),
-						Value: aws.String("true"),
-					},
-				},
+				Tags:         tags,
 			},
 		},
 		UserData: aws.String(base64.StdEncoding.EncodeToString([]byte(c.UserData))),

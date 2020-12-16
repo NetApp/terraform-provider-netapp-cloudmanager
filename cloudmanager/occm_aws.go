@@ -60,7 +60,8 @@ type createOCCMDetails struct {
 	AssociatePublicIPAddress     *bool
 	AssociatePublicIP            bool
 	FirewallTags                 bool
-    EnableTerminationProtection  *bool
+	EnableTerminationProtection  *bool
+	AwsTags                      []awsTags
 }
 
 // deleteOCCMDetails the users input for deleting a occm
