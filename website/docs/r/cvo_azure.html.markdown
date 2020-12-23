@@ -91,6 +91,7 @@ The following arguments are supported:
 * `svm_password` - (Required) The admin password for Cloud Volumes ONTAP.
 * `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
 * `resource_group` - (Optional) The resource_group where Cloud Volumes ONTAP will be created. If not provided, Cloud Manager creates the resource group (name of the working environment with suffix '-rg').
+* `allow_deploy_in_existing_rg` - (Optional) Indicates if to allow creation in existing resource group, Default is false.
 * `cidr` - (Optional) The CIDR of the VNET.
 * `disk_size` - (Optional) Azure volume size for the first data aggregate. For GB, the unit can be: [100 or 500]. For TB, the unit can be: [1,2,4,8,16]. The default is '1' .
 * `disk_size_unit` - (Optional) ['GB' or 'TB']. The default is 'TB'.
