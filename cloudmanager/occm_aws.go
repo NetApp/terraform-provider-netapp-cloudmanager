@@ -21,9 +21,10 @@ type createUserData struct {
 }
 
 type proxySettingsResponse struct {
-	ProxyURL      string `json:"proxyUrl"`
-	ProxyUserName string `json:"proxyUserName"`
-	ProxyPassword string `json:"proxyPassword"`
+	ProxyURL          string   `json:"proxyUrl"`
+	ProxyUserName     string   `json:"proxyUserName"`
+	ProxyPassword     string   `json:"proxyPassword"`
+	ProxyCertificates []string `json:"proxyCertificates"`
 }
 
 // createOCCMDetails the users input for creating a occm
@@ -151,7 +152,7 @@ type occmAgent struct {
 	AgentID string `json:"agentId"`
 }
 
-func (c *Client) getUserData(registerAgentTOService registerAgentTOServiceRequest) (string, error) {
+func (c *Client) getUserData(registerAgentTOService registerAgentTOServiceRequest, proxyCertificates []string) (string, error) {
 	accesTokenResult, err := c.getAccessToken()
 	if err != nil {
 		return "", err
@@ -178,7 +179,9 @@ func (c *Client) getUserData(registerAgentTOService registerAgentTOServiceReques
 	c.ClientID = userDataRespone.ClientID
 	c.AccountID = userDataRespone.AccountID
 
-	userData := "{\n\t\"instanceName\": \"" + userDataRespone.Name + "\",\n\t\"company\": \"" + userDataRespone.Company + "\",\n\t\"clientId\": \"" + userDataRespone.ClientID + "\",\n\t\"clientSecret\": \"" + userDataRespone.ClientSecret + "\",\n\t\"systemId\": \"" + userDataRespone.UUID + "\",\n\t\"tenancyAccountId\": \"" + userDataRespone.AccountID + "\",\n\t\"proxySettings\": {\n\t\"proxyPassword\": \"" + userDataRespone.ProxySettings.ProxyPassword + "\",\n\t\"proxyUserName\": \"" + userDataRespone.ProxySettings.ProxyUserName + "\",\n\t\"proxyUrl\": \"" + userDataRespone.ProxySettings.ProxyURL + "\"\n}\n}"
+	userDataRespone.ProxySettings.ProxyCertificates = proxyCertificates
+	rawUserData, _ := json.MarshalIndent(userDataRespone, "", "\t")
+	userData := string(rawUserData)
 	log.Print("userData ", userData)
 
 	return userData, nil
@@ -374,7 +377,7 @@ func (c *Client) getAWSInstance(occmDetails createOCCMDetails, id string) (strin
 	return "", nil
 }
 
-func (c *Client) createOCCM(occmDetails createOCCMDetails) (OCCMMResult, error) {
+func (c *Client) createOCCM(occmDetails createOCCMDetails, proxyCertificates []string) (OCCMMResult, error) {
 
 	log.Print("createOCCM")
 	if occmDetails.AMI == "" {
@@ -403,7 +406,7 @@ func (c *Client) createOCCM(occmDetails createOCCMDetails) (OCCMMResult, error) 
 		registerAgentTOService.Extra.Proxy.ProxyPassword = occmDetails.ProxyPassword
 	}
 
-	userData, err := c.getUserData(registerAgentTOService)
+	userData, err := c.getUserData(registerAgentTOService, proxyCertificates)
 	if err != nil {
 		return OCCMMResult{}, err
 	}
@@ -412,7 +415,6 @@ func (c *Client) createOCCM(occmDetails createOCCMDetails) (OCCMMResult, error) 
 	if err != nil {
 		return OCCMMResult{}, err
 	}
-
 	var result OCCMMResult
 	result.InstanceID = instanceID
 	result.ClientID = c.ClientID

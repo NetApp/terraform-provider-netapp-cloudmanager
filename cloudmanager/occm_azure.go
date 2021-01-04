@@ -9,7 +9,7 @@ import (
 	"github.com/fatih/structs"
 )
 
-func (c *Client) getCustomData(registerAgentTOService registerAgentTOServiceRequest) (string, error) {
+func (c *Client) getCustomData(registerAgentTOService registerAgentTOServiceRequest, proxyCertificates []string) (string, error) {
 	accesTokenResult, err := c.getAccessToken()
 	if err != nil {
 		return "", err
@@ -36,7 +36,9 @@ func (c *Client) getCustomData(registerAgentTOService registerAgentTOServiceRequ
 	c.ClientID = userDataRespone.ClientID
 	c.AccountID = userDataRespone.AccountID
 
-	userData := "{\n\t\"instanceName\": \"" + userDataRespone.Name + "\",\n\t\"company\": \"" + userDataRespone.Company + "\",\n\t\"clientId\": \"" + userDataRespone.ClientID + "\",\n\t\"clientSecret\": \"" + userDataRespone.ClientSecret + "\",\n\t\"systemId\": \"" + userDataRespone.UUID + "\",\n\t\"tenancyAccountId\": \"" + userDataRespone.AccountID + "\",\n\t\"proxySettings\": {\n\t\"proxyPassword\": \"" + userDataRespone.ProxySettings.ProxyPassword + "\",\n\t\"proxyUserName\": \"" + userDataRespone.ProxySettings.ProxyUserName + "\",\n\t\"proxyUrl\": \"" + userDataRespone.ProxySettings.ProxyURL + "\"\n}\n}"
+	userDataRespone.ProxySettings.ProxyCertificates = proxyCertificates
+	rawUserData, _ := json.MarshalIndent(userDataRespone, "", "\t")
+	userData := string(rawUserData)
 	log.Print("userData ", userData)
 
 	return userData, nil
@@ -70,7 +72,7 @@ func (c *Client) registerAgentTOServiceForAzure(registerAgentTOServiceRequest re
 	return result, nil
 }
 
-func (c *Client) deployAzureVM(occmDetails createOCCMDetails) (string, error) {
+func (c *Client) deployAzureVM(occmDetails createOCCMDetails, proxyCertificates []string) (string, error) {
 
 	var registerAgentTOService registerAgentTOServiceRequest
 	registerAgentTOService.Name = occmDetails.Name
@@ -96,7 +98,7 @@ func (c *Client) deployAzureVM(occmDetails createOCCMDetails) (string, error) {
 
 	registerAgentTOService.Placement.Subnet = fmt.Sprintf("%s/subnets/%s", registerAgentTOService.Placement.Network, occmDetails.SubnetID)
 
-	userData, err := c.getCustomData(registerAgentTOService)
+	userData, err := c.getCustomData(registerAgentTOService, proxyCertificates)
 	if err != nil {
 		return "", err
 	}
@@ -150,10 +152,10 @@ func (c *Client) getdeployAzureVM(occmDetails createOCCMDetails, id string) (str
 	return "", nil
 }
 
-func (c *Client) createOCCMAzure(occmDetails createOCCMDetails) (OCCMMResult, error) {
+func (c *Client) createOCCMAzure(occmDetails createOCCMDetails, ProxyCertificates []string) (OCCMMResult, error) {
 
 	log.Print("createOCCMAzure")
-	_, err := c.deployAzureVM(occmDetails)
+	_, err := c.deployAzureVM(occmDetails, ProxyCertificates)
 	if err != nil {
 		return OCCMMResult{}, err
 	}

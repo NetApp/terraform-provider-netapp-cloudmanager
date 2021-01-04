@@ -15,7 +15,7 @@ type OCCMMGCPResult struct {
 	Name string `json:"name"`
 }
 
-func (c *Client) getCustomDataForGCP(registerAgentTOService registerAgentTOServiceRequest) (string, error) {
+func (c *Client) getCustomDataForGCP(registerAgentTOService registerAgentTOServiceRequest, proxyCertificates []string) (string, error) {
 	accesTokenResult, err := c.getAccessToken()
 	if err != nil {
 		return "", err
@@ -42,7 +42,9 @@ func (c *Client) getCustomDataForGCP(registerAgentTOService registerAgentTOServi
 	c.ClientID = userDataRespone.ClientID
 	c.AccountID = userDataRespone.AccountID
 
-	userData := fmt.Sprintf(`{"instanceName":"%s","company":"%s","clientId":"%s","clientSecret":"%s","systemId":"%s","tenancyAccountId":"%s","proxySettings":{"proxyPassword":"%s","proxyUserName":"%s","proxyUrl":"%s"}}`, userDataRespone.Name, userDataRespone.Company, userDataRespone.ClientID, userDataRespone.ClientSecret, userDataRespone.UUID, userDataRespone.AccountID, userDataRespone.ProxySettings.ProxyPassword, userDataRespone.ProxySettings.ProxyUserName, userDataRespone.ProxySettings.ProxyURL)
+	userDataRespone.ProxySettings.ProxyCertificates = proxyCertificates
+	rawUserData, _ := json.Marshal(userDataRespone)
+	userData := string(rawUserData)
 	log.Print("userData ", userData)
 
 	return userData, nil
@@ -77,7 +79,7 @@ func (c *Client) registerAgentTOServiceForGCP(registerAgentTOServiceRequest regi
 	return result, nil
 }
 
-func (c *Client) deployGCPVM(occmDetails createOCCMDetails) (OCCMMResult, error) {
+func (c *Client) deployGCPVM(occmDetails createOCCMDetails, proxyCertificates []string) (OCCMMResult, error) {
 
 	var registerAgentTOService registerAgentTOServiceRequest
 	registerAgentTOService.Name = occmDetails.Name
@@ -97,7 +99,7 @@ func (c *Client) deployGCPVM(occmDetails createOCCMDetails) (OCCMMResult, error)
 
 	registerAgentTOService.Placement.Subnet = occmDetails.SubnetID
 
-	userData, err := c.getCustomDataForGCP(registerAgentTOService)
+	userData, err := c.getCustomDataForGCP(registerAgentTOService, proxyCertificates)
 	if err != nil {
 		return OCCMMResult{}, err
 	}

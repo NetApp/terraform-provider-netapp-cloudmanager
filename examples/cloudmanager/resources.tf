@@ -13,6 +13,7 @@ resource "netapp-cloudmanager_connector_aws" "cl-occm-aws" {
   iam_instance_profile_name = "OCCM_AUTOMATION"
   proxy_user_name = "test"
   proxy_password = "test"
+  proxy_url = "http://127.0.0.1:3128"
   associate_public_ip_address = true
   account_id = "account-moKEW1b5"
 }
@@ -28,10 +29,12 @@ resource "netapp-cloudmanager_connector_azure" "cl-occm-azure" {
   vnet_id = "Vnet1"
   proxy_user_name = "test"
   proxy_password = "test"
+  proxy_url = "http://127.0.0.1:3128"
   associate_public_ip_address = true
   account_id = "account-moKEW1b5"
   admin_password = "********"
   admin_username = "********"
+  network_security_group_name = "OCCM_SG"
 }
 
 resource "netapp-cloudmanager_connector_gcp" "cl-occm-gcp" {
@@ -44,6 +47,8 @@ resource "netapp-cloudmanager_connector_gcp" "cl-occm-gcp" {
   service_account_path = "gcp_creds.json"
   proxy_user_name = "test"
   proxy_password = "test"
+  proxy_url = "http://127.0.0.1:3128"
+  proxy_certificates = ["D-TRUST_Root_Class_3_CA_2_2009.crt", "DigiCertGlobalRootCA.crt", "DigiCertGlobalRootG2.crt"]
   account_id = "account-moKEW1b5"
 }
 
