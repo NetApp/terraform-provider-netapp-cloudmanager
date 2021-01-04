@@ -61,6 +61,7 @@ The following arguments are supported:
 * `proxy_url` - (Optional) The proxy URL, if using a proxy to connect to the internet.
 * `proxy_user_name` - (Optional) The proxy user name, if using a proxy to connect to the internet.
 * `proxy_password` - (Optional) The proxy password, if using a proxy to connect to the internet.
+* `proxy_certificates` - (Optional) The proxy certificates. A list of certificate file names.
 * `associate_public_ip_address` - (Optional) Indicates whether to associate the public IP address to the virtual machine.
 * `account_id` - (Optional) The NetApp account ID that the Connector will be associated with. If not provided, Cloud Manager uses the first account. If no account exists, Cloud Manager creates a new account. You can find the account ID in the account tab of Cloud Manager at [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
 

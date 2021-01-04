@@ -1,7 +1,9 @@
 package cloudmanager
 
 import (
+	"encoding/base64"
 	"fmt"
+	"io/ioutil"
 	"log"
 
 	"github.com/hashicorp/terraform/helper/schema"
@@ -89,6 +91,14 @@ func resourceOCCMAzure() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"proxy_certificates": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
 			"client_id": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -151,11 +161,34 @@ func resourceOCCMAzureCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	if o, ok := d.GetOk("proxy_user_name"); ok {
-		occmDetails.ProxyUserName = o.(string)
+		if occmDetails.ProxyURL != "" {
+			occmDetails.ProxyUserName = o.(string)
+		} else {
+			return fmt.Errorf("Mission proxy_url")
+		}
 	}
 
 	if o, ok := d.GetOk("proxy_password"); ok {
-		occmDetails.ProxyPassword = o.(string)
+		if occmDetails.ProxyURL != "" {
+			occmDetails.ProxyPassword = o.(string)
+		} else {
+			return fmt.Errorf("Mission proxy_url")
+		}
+	}
+
+	var proxyCertificates []string
+	if certificateFiles, ok := d.GetOk("proxy_certificates"); ok {
+		for _, cFile := range certificateFiles.([]interface{}) {
+			// read file
+			b, err := ioutil.ReadFile(cFile.(string))
+			if err != nil {
+				return fmt.Errorf("Cannot read certificate file: %s", err)
+			}
+			// endcode certificate
+			encodedCertificate := base64.StdEncoding.EncodeToString(b)
+			log.Printf("CFile: %s, Org cert: %s, encoded cert: %s", cFile.(string), string(b), string(encodedCertificate))
+			proxyCertificates = append(proxyCertificates, encodedCertificate)
+		}
 	}
 
 	if o, ok := d.GetOk("resource_group"); ok {
@@ -171,7 +204,7 @@ func resourceOCCMAzureCreate(d *schema.ResourceData, meta interface{}) error {
 		occmDetails.AssociatePublicIPAddress = &associatePublicIPAddress
 	}
 
-	res, err := client.createOCCMAzure(occmDetails)
+	res, err := client.createOCCMAzure(occmDetails, proxyCertificates)
 	if err != nil {
 		log.Print("Error creating instance")
 		return err

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/fatih/structs"
+	"gopkg.in/yaml.v2"
 )
 
 // OCCMMGCPResult the response name  of a occm
@@ -15,7 +16,76 @@ type OCCMMGCPResult struct {
 	Name string `json:"name"`
 }
 
-func (c *Client) getCustomDataForGCP(registerAgentTOService registerAgentTOServiceRequest) (string, error) {
+// GCP template
+type tcontent struct {
+	Resources []tresource `yaml:"resources"`
+}
+
+type tresource struct {
+	Name       string     `yaml:"name"`
+	Properties properties `yaml:"properties"`
+	Type       string     `yaml:"type"`
+	Metadata   metaData   `yaml:"metadata,omitempty"`
+}
+
+type properties struct {
+	Name              string             `yaml:"name,omitempty"`
+	SizeGb            int                `yaml:"sizeGb,omitempty"`
+	SourceImage       string             `yaml:"sourceImage,omitempty"`
+	Type              string             `yaml:"type,omitempty"`
+	Tags              tags               `yaml:"tags,omitempty"`
+	Disks             []pdisk            `yaml:"disks,omitempty"`
+	MachineType       string             `yaml:"machineType,omitempty"`
+	Zone              string             `yaml:"zone"`
+	Metadata          pmetadata          `yaml:"metadata,omitempty"`
+	NetworkInterfaces []networkInterface `yaml:"networkInterfaces,omitempty"`
+	ServiceAccounts   []serviceAccount   `yaml:"serviceAccounts,omitempty"`
+}
+
+type metaData struct {
+	DependsOn []string `yaml:"dependsOn"`
+}
+
+type tags struct {
+	Items []string `yaml:"items"`
+}
+
+type pdisk struct {
+	AutoDelete bool   `yaml:"autoDelete"`
+	Boot       bool   `yaml:"boot"`
+	DeviceName string `yaml:"deviceName"`
+	Name       string `yaml:"name"`
+	Source     string `yaml:"source"`
+	Type       string `yaml:"type"`
+}
+
+type pmetadata struct {
+	Items []item `yaml:"items"`
+}
+
+type item struct {
+	Key, Value interface{}
+}
+
+type networkInterface struct {
+	AccessConfigs []accessConfig `yaml:"accessConfigs"`
+	Kind          string         `yaml:"kind"`
+	Subnetwork    string         `yaml:"subnetwork"`
+}
+
+type accessConfig struct {
+	Kind        string `yaml:"kind"`
+	Name        string `yaml:"name"`
+	Type        string `yaml:"type"`
+	NetworkTier string `yaml:"networkTier"`
+}
+
+type serviceAccount struct {
+	Email  string   `yaml:"email"`
+	Scopes []string `yaml:"scopes"`
+}
+
+func (c *Client) getCustomDataForGCP(registerAgentTOService registerAgentTOServiceRequest, proxyCertificates []string) (string, error) {
 	accesTokenResult, err := c.getAccessToken()
 	if err != nil {
 		return "", err
@@ -42,7 +112,9 @@ func (c *Client) getCustomDataForGCP(registerAgentTOService registerAgentTOServi
 	c.ClientID = userDataRespone.ClientID
 	c.AccountID = userDataRespone.AccountID
 
-	userData := fmt.Sprintf(`{"instanceName":"%s","company":"%s","clientId":"%s","clientSecret":"%s","systemId":"%s","tenancyAccountId":"%s","proxySettings":{"proxyPassword":"%s","proxyUserName":"%s","proxyUrl":"%s"}}`, userDataRespone.Name, userDataRespone.Company, userDataRespone.ClientID, userDataRespone.ClientSecret, userDataRespone.UUID, userDataRespone.AccountID, userDataRespone.ProxySettings.ProxyPassword, userDataRespone.ProxySettings.ProxyUserName, userDataRespone.ProxySettings.ProxyURL)
+	userDataRespone.ProxySettings.ProxyCertificates = proxyCertificates
+	rawUserData, _ := json.Marshal(userDataRespone)
+	userData := string(rawUserData)
 	log.Print("userData ", userData)
 
 	return userData, nil
@@ -77,8 +149,7 @@ func (c *Client) registerAgentTOServiceForGCP(registerAgentTOServiceRequest regi
 	return result, nil
 }
 
-func (c *Client) deployGCPVM(occmDetails createOCCMDetails) (OCCMMResult, error) {
-
+func (c *Client) deployGCPVM(occmDetails createOCCMDetails, proxyCertificates []string) (OCCMMResult, error) {
 	var registerAgentTOService registerAgentTOServiceRequest
 	registerAgentTOService.Name = occmDetails.Name
 	registerAgentTOService.Placement.Region = occmDetails.Region
@@ -97,7 +168,7 @@ func (c *Client) deployGCPVM(occmDetails createOCCMDetails) (OCCMMResult, error)
 
 	registerAgentTOService.Placement.Subnet = occmDetails.SubnetID
 
-	userData, err := c.getCustomDataForGCP(registerAgentTOService)
+	userData, err := c.getCustomDataForGCP(registerAgentTOService, proxyCertificates)
 	if err != nil {
 		return OCCMMResult{}, err
 	}
@@ -108,39 +179,81 @@ func (c *Client) deployGCPVM(occmDetails createOCCMDetails) (OCCMMResult, error)
 	result.AccountID = c.AccountID
 
 	gcpCustomData := base64.StdEncoding.EncodeToString([]byte(userData))
-	gcpSaScopes := `- https://www.googleapis.com/auth/cloud-platform\n      - https://www.googleapis.com/auth/compute\n      - https://www.googleapis.com/auth/compute.readonly\n      - https://www.googleapis.com/auth/ndev.cloudman\n      - https://www.googleapis.com/auth/ndev.cloudman.readonly`
 
-	var tags string
-	var accessConfig string
+	gcpSaScopes := []string{"https://www.googleapis.com/auth/cloud-platform",
+		"https://www.googleapis.com/auth/compute",
+		"https://www.googleapis.com/auth/compute.readonly",
+		"https://www.googleapis.com/auth/ndev.cloudman",
+		"https://www.googleapis.com/auth/ndev.cloudman.readonly"}
+
+	content := tcontent{}
+
+	// first resource
+	t := tresource{}
+	t.Name = fmt.Sprintf("%s-vm", occmDetails.Name)
 	if occmDetails.FirewallTags == true {
-		tags = `    tags:\n      items:\n      - firewall-tag-bvsu\n      - http-server\n      - https-server\n`
+		t.Properties.Tags.Items = []string{"firewall-tag-bvsu", "http-server", "https-server"}
 	}
+	deviceName := fmt.Sprintf("%s-vm-disk-boot", occmDetails.Name)
+	t.Properties.Disks = []pdisk{
+		{AutoDelete: true,
+			Boot:       true,
+			DeviceName: deviceName,
+			Name:       deviceName,
+			Source:     fmt.Sprintf("\\\"$(ref.%s.selfLink)\\\"", deviceName),
+			Type:       "PERSISTENT",
+		},
+	}
+	t.Properties.MachineType = fmt.Sprintf("zones/%s/machineTypes/%s", occmDetails.Zone, occmDetails.MachineType)
+	t.Properties.Metadata.Items = []item{
+		{Key: "serial-port-enable", Value: 1},
+		{Key: "customData", Value: gcpCustomData}}
 
+	var accessConfigs []accessConfig
 	if occmDetails.AssociatePublicIP == true {
-		accessConfig = `\n      - kind: compute#accessConfig\n        name: External NAT\n        type: ONE_TO_ONE_NAT\n        networkTier: PREMIUM`
-	} else {
-		accessConfig = ` []`
+		accessConfigs = []accessConfig{{Kind: "compute#accessConfig", Name: "External NAT", Type: "ONE_TO_ONE_NAT", NetworkTier: "PREMIUM"}}
 	}
-
+	var projectID string
 	if occmDetails.NetworkProjectID != "" {
-		c.GCPDeploymentTemplate = fmt.Sprintf(`{
-			"name": "%s%s",
-			"target": {
-			"config": {
-			"content": "resources:\n- name: %s-vm\n  properties:\n%s    disks:\n    - autoDelete: true\n      boot: true\n      deviceName: %s-vm-disk-boot\n      name: %s-vm-disk-boot\n      source: \"$(ref.%s-vm-disk-boot.selfLink)\"\n      type: PERSISTENT\n    machineType: zones/%s/machineTypes/%s\n    metadata:\n      items:\n      - key: serial-port-enable\n        value: 1\n      - key: customData\n        value: %s\n    networkInterfaces:\n    - accessConfigs:%s\n      kind: compute#networkInterface\n      subnetwork: projects/%s/regions/%s/subnetworks/%s\n    serviceAccounts:\n    - email: %s\n      scopes:\n      %s\n    zone: %s\n  type: compute.v1.instance\n  metadata:\n    dependsOn:\n    - %s-vm-disk-boot\n- name: %s-vm-disk-boot\n  properties:\n    name: %s-vm-disk-boot\n    sizeGb: 100\n    sourceImage: projects/%s/global/images/family/%s\n    type: zones/%s/diskTypes/pd-ssd\n    zone: %s\n  type: compute.v1.disks"
-			}
-		}
-		}`, occmDetails.Name, occmDetails.GCPCommonSuffixName, occmDetails.Name, tags, occmDetails.Name, occmDetails.Name, occmDetails.Name, occmDetails.Zone, occmDetails.MachineType, gcpCustomData, accessConfig, occmDetails.NetworkProjectID, occmDetails.Region, occmDetails.SubnetID, occmDetails.ServiceAccountEmail, gcpSaScopes, occmDetails.Zone, occmDetails.Name, occmDetails.Name, occmDetails.Name, c.GCPImageProject, c.GCPImageFamily, occmDetails.Zone, occmDetails.Zone)
+		projectID = occmDetails.NetworkProjectID
 	} else {
-		c.GCPDeploymentTemplate = fmt.Sprintf(`{
-			"name": "%s%s",
-			"target": {
-			"config": {
-			"content": "resources:\n- name: %s-vm\n  properties:\n%s    disks:\n    - autoDelete: true\n      boot: true\n      deviceName: %s-vm-disk-boot\n      name: %s-vm-disk-boot\n      source: \"$(ref.%s-vm-disk-boot.selfLink)\"\n      type: PERSISTENT\n    machineType: zones/%s/machineTypes/%s\n    metadata:\n      items:\n      - key: serial-port-enable\n        value: 1\n      - key: customData\n        value: %s\n    networkInterfaces:\n    - accessConfigs:%s\n      kind: compute#networkInterface\n      subnetwork: projects/%s/regions/%s/subnetworks/%s\n    serviceAccounts:\n    - email: %s\n      scopes:\n      %s\n    zone: %s\n  type: compute.v1.instance\n  metadata:\n    dependsOn:\n    - %s-vm-disk-boot\n- name: %s-vm-disk-boot\n  properties:\n    name: %s-vm-disk-boot\n    sizeGb: 100\n    sourceImage: projects/%s/global/images/family/%s\n    type: zones/%s/diskTypes/pd-ssd\n    zone: %s\n  type: compute.v1.disks"
-			}
-		}
-		}`, occmDetails.Name, occmDetails.GCPCommonSuffixName, occmDetails.Name, tags, occmDetails.Name, occmDetails.Name, occmDetails.Name, occmDetails.Zone, occmDetails.MachineType, gcpCustomData, accessConfig, occmDetails.GCPProject, occmDetails.Region, occmDetails.SubnetID, occmDetails.ServiceAccountEmail, gcpSaScopes, occmDetails.Zone, occmDetails.Name, occmDetails.Name, occmDetails.Name, c.GCPImageProject, c.GCPImageFamily, occmDetails.Zone, occmDetails.Zone)
+		projectID = occmDetails.GCPProject
 	}
+	t.Properties.NetworkInterfaces = []networkInterface{
+		{AccessConfigs: accessConfigs,
+			Kind:       "compute#networkInterface",
+			Subnetwork: fmt.Sprintf("projects/%s/regions/%s/subnetworks/%s", projectID, occmDetails.Region, occmDetails.SubnetID),
+		},
+	}
+	t.Properties.ServiceAccounts = []serviceAccount{{Email: occmDetails.ServiceAccountEmail, Scopes: gcpSaScopes}}
+	t.Properties.Zone = occmDetails.Zone
+	t.Type = "compute.v1.instance"
+	t.Metadata.DependsOn = []string{deviceName}
+
+	// the resource which the first resource depends on
+	td := tresource{}
+	td.Name = deviceName
+	td.Properties.Name = deviceName
+	td.Properties.SizeGb = 100
+	td.Properties.SourceImage = fmt.Sprintf("projects/%s/global/images/family/%s", c.GCPImageProject, c.GCPImageFamily)
+	td.Properties.Type = fmt.Sprintf("zones/%s/diskTypes/pd-ssd", occmDetails.Zone)
+	td.Properties.Zone = occmDetails.Zone
+	td.Type = "compute.v1.disks"
+
+	content.Resources = []tresource{t, td}
+	data, err := yaml.Marshal(&content)
+	if err != nil {
+		return OCCMMResult{}, fmt.Errorf("error: %v", err)
+	}
+	mydata := string(data)
+	c.GCPDeploymentTemplate = fmt.Sprintf(`{
+		"name": "%s%s",
+		"target": {
+		"config": {
+		"content": "%s"
+		}
+	}
+	}`, occmDetails.Name, occmDetails.GCPCommonSuffixName, mydata)
 
 	baseURL := fmt.Sprintf("/deploymentmanager/v2/projects/%s/global/deployments", occmDetails.GCPProject)
 	hostType := "GCPDeploymentManager"

@@ -1,7 +1,9 @@
 package cloudmanager
 
 import (
+	"encoding/base64"
 	"fmt"
+	"io/ioutil"
 	"log"
 
 	"github.com/hashicorp/terraform/helper/schema"
@@ -79,6 +81,14 @@ func resourceOCCMAWS() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"proxy_certificates": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
 			"client_id": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -101,6 +111,25 @@ func resourceOCCMAWS() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 				Default:  true,
+			},
+			"aws_tag": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				ForceNew: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"tag_key": {
+							Type:     schema.TypeString,
+							Required: true,
+							ForceNew: true,
+						},
+						"tag_value": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+					},
+				},
 			},
 		},
 	}
@@ -126,11 +155,34 @@ func resourceOCCMAWSCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	if o, ok := d.GetOk("proxy_user_name"); ok {
-		occmDetails.ProxyUserName = o.(string)
+		if occmDetails.ProxyURL != "" {
+			occmDetails.ProxyUserName = o.(string)
+		} else {
+			return fmt.Errorf("Mission proxy_url")
+		}
 	}
 
 	if o, ok := d.GetOk("proxy_password"); ok {
-		occmDetails.ProxyPassword = o.(string)
+		if occmDetails.ProxyURL != "" {
+			occmDetails.ProxyPassword = o.(string)
+		} else {
+			return fmt.Errorf("Mission proxy_url")
+		}
+	}
+
+	var proxyCertificates []string
+	if certificateFiles, ok := d.GetOk("proxy_certificates"); ok {
+		for _, cFile := range certificateFiles.([]interface{}) {
+			// read file
+			b, err := ioutil.ReadFile(cFile.(string))
+			if err != nil {
+				return fmt.Errorf("Cannot read certificate file: %s", err)
+			}
+			// endcode certificate
+			encodedCertificate := base64.StdEncoding.EncodeToString(b)
+			log.Printf("CFile: %s, Org cert: %s, encoded cert: %s", cFile.(string), string(b), string(encodedCertificate))
+			proxyCertificates = append(proxyCertificates, encodedCertificate)
+		}
 	}
 
 	if o, ok := d.GetOk("ami"); ok {
@@ -145,13 +197,21 @@ func resourceOCCMAWSCreate(d *schema.ResourceData, meta interface{}) error {
 		associatePublicIPAddress := o.(bool)
 		occmDetails.AssociatePublicIPAddress = &associatePublicIPAddress
 	}
-  
-  	if o, ok := d.GetOkExists("enable_termination_protection"); ok {
+
+	if o, ok := d.GetOkExists("enable_termination_protection"); ok {
 		enableTerminationProtection := o.(bool)
 		occmDetails.EnableTerminationProtection = &enableTerminationProtection
 	}
 
-	res, err := client.createOCCM(occmDetails)
+	if o, ok := d.GetOk("aws_tag"); ok {
+		tags := o.(*schema.Set)
+		if tags.Len() > 0 {
+			occmDetails.AwsTags = expandAWSTags(tags)
+		}
+	}
+
+	res, err := client.createOCCM(occmDetails, proxyCertificates)
+
 	if err != nil {
 		log.Print("Error creating instance")
 		return err

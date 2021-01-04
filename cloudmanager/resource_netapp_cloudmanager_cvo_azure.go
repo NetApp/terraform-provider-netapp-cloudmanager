@@ -175,6 +175,12 @@ func resourceCVOAzure() *schema.Resource {
 				ForceNew: true,
 				Default:  false,
 			},
+			"allow_deploy_in_existing_rg": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+				Default:  false,
+			},
 			"azure_tag": {
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -283,6 +289,7 @@ func resourceCVOAzureCreate(d *schema.ResourceData, meta interface{}) error {
 
 	if c, ok := d.GetOk("resource_group"); ok {
 		cvoDetails.ResourceGroup = c.(string)
+		cvoDetails.AllowDeployInExistingRg = d.Get("allow_deploy_in_existing_rg").(bool)
 	} else {
 		cvoDetails.ResourceGroup = cvoDetails.Name + "-rg"
 	}
