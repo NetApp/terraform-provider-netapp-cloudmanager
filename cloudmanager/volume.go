@@ -174,8 +174,8 @@ func (c *Client) deleteVolume(vol volumeRequest) error {
 	if responseError != nil {
 		return responseError
 	}
-  
-  	log.Print("Wait for volume deletion.")
+
+	log.Print("Wait for volume deletion.")
 	err = c.waitOnCompletion(onCloudRequestID, "volume", "delete", 10, 60)
 	if err != nil {
 		log.Print("deleteVolume request failed ", statusCode)
@@ -204,6 +204,28 @@ func (c *Client) getVolume(vol volumeRequest) ([]volumeResponse, error) {
 	}
 	if err := json.Unmarshal(response, &result); err != nil {
 		log.Print("Failed to unmarshall response from getVolume ", err)
+		return result, err
+	}
+
+	return result, nil
+}
+
+func (c *Client) getVolumeForOnPrem(vol volumeRequest) ([]volumeResponse, error) {
+	var result []volumeResponse
+	hostType := "CloudManagerHost"
+	baseURL := fmt.Sprintf("/occm/api/onprem/volumes?workingEnvironmentId=%s", vol.WorkingEnvironmentID)
+
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+	if err != nil {
+		log.Print("getVolumeForOnPrem request failed ", statusCode)
+		return result, err
+	}
+	responseError := apiResponseChecker(statusCode, response, "getVolumeForOnPrem")
+	if responseError != nil {
+		return result, responseError
+	}
+	if err := json.Unmarshal(response, &result); err != nil {
+		log.Print("Failed to unmarshall response from getVolumeForOnPrem ", err)
 		return result, err
 	}
 
