@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 
 	"github.com/fatih/structs"
 )
@@ -375,11 +376,17 @@ func (c *Client) checkCifsExists(workingEnvironmentID string, svm string) (bool,
 }
 
 func convertSizeUnit(size float64, from string, to string) float64 {
-	if from == "GB" && to == "GB" {
+	if strings.ToUpper(from) == "GB" && strings.ToUpper(to) == "GB" {
 		return size
 	}
-	if from == "GB" && to == "TB" {
+	if strings.ToUpper(from) == "GB" && strings.ToUpper(to) == "TB" {
 		size = size / 1024
+	}
+	if strings.ToUpper(from) == "GB" && strings.ToUpper(to) == "B" {
+		size = size * 1073741824
+	}
+	if strings.ToUpper(from) == "B" && strings.ToUpper(to) == "GB" {
+		size = size / 1073741824
 	}
 	return size
 }
