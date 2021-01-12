@@ -15,6 +15,7 @@ type Client struct {
 	RefreshToken         string
 	Audience             string
 	GCPDeploymentManager string
+	CVSHostName          string
 
 	httpClient http.Client
 }
@@ -36,6 +37,8 @@ func (c *Client) Do(baseURL string, hostType string, token string, paramsNil boo
 	} else if hostType == "GCPDeploymentManager" {
 		host = c.GCPDeploymentManager
 		gcpType = true
+	} else if hostType == "CVSHost" {
+		host = c.CVSHostName
 	}
 
 	httpReq, err := req.BuildHTTPReq(host, token, c.Audience, baseURL, paramsNil, accountID, clientID, gcpType)

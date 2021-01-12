@@ -74,7 +74,7 @@ func (c *Client) getInterclusterlifs(snapMirror snapMirrorRequest) (intercluster
 	return interclusterlifsResponse, nil
 }
 
-func (c *Client) buildSnapMirrorCreate(snapMirror snapMirrorRequest) (snapMirrorRequest, error) {
+func (c *Client) buildSnapMirrorCreate(snapMirror snapMirrorRequest, sourceWorkingEnvironmentType string, destWorkingEnvironmentType string) (snapMirrorRequest, error) {
 
 	accessTokenResult, err := c.getAccessToken()
 	if err != nil {
@@ -89,14 +89,23 @@ func (c *Client) buildSnapMirrorCreate(snapMirror snapMirrorRequest) (snapMirror
 		return snapMirrorRequest{}, err
 	}
 
+	var volumeSource []volumeResponse
 	volumeS := volumeRequest{}
 	volumeS.WorkingEnvironmentID = snapMirror.ReplicationRequest.SourceWorkingEnvironmentID
 	volumeS.Name = snapMirror.ReplicationVolume.SourceVolumeName
 
-	volumeSource, err := c.getVolume(volumeS)
-	if err != nil {
-		log.Print("Error reading source volume")
-		return snapMirrorRequest{}, err
+	if sourceWorkingEnvironmentType != "ON_PREM" {
+		volumeSource, err = c.getVolume(volumeS)
+		if err != nil {
+			log.Print("Error reading source volume")
+			return snapMirrorRequest{}, err
+		}
+	} else {
+		volumeSource, err = c.getVolumeForOnPrem(volumeS)
+		if err != nil {
+			log.Print("Error reading source volume")
+			return snapMirrorRequest{}, err
+		}
 	}
 
 	if len(volumeSource) == 0 {
@@ -122,12 +131,21 @@ func (c *Client) buildSnapMirrorCreate(snapMirror snapMirrorRequest) (snapMirror
 		return snapMirrorRequest{}, fmt.Errorf("source volume not found")
 	}
 
-	quote := c.buildQuoteRequest(snapMirror, volDestQuote, snapMirror.ReplicationVolume.DestinationVolumeName, snapMirror.ReplicationVolume.DestinationSvmName, snapMirror.ReplicationRequest.DestinationWorkingEnvironmentID)
+	if destWorkingEnvironmentType != "ON_PREM" {
+		quote := c.buildQuoteRequest(snapMirror, volDestQuote, snapMirror.ReplicationVolume.DestinationVolumeName, snapMirror.ReplicationVolume.DestinationSvmName, snapMirror.ReplicationRequest.DestinationWorkingEnvironmentID)
 
-	quoteResponse, err := c.quoteVolume(quote)
-	if err != nil {
-		log.Printf("Error quoting destination volume")
-		return snapMirrorRequest{}, err
+		quoteResponse, err := c.quoteVolume(quote)
+		if err != nil {
+			log.Printf("Error quoting destination volume")
+			return snapMirrorRequest{}, err
+		}
+		snapMirror.ReplicationVolume.NumOfDisksApprovedToAdd = quoteResponse["numOfDisks"].(float64)
+		if snapMirror.ReplicationVolume.DestinationAggregateName != "" {
+			snapMirror.ReplicationVolume.AdvancedMode = true
+		} else {
+			snapMirror.ReplicationVolume.AdvancedMode = false
+			snapMirror.ReplicationVolume.DestinationAggregateName = quoteResponse["aggregateName"].(string)
+		}
 	}
 
 	var sourceInterclusterLifIps []string
@@ -139,20 +157,11 @@ func (c *Client) buildSnapMirrorCreate(snapMirror snapMirrorRequest) (snapMirror
 	snapMirror.ReplicationVolume.SourceSvmName = sourceVolume.SvmName
 	snapMirror.ReplicationVolume.SourceVolumeName = sourceVolume.Name
 
-	snapMirror.ReplicationVolume.NumOfDisksApprovedToAdd = quoteResponse["numOfDisks"].(float64)
-
 	if snapMirror.ReplicationVolume.DestinationProviderVolumeType == "" {
 		snapMirror.ReplicationVolume.DestinationProviderVolumeType = sourceVolume.ProviderVolumeType
 	}
 
-	if snapMirror.ReplicationVolume.DestinationAggregateName != "" {
-		snapMirror.ReplicationVolume.AdvancedMode = true
-	} else {
-		snapMirror.ReplicationVolume.AdvancedMode = false
-		snapMirror.ReplicationVolume.DestinationAggregateName = quoteResponse["aggregateName"].(string)
-	}
-
-	err = c.createSnapMirror(snapMirror)
+	err = c.createSnapMirror(snapMirror, destWorkingEnvironmentType)
 	if err != nil {
 		log.Printf("Error creating snapmirror")
 		return snapMirrorRequest{}, err
@@ -168,7 +177,6 @@ func (c *Client) buildQuoteRequest(snapMirror snapMirrorRequest, vol volumeRespo
 	quote.Size.Size = vol.Size.Size
 	quote.Size.Unit = vol.Size.Unit
 	quote.SnapshotPolicyName = vol.SnapshotPolicyName
-	quote.ProviderVolumeType = vol.ProviderVolumeType
 	quote.EnableDeduplication = vol.EnableDeduplication
 	quote.EnableThinProvisioning = vol.EnableThinProvisioning
 	quote.EnableCompression = vol.EnableCompression
@@ -188,8 +196,13 @@ func (c *Client) buildQuoteRequest(snapMirror snapMirrorRequest, vol volumeRespo
 	return quote
 }
 
-func (c *Client) createSnapMirror(sm snapMirrorRequest) error {
-	baseURL := "/occm/api/replication/vsa"
+func (c *Client) createSnapMirror(sm snapMirrorRequest, destWorkingEnvironmentType string) error {
+	var baseURL string
+	if destWorkingEnvironmentType != "ON_PREM" {
+		baseURL = "/occm/api/replication/vsa"
+	} else {
+		baseURL = "/occm/api/replication/onprem"
+	}
 	hostType := "CloudManagerHost"
 
 	params := structs.Map(sm)

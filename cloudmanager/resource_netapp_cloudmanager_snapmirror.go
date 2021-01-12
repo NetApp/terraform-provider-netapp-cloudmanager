@@ -144,7 +144,7 @@ func resourceCVOSnapMirrorCreate(d *schema.ResourceData, meta interface{}) error
 		snapMirror.ReplicationVolume.DestinationSvmName = destWEInfo.SvmName
 	}
 
-	res, err := client.buildSnapMirrorCreate(snapMirror)
+	res, err := client.buildSnapMirrorCreate(snapMirror, sourceWEInfo.WorkingEnvironmentType, destWEInfo.WorkingEnvironmentType)
 	if err != nil {
 		log.Print("Error creating SnapMirrorCreate")
 		return err

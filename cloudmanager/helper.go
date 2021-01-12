@@ -152,6 +152,17 @@ func findWE(name string, weList []workingEnvironmentInfo) (workingEnvironmentInf
 	return workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment %s in the list", name)
 }
 
+func findWEForID(id string, weList []workingEnvironmentInfo) (workingEnvironmentInfo, error) {
+
+	for i := range weList {
+		if weList[i].PublicID == id {
+			log.Printf("Found working environment: %v", weList[i])
+			return weList[i], nil
+		}
+	}
+	return workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment %s in the list", id)
+}
+
 func (c *Client) findWorkingEnvironmentByName(name string) (workingEnvironmentInfo, error) {
 	// check working environment exists or not
 	baseURL := fmt.Sprintf("/occm/api/working-environments/exists/%s", name)
@@ -217,6 +228,7 @@ func (c *Client) findWorkingEnvironmentByName(name string) (workingEnvironmentIn
 	return workingEnvironmentInfo{}, err
 }
 
+// get WE directly from REST API using a given ID
 func (c *Client) findWorkingEnvironmentByID(id string) (workingEnvironmentInfo, error) {
 	workingEnvInfo, err := c.getWorkingEnvironmentInfo(id)
 	if err != nil {
@@ -317,7 +329,7 @@ func (c *Client) getWorkingEnvironmentDetailForSnapMirror(d *schema.ResourceData
 
 	if a, ok := d.GetOk("source_working_environment_id"); ok {
 		WorkingEnvironmentID := a.(string)
-		sourceWorkingEnvDetail, err = c.findWorkingEnvironmentByID(WorkingEnvironmentID)
+		sourceWorkingEnvDetail, err = c.findWorkingEnvironmentForID(WorkingEnvironmentID)
 		if err != nil {
 			return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by source_working_environment_id %s", WorkingEnvironmentID)
 		}
@@ -333,10 +345,11 @@ func (c *Client) getWorkingEnvironmentDetailForSnapMirror(d *schema.ResourceData
 
 	if a, ok := d.GetOk("destination_working_environment_id"); ok {
 		WorkingEnvironmentID := a.(string)
-		destWorkingEnvDetail, err = c.findWorkingEnvironmentByID(WorkingEnvironmentID)
+		destWorkingEnvDetail, err = c.findWorkingEnvironmentForID(WorkingEnvironmentID)
 		if err != nil {
 			return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by destination_working_environment_id %s", WorkingEnvironmentID)
 		}
+		log.Print("findWorkingEnvironmentForID", destWorkingEnvDetail)
 	} else if a, ok = d.GetOk("destination_working_environment_name"); ok {
 		destWorkingEnvDetail, err = c.findWorkingEnvironmentByName(a.(string))
 		if err != nil {
@@ -347,4 +360,56 @@ func (c *Client) getWorkingEnvironmentDetailForSnapMirror(d *schema.ResourceData
 		return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by destination_working_environment_id or destination_working_environment_name")
 	}
 	return sourceWorkingEnvDetail, destWorkingEnvDetail, nil
+}
+
+// get all WE from REST API and then using a given ID get the WE
+func (c *Client) findWorkingEnvironmentForID(id string) (workingEnvironmentInfo, error) {
+	hostType := "CloudManagerHost"
+
+	if c.Token == "" {
+		accesTokenResult, err := c.getAccessToken()
+		if err != nil {
+			return workingEnvironmentInfo{}, err
+		}
+		c.Token = accesTokenResult.Token
+	}
+	baseURL := "/occm/api/working-environments"
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+	if err != nil {
+		log.Printf("findWorkingEnvironmentForId %s request failed (%d)", id, statusCode)
+		return workingEnvironmentInfo{}, err
+	}
+
+	responseError := apiResponseChecker(statusCode, response, "findWorkingEnvironmentByName")
+	if responseError != nil {
+		return workingEnvironmentInfo{}, responseError
+	}
+
+	var workingEnvironments workingEnvironmentResult
+	if err := json.Unmarshal(response, &workingEnvironments); err != nil {
+		log.Print("Failed to unmarshall response from findWorkingEnvironmentByName")
+		return workingEnvironmentInfo{}, err
+	}
+
+	var workingEnvironment workingEnvironmentInfo
+	workingEnvironment, err = findWEForID(id, workingEnvironments.VsaWorkingEnvironment)
+	if err == nil {
+		return workingEnvironment, nil
+	}
+	workingEnvironment, err = findWEForID(id, workingEnvironments.OnPremWorkingEnvironments)
+	if err == nil {
+		return workingEnvironment, nil
+	}
+	workingEnvironment, err = findWEForID(id, workingEnvironments.AzureVsaWorkingEnvironments)
+	if err == nil {
+		return workingEnvironment, nil
+	}
+	workingEnvironment, err = findWEForID(id, workingEnvironments.GcpVsaWorkingEnvironments)
+	if err == nil {
+		return workingEnvironment, nil
+	}
+
+	log.Printf("Cannot find the working environment %s", id)
+
+	return workingEnvironmentInfo{}, err
 }

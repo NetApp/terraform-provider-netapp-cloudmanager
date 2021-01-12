@@ -51,6 +51,7 @@ type Client struct {
 	GCPImageFamily          string
 	GCPDeploymentTemplate   string
 	GCPServiceAccountPath   string
+	CVSHostName             string
 
 	initOnce      sync.Once
 	instanceInput *restapi.Client
@@ -643,6 +644,7 @@ func (c *Client) init() {
 		RefreshToken:         c.RefreshToken,
 		Audience:             c.Audience,
 		GCPDeploymentManager: c.GCPDeploymentManager,
+		CVSHostName:          c.CVSHostName,
 	}
 }
 

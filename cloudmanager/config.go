@@ -27,6 +27,7 @@ func (c *configStuct) clientFun() (*Client, error) {
 			GCPDeploymentManager: "https://www.googleapis.com",
 			GCPImageProject:      "netapp-cloudmanager",
 			GCPImageFamily:       "cloudmanager",
+			CVSHostName:          "https://api.services.cloud.netapp.com",
 		}
 	} else if c.Environment == "stage" {
 		log.Print("Stage Environment")
@@ -41,6 +42,7 @@ func (c *configStuct) clientFun() (*Client, error) {
 			GCPImageProject:         "tlv-automation",
 			GCPImageFamily:          "occm-automation",
 			AzureEnvironmentForOCCM: "stage",
+			CVSHostName:             "https://staging.api.services.cloud.netapp.com",
 		}
 	} else {
 		return &Client{}, fmt.Errorf("expected environment to be one of [prod stage], %s", c.Environment)

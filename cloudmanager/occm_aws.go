@@ -133,7 +133,8 @@ type accountResult struct {
 
 // accountIDResult to get the account ID
 type accountIDResult struct {
-	AccountID string `json:"accountPublicId"`
+	AccountID   string `json:"accountPublicId"`
+	AccountName string `json:"accountName"`
 }
 
 // listOCCMResult lists the details for given Client ID

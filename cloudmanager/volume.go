@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 
 	"github.com/fatih/structs"
 )
@@ -173,8 +174,8 @@ func (c *Client) deleteVolume(vol volumeRequest) error {
 	if responseError != nil {
 		return responseError
 	}
-  
-  	log.Print("Wait for volume deletion.")
+
+	log.Print("Wait for volume deletion.")
 	err = c.waitOnCompletion(onCloudRequestID, "volume", "delete", 10, 60)
 	if err != nil {
 		log.Print("deleteVolume request failed ", statusCode)
@@ -203,6 +204,28 @@ func (c *Client) getVolume(vol volumeRequest) ([]volumeResponse, error) {
 	}
 	if err := json.Unmarshal(response, &result); err != nil {
 		log.Print("Failed to unmarshall response from getVolume ", err)
+		return result, err
+	}
+
+	return result, nil
+}
+
+func (c *Client) getVolumeForOnPrem(vol volumeRequest) ([]volumeResponse, error) {
+	var result []volumeResponse
+	hostType := "CloudManagerHost"
+	baseURL := fmt.Sprintf("/occm/api/onprem/volumes?workingEnvironmentId=%s", vol.WorkingEnvironmentID)
+
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+	if err != nil {
+		log.Print("getVolumeForOnPrem request failed ", statusCode)
+		return result, err
+	}
+	responseError := apiResponseChecker(statusCode, response, "getVolumeForOnPrem")
+	if responseError != nil {
+		return result, responseError
+	}
+	if err := json.Unmarshal(response, &result); err != nil {
+		log.Print("Failed to unmarshall response from getVolumeForOnPrem ", err)
 		return result, err
 	}
 
@@ -375,11 +398,17 @@ func (c *Client) checkCifsExists(workingEnvironmentID string, svm string) (bool,
 }
 
 func convertSizeUnit(size float64, from string, to string) float64 {
-	if from == "GB" && to == "GB" {
+	if strings.ToUpper(from) == "GB" && strings.ToUpper(to) == "GB" {
 		return size
 	}
-	if from == "GB" && to == "TB" {
+	if strings.ToUpper(from) == "GB" && strings.ToUpper(to) == "TB" {
 		size = size / 1024
+	}
+	if strings.ToUpper(from) == "GB" && strings.ToUpper(to) == "B" {
+		size = size * 1073741824
+	}
+	if strings.ToUpper(from) == "B" && strings.ToUpper(to) == "GB" {
+		size = size / 1073741824
 	}
 	return size
 }
