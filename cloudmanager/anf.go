@@ -55,7 +55,8 @@ type rule struct {
 	UnixReadWrite  bool   `structs:"unixReadWrite"`
 }
 
-type azureInfo struct {
+// AWS,ANF and GCP share this struct.
+type cvsInfo struct {
 	AccountName        string `structs:"accountName"`
 	AccountID          string `structs:"accountID"`
 	CredentialsID      string `structs:"credentialsID"`
@@ -103,7 +104,7 @@ func (c *Client) getAccountByName(name string) (string, error) {
 	return results[0].AccountID, nil
 }
 
-func (c *Client) createANFVolume(vol anfVolumeRequest, info azureInfo) error {
+func (c *Client) createANFVolume(vol anfVolumeRequest, info cvsInfo) error {
 	baseURL, err := c.getCVSAPIRoot(info.AccountName, vol.WorkingEnvironmentName)
 	if err != nil {
 		return err
@@ -133,7 +134,7 @@ func (c *Client) createANFVolume(vol anfVolumeRequest, info azureInfo) error {
 	return nil
 }
 
-func (c *Client) getANFVolume(vol anfVolumeRequest, info azureInfo) (anfVolumeResponse, error) {
+func (c *Client) getANFVolume(vol anfVolumeRequest, info cvsInfo) (anfVolumeResponse, error) {
 	baseURL, err := c.getCVSAPIRoot(info.AccountName, vol.WorkingEnvironmentName)
 	if err != nil {
 		return anfVolumeResponse{}, err
@@ -310,7 +311,7 @@ func (c *Client) getSubnetID(baseURL string, virtualNetwork string, subnet strin
 
 }
 
-func (c *Client) deleteANFVolume(vol anfVolumeRequest, info azureInfo) error {
+func (c *Client) deleteANFVolume(vol anfVolumeRequest, info cvsInfo) error {
 	baseURL, err := c.getCVSAPIRoot(info.AccountName, vol.WorkingEnvironmentName)
 	if err != nil {
 		return err

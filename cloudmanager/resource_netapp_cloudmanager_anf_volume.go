@@ -197,7 +197,7 @@ func resourceCVSAzureVolumeCreate(d *schema.ResourceData, meta interface{}) erro
 			volume.Rules = rules
 		}
 	}
-	info := azureInfo{}
+	info := cvsInfo{}
 	info.AccountName = d.Get("account").(string)
 	info.SubscriptionName = d.Get("subscription").(string)
 	info.VirtualNetworkName = d.Get("virtual_network").(string)
@@ -219,7 +219,7 @@ func resourceCVSAzureVolumeRead(d *schema.ResourceData, meta interface{}) error 
 	client := meta.(*Client)
 	client.ClientID = d.Get("client_id").(string)
 	volume := anfVolumeRequest{}
-	info := azureInfo{}
+	info := cvsInfo{}
 	volume.Name = d.Get("name").(string)
 	volume.WorkingEnvironmentName = d.Get("working_environment_name").(string)
 	volume.Location = d.Get("location").(string)
@@ -267,7 +267,7 @@ func resourceCVSAzureVolumeRead(d *schema.ResourceData, meta interface{}) error 
 func resourceCVSAzureVolumeDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Client)
 	client.ClientID = d.Get("client_id").(string)
-	info := azureInfo{}
+	info := cvsInfo{}
 	volume := anfVolumeRequest{}
 	volume.Name = d.Get("name").(string)
 	volume.WorkingEnvironmentName = d.Get("working_environment_name").(string)
