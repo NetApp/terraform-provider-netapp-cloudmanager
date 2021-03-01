@@ -124,9 +124,10 @@ func resourceCVOSnapMirrorCreate(d *schema.ResourceData, meta interface{}) error
 		snapMirror.ReplicationVolume.DestinationProviderVolumeType = s.(string)
 	}
 	if s, ok := d.GetOk("capacity_tier"); ok {
-		snapMirror.ReplicationVolume.DestinationCapacityTier = s.(string)
-	}
-	if snapMirror.ReplicationVolume.DestinationCapacityTier == "" {
+		if s.(string) != "none" {
+			snapMirror.ReplicationVolume.DestinationCapacityTier = s.(string)
+		}
+	} else {
 		cloudProvider := strings.ToLower(destWEInfo.CloudProviderName)
 		if cloudProvider == "aws" {
 			snapMirror.ReplicationVolume.DestinationCapacityTier = "S3"

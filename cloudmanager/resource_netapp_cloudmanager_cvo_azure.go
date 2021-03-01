@@ -244,8 +244,11 @@ func resourceCVOAzureCreate(d *schema.ResourceData, meta interface{}) error {
 	cvoDetails.WorkspaceID = d.Get("workspace_id").(string)
 	cvoDetails.StorageType = d.Get("storage_type").(string)
 	cvoDetails.SvmPassword = d.Get("svm_password").(string)
-	cvoDetails.CapacityTier = d.Get("capacity_tier").(string)
-	cvoDetails.TierLevel = d.Get("tier_level").(string)
+	capacityTier := d.Get("capacity_tier").(string)
+	if capacityTier == "Blob" {
+		cvoDetails.CapacityTier = capacityTier
+		cvoDetails.TierLevel = d.Get("tier_level").(string)
+	}
 	cvoDetails.OptimizedNetworkUtilization = true
 	cvoDetails.BackupVolumesToCbs = d.Get("backup_volumes_to_cbs").(bool)
 	cvoDetails.EnableCompliance = d.Get("enable_compliance").(bool)
