@@ -43,6 +43,7 @@ The following arguments are supported:
 * `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
 * `workspace_id` - (Optional) The ID of the Cloud Manager workspace where you want to deploy Cloud Volumes ONTAP. If not provided, Cloud Manager uses the first workspace. You can find the ID from the Workspace tab on [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
 * `data_encryption_type` - (Optional) The type of data encryption to use for the working environment: ['GCP', 'NONE']. The default is 'GCP'.
+* `gcp_encryption_parameters` - (Optional) Required if using gcp encryption with custom key. Key format is 'projects/default-project/locations/global/keyRings/test/cryptoKeys/key1'.
 * `gcp_volume_type` - (Optional) The type of the storage for the first data aggregate: ['pd-standard', 'pd-ssd']. The default is 'pd-ssd'
 * `subnet_id` - (Optional) The name of the subnet for Cloud Volumes ONTAP. The default is: 'default'.
 * `network_project_id` - (Optional) The project id in GCP associated with the Subnet. If not provided, it’s assumed that the Subnet is within the previously specified project id.

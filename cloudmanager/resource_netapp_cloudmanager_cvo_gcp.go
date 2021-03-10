@@ -46,6 +46,11 @@ func resourceCVOGCP() *schema.Resource {
 				Default:      "GCP",
 				ValidateFunc: validation.StringInSlice([]string{"GCP", "NONE"}, false),
 			},
+			"gcp_encryption_parameters": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"gcp_volume_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -339,6 +344,10 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 
 	if c, ok := d.GetOk("serial_number"); ok {
 		cvoDetails.SerialNumber = c.(string)
+	}
+
+	if c, ok := d.GetOk("gcp_encryption_parameters"); ok {
+		cvoDetails.GcpEncryptionParameters.Key = c.(string)
 	}
 
 	cvoDetails.IsHA = d.Get("is_ha").(bool)
