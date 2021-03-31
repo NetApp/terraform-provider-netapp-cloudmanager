@@ -121,9 +121,8 @@ func resourceAggregateCreate(d *schema.ResourceData, meta interface{}) error {
 		}
 	}
 	if a, ok := d.GetOk("capacity_tier"); ok {
-		aggregate.CapacityTier = a.(string)
-		if aggregate.CapacityTier == "NONE" {
-			aggregate.CapacityTier = ""
+		if a.(string) != "NONE" {
+			aggregate.CapacityTier = a.(string)
 		}
 	} else if workingEnv.CloudProviderName == "Amazon" {
 		aggregate.CapacityTier = "S3"

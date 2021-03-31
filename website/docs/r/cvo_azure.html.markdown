@@ -101,7 +101,7 @@ The following arguments are supported:
 * `instance_type` - (Optional) The type of instance to use, which depends on the license type you chose: Explore:['Standard_DS3_v2'], Standard:['Standard_DS4_v2,Standard_DS13_v2,Standard_L8s_v2'], Premium:['Standard_DS5_v2','Standard_DS14_v2'], BYOL: all instance types defined for PayGo. For more supported instance types, refer to Cloud Volumes ONTAP Release Notes. The default is 'Standard_DS4_v2' .
 * `serial_number` - (Optional) The serial number for the cluster. Required when using one of these: ['azure-cot-premium-byol' or 'azure-ha-cot-premium-byol'].
 * `capacity_tier` - (Optional) Whether to enable data tiering for the first data aggregate: ['Blob', 'NONE']. The default is 'BLOB'.
-* `tier_level` - (Optional) If capacity_tier is BLOB, this argument indicates the tiering level: ['normal', 'cool']. The default is: 'normal'.
+* `tier_level` - (Optional) If capacity_tier is Blob, this argument indicates the tiering level: ['normal', 'cool']. The default is: 'normal'.
 * `nss_account` - (Optional) The NetApp Support Site account ID to use with this Cloud Volumes ONTAP system. If the license type is BYOL and an NSS account isn't provided, Cloud Manager tries to use the first existing NSS account.
 * `writing_speed_state` - (Optional) The write speed setting for Cloud Volumes ONTAP: ['NORMAL','HIGH']. The default is 'NORMAL'. This argument is not relevant for HA pairs.
 * `security_group_id` - (Optional) The name of the security group (full identifier: /subscriptions/xxxxxx/resourceGroups/rg_westus/providers/Microsoft.Network/networkSecurityGroups/CVO-SG). If not provided, Cloud Manager creates the security group.

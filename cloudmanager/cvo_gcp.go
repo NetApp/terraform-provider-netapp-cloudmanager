@@ -15,34 +15,40 @@ var GCPLicenseTypes = []string{"gcp-cot-standard-paygo", "gcp-cot-explore-paygo"
 
 // createCVOGCPDetails the users input for creating a CVO
 type createCVOGCPDetails struct {
-	Name               string      `structs:"name"`
-	DataEncryptionType string      `structs:"dataEncryptionType"`
-	WorkspaceID        string      `structs:"tenantId,omitempty"`
-	Region             string      `structs:"region"`
-	GCPServiceAccount  string      `structs:"gcpServiceAccount"`
-	VpcID              string      `structs:"vpcId"`
-	SvmPassword        string      `structs:"svmPassword"`
-	VsaMetadata        vsaMetadata `structs:"vsaMetadata"`
-	GCPVolumeSize      diskSize    `structs:"gcpVolumeSize"`
-	GCPVolumeType      string      `structs:"gcpVolumeType"`
-	SubnetID           string      `structs:"subnetId"`
-	SubnetPath         string      `structs:"subnetPath"`
-	Project            string      `structs:"project"`
-	CapacityTier       string      `structs:"capacityTier"`
-	TierLevel          string      `structs:"tierLevel"`
-	NssAccount         string      `structs:"nssAccount,omitempty"`
-	WritingSpeedState  string      `structs:"writingSpeedState,omitempty"`
-	SerialNumber       string      `structs:"serialNumber,omitempty"`
-	GCPLabels          []gcpLabels `structs:"gcpLabels,omitempty"`
-	FirewallRule       string      `structs:"firewallRule,omitempty"`
-	IsHA               bool
-	HAParams           haParamsGCP `structs:"haParams,omitempty"`
+	Name                    string                  `structs:"name"`
+	DataEncryptionType      string                  `structs:"dataEncryptionType"`
+	WorkspaceID             string                  `structs:"tenantId,omitempty"`
+	Region                  string                  `structs:"region"`
+	GCPServiceAccount       string                  `structs:"gcpServiceAccount"`
+	VpcID                   string                  `structs:"vpcId"`
+	SvmPassword             string                  `structs:"svmPassword"`
+	VsaMetadata             vsaMetadata             `structs:"vsaMetadata"`
+	GCPVolumeSize           diskSize                `structs:"gcpVolumeSize"`
+	GCPVolumeType           string                  `structs:"gcpVolumeType"`
+	SubnetID                string                  `structs:"subnetId"`
+	SubnetPath              string                  `structs:"subnetPath"`
+	Project                 string                  `structs:"project"`
+	CapacityTier            string                  `structs:"capacityTier"`
+	TierLevel               string                  `structs:"tierLevel"`
+	NssAccount              string                  `structs:"nssAccount,omitempty"`
+	WritingSpeedState       string                  `structs:"writingSpeedState,omitempty"`
+	SerialNumber            string                  `structs:"serialNumber,omitempty"`
+	GCPLabels               []gcpLabels             `structs:"gcpLabels,omitempty"`
+	GcpEncryptionParameters gcpEncryptionParameters `structs:"gcpEncryptionParameters,omitempty"`
+	FirewallRule            string                  `structs:"firewallRule,omitempty"`
+	IsHA                    bool
+	HAParams                haParamsGCP `structs:"haParams,omitempty"`
 }
 
 // gcpLabels the input for requesting a CVO
 type gcpLabels struct {
 	LabelKey   string `structs:"labelKey"`
 	LabelValue string `structs:"labelValue,omitempty"`
+}
+
+// gcpEncryptionParameters the input for requesting a CVO
+type gcpEncryptionParameters struct {
+	Key string `structs:"key,omitempty"`
 }
 
 // haParamsGCP the input for requesting a CVO

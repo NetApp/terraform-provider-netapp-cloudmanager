@@ -8,7 +8,7 @@ description: |-
 
 # netapp-cloudmanager Provider
 
-The netapp-cloudmanager provider is used to interact with NetApp Cloud Manager in order to create and manage Cloud Volumes ONTAP in AWS, Azure, and GCP. 
+The netapp-cloudmanager provider is used to interact with NetApp Cloud Manager in order to create and manage Cloud Volumes ONTAP in AWS, Azure, and GCP.
 The provider needs to be configured with the proper credentials before it can be used.
 
 
@@ -22,7 +22,9 @@ and therefore may undergo significant changes as the community improves it.
 * Create a Cloud Volumes ONTAP system (single node or HA pair)
 * Create aggregates
 * Create a CIFS server to enable CIFS volume creation
-* Create volumes all types of volumes: NFS, CIFS, and iSCSI
+* Create volumes of any type: NFS, CIFS, or iSCSI
+* Create snapmirror relationship
+* Create Netapp Support Site account
 
 ## Example Usage
 
