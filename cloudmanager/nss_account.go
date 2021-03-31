@@ -9,7 +9,6 @@ import (
 )
 
 type nssAccountRequest struct {
-	Name               string                `structs:"accountName"`
 	AccountCredentials nssAccountCredentials `structs:"providerKeys"`
 	VsaList            []string              `structs:"vsaList"`
 }
@@ -46,7 +45,7 @@ func (c *Client) createNssAccount(acc nssAccountRequest) (map[string]interface{}
 	return res, nil
 }
 
-func (c *Client) getNssAccount(name string) (map[string]interface{}, error) {
+func (c *Client) getNssAccount(nssUserName string) (map[string]interface{}, error) {
 	hostType := "CloudManagerHost"
 	baseURL := fmt.Sprint("/occm/api/accounts")
 	if c.Token == "" {
@@ -73,7 +72,7 @@ func (c *Client) getNssAccount(name string) (map[string]interface{}, error) {
 	var res []interface{} = allAccounts["nssAccounts"].([]interface{})
 	for _, acc := range res {
 		info := acc.(map[string]interface{})
-		if info["accountName"] == name {
+		if info["nssUserName"] == nssUserName {
 			return info, nil
 		}
 	}

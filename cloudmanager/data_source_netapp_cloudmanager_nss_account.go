@@ -12,14 +12,9 @@ func dataSourceCVONssAccount() *schema.Resource {
 		Read: dataSourceCVONssAccountRead,
 
 		Schema: map[string]*schema.Schema{
-			"name": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
-			},
 			"username": {
 				Type:     schema.TypeString,
-				Optional: true,
+				Required: true,
 				ForceNew: true,
 			},
 			"password": {
@@ -37,18 +32,17 @@ func dataSourceCVONssAccount() *schema.Resource {
 }
 
 func dataSourceCVONssAccountRead(d *schema.ResourceData, meta interface{}) error {
-	log.Printf("Getting nss account: %s", d.Get("name").(string))
+	log.Printf("Getting nss account: %s", d.Get("username").(string))
 	client := meta.(*Client)
 	client.ClientID = d.Get("client_id").(string)
-	res, err := client.getNssAccount(d.Get("name").(string))
+	res, err := client.getNssAccount(d.Get("username").(string))
 	if err != nil {
-		log.Printf("Error getting nss account: %s", d.Get("name").(string))
+		log.Printf("Error getting nss account: %s", d.Get("username").(string))
 		return err
 	}
 	if res == nil {
-		return fmt.Errorf("account name doesn't exist")
+		return fmt.Errorf("Failed to find account: %s", d.Get("username"))
 	}
-	d.Set("name", res["accountName"])
 	d.Set("username", res["nssUserName"])
 	d.SetId(res["publicId"].(string))
 	return nil

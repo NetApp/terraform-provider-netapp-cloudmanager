@@ -17,8 +17,8 @@ Provides a netapp-cloudmanager_nss_account resource. This can be used to read a 
 ```
 data "netapp-cloudmanager_nss_account" "nss-account-1" {
 		provider = netapp-cloudmanager
-		client_id = "Nw4Q2O1kdnLtvhwegGalFnodEHUfPJWh"
-		name = "accountName"
+		client_id = "Rw4Q2O1kdnLtvhwegGalFnodEHUfPJWh"
+		username = "user"
 	}
 ```
 
@@ -27,11 +27,10 @@ data "netapp-cloudmanager_nss_account" "nss-account-1" {
 The following arguments are supported:
 
 * `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
-* `name` - (Required) Account name.
+* `username` - (Required) The user name.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `id` - The unique identifier of the account.
-* `username` - NSS username. Not required in data source.

@@ -18,11 +18,6 @@ func resourceCVONssAccount() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"name": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
-			},
 			"username": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -43,11 +38,10 @@ func resourceCVONssAccount() *schema.Resource {
 }
 
 func resourceCVONssAccountCreate(d *schema.ResourceData, meta interface{}) error {
-	log.Printf("Creating nss account: %s", d.Get("name").(string))
+	log.Printf("Creating nss account: %s", d.Get("username").(string))
 	client := meta.(*Client)
 	client.ClientID = d.Get("client_id").(string)
 	nssAcc := nssAccountRequest{}
-	nssAcc.Name = d.Get("name").(string)
 	nssAcc.VsaList = make([]string, 0, 0)
 	if v, ok := d.GetOk("username"); ok {
 		nssAcc.AccountCredentials.Username = v.(string)
@@ -61,7 +55,7 @@ func resourceCVONssAccountCreate(d *schema.ResourceData, meta interface{}) error
 	}
 	res, err := client.createNssAccount(nssAcc)
 	if err != nil {
-		log.Printf("Error creating nss account: %s", d.Get("name").(string))
+		log.Printf("Error creating nss account: %s", d.Get("username").(string))
 		return err
 	}
 	d.SetId(res["publicId"].(string))
@@ -69,19 +63,16 @@ func resourceCVONssAccountCreate(d *schema.ResourceData, meta interface{}) error
 }
 
 func resourceCVONssAccountRead(d *schema.ResourceData, meta interface{}) error {
-	log.Printf("Getting nss account: %s", d.Get("name").(string))
+	log.Printf("Getting nss account: %s", d.Get("username").(string))
 	client := meta.(*Client)
 	client.ClientID = d.Get("client_id").(string)
-	res, err := client.getNssAccount(d.Get("name").(string))
+	res, err := client.getNssAccount(d.Get("username").(string))
 	if err != nil {
-		log.Printf("Error getting nss account: %s", d.Get("name").(string))
+		log.Printf("Error getting nss account: %s", d.Get("username").(string))
 		return err
 	}
 	if res == nil {
-		return fmt.Errorf("account name doesn't exist")
-	}
-	if _, ok := d.GetOk("name"); ok {
-		d.Set("name", res["accountName"])
+		return fmt.Errorf("Failed to find account: %s ", d.Get("username"))
 	}
 	if _, ok := d.GetOk("username"); ok {
 		d.Set("username", res["nssUserName"])
@@ -90,12 +81,12 @@ func resourceCVONssAccountRead(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceCVONssAccountDelete(d *schema.ResourceData, meta interface{}) error {
-	log.Printf("Deleting nss account: %s", d.Get("name").(string))
+	log.Printf("Deleting nss account: %s", d.Get("username").(string))
 	client := meta.(*Client)
 	client.ClientID = d.Get("client_id").(string)
 	err := client.deleteNssAccount(d.Id())
 	if err != nil {
-		log.Printf("Error deleting nss account: %s", d.Get("name").(string))
+		log.Printf("Error deleting nss account: %s", d.Get("username").(string))
 		return err
 	}
 	d.SetId("")
@@ -103,12 +94,12 @@ func resourceCVONssAccountDelete(d *schema.ResourceData, meta interface{}) error
 }
 
 func resourceCVONssAccountExists(d *schema.ResourceData, meta interface{}) (bool, error) {
-	log.Printf("Checking existence of nss account: %s", d.Get("name").(string))
+	log.Printf("Checking existence of nss account: %s", d.Get("username").(string))
 	client := meta.(*Client)
 	client.ClientID = d.Get("client_id").(string)
-	res, err := client.getNssAccount(d.Get("name").(string))
+	res, err := client.getNssAccount(d.Get("username").(string))
 	if err != nil {
-		log.Printf("Error checking existence of nss account: %s", d.Get("name").(string))
+		log.Printf("Error checking existence of nss account: %s", d.Get("username").(string))
 		return false, err
 	}
 	if res == nil {
