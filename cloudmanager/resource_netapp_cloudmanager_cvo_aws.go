@@ -375,7 +375,12 @@ func resourceCVOAWSCreate(d *schema.ResourceData, meta interface{}) error {
 		cvoDetails.HAParams.Node2SubnetID = d.Get("node2_subnet_id").(string)
 		cvoDetails.HAParams.MediatorSubnetID = d.Get("mediator_subnet_id").(string)
 		cvoDetails.HAParams.MediatorKeyPairName = d.Get("mediator_key_pair_name").(string)
-		cvoDetails.HAParams.MediatorAssignPublicIP = d.Get("mediator_assign_public_ip").(bool)
+
+		if o, ok := d.GetOkExists("mediator_assign_public_ip"); ok {
+			mediatorAssignPublicIP := o.(bool)
+			cvoDetails.HAParams.MediatorAssignPublicIP = &mediatorAssignPublicIP
+		}
+
 		cvoDetails.HAParams.ClusterFloatingIP = d.Get("cluster_floating_ip").(string)
 		cvoDetails.HAParams.DataFloatingIP = d.Get("data_floating_ip").(string)
 		cvoDetails.HAParams.DataFloatingIP2 = d.Get("data_floating_ip2").(string)

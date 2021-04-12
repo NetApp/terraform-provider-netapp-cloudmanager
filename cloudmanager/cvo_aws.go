@@ -57,7 +57,7 @@ type haParamsAWS struct {
 	MediatorKeyPairName       string   `structs:"mediatorKeyPairName,omitempty"`
 	PlatformSerialNumberNode1 string   `structs:"platformSerialNumberNode1,omitempty"`
 	PlatformSerialNumberNode2 string   `structs:"platformSerialNumberNode2,omitempty"`
-	MediatorAssignPublicIP    bool     `structs:"mediatorAssignPublicIP,omitempty"`
+	MediatorAssignPublicIP    *bool    `structs:"mediatorAssignPublicIP,omitempty"`
 	RouteTableIds             []string `structs:"routeTableIds,omitempty"`
 }
 
