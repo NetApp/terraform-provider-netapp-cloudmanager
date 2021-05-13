@@ -18,6 +18,7 @@ type createUserData struct {
 	Company       string                `json:"company"`
 	Name          string                `json:"instanceName"`
 	ProxySettings proxySettingsResponse `json:"proxySettings"`
+	IgnoreUpgrade bool                  `json:"ignoreUpgrade"`
 }
 
 type proxySettingsResponse struct {
@@ -252,7 +253,7 @@ func (c *Client) registerAgentTOService(registerAgentTOServiceRequest registerAg
 		log.Print("Failed to unmarshall response from registerAgentTOService ", err)
 		return createUserData{}, err
 	}
-
+	result.IgnoreUpgrade = true
 	return result, nil
 }
 

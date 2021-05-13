@@ -145,7 +145,7 @@ func (c *Client) registerAgentTOServiceForGCP(registerAgentTOServiceRequest regi
 		log.Print("Failed to unmarshall response from registerAgentTOService ", err)
 		return createUserData{}, err
 	}
-
+	result.IgnoreUpgrade = true
 	return result, nil
 }
 

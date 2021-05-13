@@ -67,16 +67,16 @@ resource "netapp-cloudmanager_cvo_aws" "cl-cvo-aws" {
               tag_key = "xxx"
               tag_value = "YYY"
             }
-  ebs_volume_type = "gp2"
+  ebs_volume_type = "gp3"
+  iops = 3000
+  throughput = 125
   svm_password = "netapp1!"
   ontap_version = "latest"
   use_latest_version = true
   license_type = "ha-cot-standard-paygo"
   instance_type = "m5.2xlarge"
   client_id = "Nw4Q2O1kdnLtvhwegGalFnodEHUfPJWh"
-  workspace_id = "workspace-abaaFgcQ"
   capacity_tier = "S3"
-  nss_account = "CloudProviderAccount-thlalnlg"
   writing_speed_state = "NORMAL"
   instance_tenancy = "default"
   cloud_provider_account =  "InstanceProfile"

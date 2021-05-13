@@ -87,13 +87,14 @@ The following arguments are supported:
 * `data_encryption_type` - (Optional) The type of encryption to use for the working environment: ['AWS', 'NONE']. The default is 'AWS'.
 * `ebs_volume_size` - (Optional) EBS volume size for the first data aggregate. For GB, the unit can be: [100 or 500]. For TB, the unit can be: [1,2,4,8,16]. The default is '1' .
 * `ebs_volume_size_unit` - (Optional) ['GB' or 'TB']. The default is 'TB'.
-* `ebs_volume_type` - (Optional) The EBS volume type for the first data aggregate ['gp2','io1','st1','sc1']. The default is 'gp2'.
-* `iops` - (Optional) Provisioned IOPS. Required only when providerVolumeType is "io1"
+* `ebs_volume_type` - (Optional) The EBS volume type for the first data aggregate ['gp3', 'gp2','io1','st1','sc1']. The default is 'gp2'.
+* `iops` - (Optional) Provisioned IOPS. Required only when 'ebs_volume_type' is 'io1' or 'gp3'.
+* `throughput` - (Optional) Required only when 'ebs_volume_type' is 'gp3'.
 * `ontap_version` - (Optional) The required ONTAP version. Ignored if 'use_latest_version' is set to true. The default is to use the latest version.
 * `use_latest_version` - (Optional) Indicates whether to use the latest available ONTAP version. The default is 'true'.
 * `license_type` - (Optional) The type of license to use. For single node: ['cot-explore-paygo','cot-standard-paygo', 'cot-premium-paygo', 'cot-premium-byol']. For HA: ['ha-cot-explore-paygo','ha-cot-standard-paygo','ha-cot-premium-paygo','ha-cot-premium-byol']. The default is 'cot-standard-paygo'.
 * `instance_type` - (Optional) The instance type to use, which depends on the license type: Explore:['m5.xlarge'], Standard:['m5.2xlarge','r5.xlarge'], Premium:['m5.4xlarge','r5.2xlarge','c4.8xlarge'], BYOL: all instance types defined for PayGo. For more supported instance types, refer to Cloud Volumes ONTAP Release Notes. The default is 'm5.2xlarge'.
-* `platform_serial_number` - (Optional) The serial number for the cluster. This is required when using 'cot-premium-byol'.
+* `platform_serial_number` - (Optional) The serial number for the cluster. This is required when 'license_type' is set 'cot-premium-byol'.
 * `capacity_tier` - (Optional) Whether to enable data tiering for the first data aggregate: ['S3','NONE']. The default is 'S3'.
 * `tier_level` - (Optional) The tiering level when 'capacity_tier' is set to 'S3' ['normal','ia','ia-single','intelligent']. The default is 'normal'.
 * `nss_account` - (Optional) The NetApp Support Site account ID to use with this Cloud Volumes ONTAP system. If the license type is BYOL and an NSS account isn't provided, Cloud Manager tries to use the first existing NSS account.

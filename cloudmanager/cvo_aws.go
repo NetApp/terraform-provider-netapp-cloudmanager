@@ -30,6 +30,7 @@ type createCVOAWSDetails struct {
 	NssAccount                  string                  `structs:"nssAccount,omitempty"`
 	WritingSpeedState           string                  `structs:"writingSpeedState,omitempty"`
 	IOPS                        int                     `structs:"iops,omitempty"`
+	Throughput                  int                     `structs:"throughput,omitempty"`
 	OptimizedNetworkUtilization bool                    `structs:"optimizedNetworkUtilization"`
 	InstanceTenancy             string                  `structs:"instanceTenancy"`
 	InstanceProfileName         string                  `structs:"instanceProfileName,omitempty"`
@@ -57,7 +58,7 @@ type haParamsAWS struct {
 	MediatorKeyPairName       string   `structs:"mediatorKeyPairName,omitempty"`
 	PlatformSerialNumberNode1 string   `structs:"platformSerialNumberNode1,omitempty"`
 	PlatformSerialNumberNode2 string   `structs:"platformSerialNumberNode2,omitempty"`
-	MediatorAssignPublicIP    bool     `structs:"mediatorAssignPublicIP,omitempty"`
+	MediatorAssignPublicIP    *bool    `structs:"mediatorAssignPublicIP,omitempty"`
 	RouteTableIds             []string `structs:"routeTableIds,omitempty"`
 }
 
@@ -380,8 +381,16 @@ func validateCVOParams(cvoDetails createCVOAWSDetails) error {
 		return fmt.Errorf("both platform_serial_number_node1 and platform_serial_number_node2 parameters are only required when having ha type as true and license_type as ha-cot-premium-byol")
 	}
 
-	if (cvoDetails.IOPS == 0 && cvoDetails.EbsVolumeType == "io1") || (cvoDetails.IOPS != 0 && cvoDetails.EbsVolumeType != "io1") {
-		return fmt.Errorf("iops parameter required when having ebs_volume_type as io1")
+	if (cvoDetails.EbsVolumeType == "io1" || cvoDetails.EbsVolumeType == "gp3") && cvoDetails.IOPS == 0 {
+		return fmt.Errorf("iops parameter is required when having ebs_volume_type as io1 or gp3")
+	}
+
+	if cvoDetails.IOPS != 0 && cvoDetails.EbsVolumeType != "io1" && cvoDetails.EbsVolumeType != "gp3" {
+		return fmt.Errorf("iops parameter is not supported when ebs_volume_type is not io1 or gp3")
+	}
+
+	if cvoDetails.EbsVolumeType == "gp3" && cvoDetails.Throughput == 0 {
+		return fmt.Errorf("throughput parameter required when ebs_volume_type is gp3")
 	}
 
 	if cvoDetails.IsHA == true && cvoDetails.SubnetID != "" {
