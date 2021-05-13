@@ -52,7 +52,7 @@ The following arguments are supported:
 * `gcp_volume_size_unit` - (Optional) ['GB' or 'TB']. The default is 'TB'.
 * `ontap_version` - (Optional) The required ONTAP version. Ignored if 'use_latest_version' is set to true. The default is to use the latest version.
 * `use_latest_version` - (Optional) Indicates whether to use the latest available ONTAP version. The default is 'true'.
-* `license_type` - (Optional) The type of license to use. For single node: ['gcp-cot-explore-paygo', 'gcp-cot-standard-paygo', 'gcp-cot-premium-paygo', 'gcp-cot-premium-byol']. The default is 'gcp-cot-standard-paygo'.
+* `license_type` - (Optional) The type of license to use. For single node: ['gcp-cot-explore-paygo', 'gcp-cot-standard-paygo', 'gcp-cot-premium-paygo', 'gcp-cot-premium-byol'], For HA: ['gcp-ha-cot-explore-paygo', 'gcp-ha-cot-standard-paygo', 'gcp-ha-cot-premium-paygo', 'gcp-ha-cot-premium-byol']. The default is 'gcp-cot-standard-paygo'.
 * `instance_type` - (Optional) The type of instance to use, which depends on the license type you choose: Explore:['custom-4-16384'], Standard:['n1-standard-8'], Premium:['n1-standard-32'], BYOL: all instance types defined for PayGo. For more supported instance types, refer to Cloud Volumes ONTAP Release Notes. default is 'n1-standard-8' .
 * `serial_number` - (Optional) The serial number for the system. Required when using 'gcp-cot-premium-byol'.
 * `capacity_tier` - (Optional) Indicates the type of data tiering to use: ['cloudStorage', 'NONE']. The default is 'cloudStorage'.
