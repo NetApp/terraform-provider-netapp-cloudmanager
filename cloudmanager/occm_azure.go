@@ -68,7 +68,7 @@ func (c *Client) registerAgentTOServiceForAzure(registerAgentTOServiceRequest re
 		log.Print("Failed to unmarshall response from registerAgentTOService ", err)
 		return createUserData{}, err
 	}
-
+	result.IgnoreUpgrade = true
 	return result, nil
 }
 

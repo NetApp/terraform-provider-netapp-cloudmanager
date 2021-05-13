@@ -46,7 +46,7 @@ func resourceCVOAWS() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Default:      "gp2",
-				ValidateFunc: validation.StringInSlice([]string{"gp2", "io1", "sc1", "st1"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"gp3", "gp2", "io1", "sc1", "st1"}, false),
 			},
 			"ebs_volume_size": {
 				Type:     schema.TypeInt,
@@ -125,6 +125,11 @@ func resourceCVOAWS() *schema.Resource {
 				ForceNew: true,
 			},
 			"iops": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
+			"throughput": {
 				Type:     schema.TypeInt,
 				Optional: true,
 				ForceNew: true,
@@ -345,6 +350,10 @@ func resourceCVOAWSCreate(d *schema.ResourceData, meta interface{}) error {
 
 	if c, ok := d.GetOk("iops"); ok {
 		cvoDetails.IOPS = c.(int)
+	}
+
+	if c, ok := d.GetOk("throughput"); ok {
+		cvoDetails.Throughput = c.(int)
 	}
 
 	if c, ok := d.GetOk("instance_profile_name"); ok {
