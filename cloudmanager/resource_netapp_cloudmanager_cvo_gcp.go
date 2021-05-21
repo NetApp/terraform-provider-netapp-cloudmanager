@@ -368,31 +368,31 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 			cvoDetails.HAParams.MediatorZone = c.(string)
 		}
 		if c, ok := d.GetOk("vpc0_node_and_data_connectivity"); ok {
-			cvoDetails.HAParams.VPC0NodeAndDataConnectivity = fmt.Sprintf("https://www.googleapis.com/compute/v1/projects/%s/global/networks/%s", networkProjectID, c.(string))
+			cvoDetails.HAParams.VPC0NodeAndDataConnectivity = fmt.Sprintf("projects/%s/global/networks/%s", networkProjectID, c.(string))
 
 		}
 		if c, ok := d.GetOk("vpc1_cluster_connectivity"); ok {
-			cvoDetails.HAParams.VPC1ClusterConnectivity = fmt.Sprintf("https://www.googleapis.com/compute/v1/projects/%s/global/networks/%s", networkProjectID, c.(string))
+			cvoDetails.HAParams.VPC1ClusterConnectivity = fmt.Sprintf("projects/%s/global/networks/%s", networkProjectID, c.(string))
 
 		}
 		if c, ok := d.GetOk("vpc2_ha_connectivity"); ok {
-			cvoDetails.HAParams.VPC2HAConnectivity = fmt.Sprintf("https://www.googleapis.com/compute/v1/projects/%s/global/networks/%s", networkProjectID, c.(string))
+			cvoDetails.HAParams.VPC2HAConnectivity = fmt.Sprintf("projects/%s/global/networks/%s", networkProjectID, c.(string))
 
 		}
 		if c, ok := d.GetOk("vpc3_data_replication"); ok {
-			cvoDetails.HAParams.VPC3DataReplication = fmt.Sprintf("https://www.googleapis.com/compute/v1/projects/%s/global/networks/%s", networkProjectID, c.(string))
+			cvoDetails.HAParams.VPC3DataReplication = fmt.Sprintf("projects/%s/global/networks/%s", networkProjectID, c.(string))
 		}
 		if c, ok := d.GetOk("subnet0_node_and_data_connectivity"); ok {
-			cvoDetails.HAParams.Subnet0NodeAndDataConnectivity = fmt.Sprintf("https://www.googleapis.com/compute/v1/projects/%s/regions/%s/subnetworks/%s", networkProjectID, cvoDetails.Region[0:len(cvoDetails.Region)-2], c.(string))
+			cvoDetails.HAParams.Subnet0NodeAndDataConnectivity = fmt.Sprintf("projects/%s/regions/%s/subnetworks/%s", networkProjectID, cvoDetails.Region[0:len(cvoDetails.Region)-2], c.(string))
 		}
 		if c, ok := d.GetOk("subnet1_cluster_connectivity"); ok {
-			cvoDetails.HAParams.Subnet1ClusterConnectivity = fmt.Sprintf("https://www.googleapis.com/compute/v1/projects/%s/regions/%s/subnetworks/%s", networkProjectID, cvoDetails.Region[0:len(cvoDetails.Region)-2], c.(string))
+			cvoDetails.HAParams.Subnet1ClusterConnectivity = fmt.Sprintf("projects/%s/regions/%s/subnetworks/%s", networkProjectID, cvoDetails.Region[0:len(cvoDetails.Region)-2], c.(string))
 		}
 		if c, ok := d.GetOk("subnet2_ha_connectivity"); ok {
-			cvoDetails.HAParams.Subnet2HAConnectivity = fmt.Sprintf("https://www.googleapis.com/compute/v1/projects/%s/regions/%s/subnetworks/%s", networkProjectID, cvoDetails.Region[0:len(cvoDetails.Region)-2], c.(string))
+			cvoDetails.HAParams.Subnet2HAConnectivity = fmt.Sprintf("projects/%s/regions/%s/subnetworks/%s", networkProjectID, cvoDetails.Region[0:len(cvoDetails.Region)-2], c.(string))
 		}
 		if c, ok := d.GetOk("subnet3_data_replication"); ok {
-			cvoDetails.HAParams.Subnet3DataReplication = fmt.Sprintf("https://www.googleapis.com/compute/v1/projects/%s/regions/%s/subnetworks/%s", networkProjectID, cvoDetails.Region[0:len(cvoDetails.Region)-2], c.(string))
+			cvoDetails.HAParams.Subnet3DataReplication = fmt.Sprintf("projects/%s/regions/%s/subnetworks/%s", networkProjectID, cvoDetails.Region[0:len(cvoDetails.Region)-2], c.(string))
 		}
 		if c, ok := d.GetOk("vpc0_firewall_rule_name"); ok {
 			cvoDetails.HAParams.VPC0FirewallRuleName = c.(string)
