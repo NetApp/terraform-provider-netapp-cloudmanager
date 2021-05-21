@@ -49,7 +49,7 @@ The following arguments are supported:
 * `schedule` - (Optional) Schedule name. The default is '1hour'.
 * `max_transfer_rate` - (Required) Maximum transfer rate limit (KB/s). Use 0 for no limit, otherwise use number between 1024 and 2,147,482,624.  The default is 100000.
 * `destination_aggregate_name` - (Optional) The aggregate in which the volume will be created. If not provided, Cloud Manager chooses the best aggregate for you.
-* `provider_volume_type` - (Optional) The underlying cloud provider volume type. For AWS: ["gp2", "io1", "st1", "sc1"]. For Azure: ['Premium_LRS','Standard_LRS','StandardSSD_LRS']. For GCP: ['pd-ssd','pd-standard']
+* `provider_volume_type` - (Optional) The underlying cloud provider volume type. For AWS: ['gp3', 'gp2', 'io1', 'st1', 'sc1']. For Azure: ['Premium_LRS','Standard_LRS','StandardSSD_LRS']. For GCP: ['pd-ssd','pd-standard']
 * `capacity_tier` - (Optional) The volume's capacity tier for tiering cold data to object storage: ['S3', 'Blob', 'cloudStorage']. The default values for each cloud provider are as follows: Amazon => 'S3', Azure => 'Blob', GCP => 'cloudStorage'. If none, the capacity tier won't be set on volume creation.
 
 ## Attributes Reference

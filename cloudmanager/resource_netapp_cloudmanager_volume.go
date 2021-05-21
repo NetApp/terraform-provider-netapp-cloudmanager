@@ -100,6 +100,10 @@ func resourceCVOVolume() *schema.Resource {
 				Type:     schema.TypeInt,
 				Optional: true,
 			},
+			"throughput": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
 			"provider_volume_type": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -190,6 +194,9 @@ func resourceCVOVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 	quote.VerifyNameUniqueness = true // hard code to always true
 	if v, ok := d.GetOk("iops"); ok {
 		quote.Iops = v.(int)
+	}
+	if v, ok := d.GetOk("throughput"); ok {
+		quote.Throughput = v.(int)
 	}
 	if v, ok := d.GetOk("aggregate_name"); ok {
 		quote.AggregateName = v.(string)
@@ -287,6 +294,9 @@ func resourceCVOVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 	if v, ok := d.GetOk("iops"); ok {
 		volume.Iops = v.(int)
+	}
+	if v, ok := d.GetOk("throughput"); ok {
+		volume.Throughput = v.(int)
 	}
 	if volumeProtocol == "cifs" {
 		exist, err := client.checkCifsExists(volume.WorkingEnvironmentID, volume.SvmName)
@@ -623,8 +633,11 @@ func resourceVolumeCustomizeDiff(diff *schema.ResourceDiff, v interface{}) error
 		}
 	}
 	providerVolumeType := diff.Get("provider_volume_type")
-	if _, ok := diff.GetOk("iops"); !ok && providerVolumeType == "io1" {
-		return fmt.Errorf("iops is required when provider_volume_type is io1")
+	if _, ok := diff.GetOk("iops"); !ok && (providerVolumeType == "io1" || providerVolumeType == "gp3") {
+		return fmt.Errorf("iops is required when provider_volume_type is io1 or gp3")
+	}
+	if _, ok := diff.GetOk("throughput"); !ok && providerVolumeType == "gp3" {
+		return fmt.Errorf("throughput is required when provider_volume_type is gp3")
 	}
 	capacityTier := diff.Get("capacity_tier")
 	if _, ok := diff.GetOk("tiering_policy"); !ok && capacityTier == "S3" {

@@ -38,9 +38,10 @@ The following arguments are supported:
 * `disk_size_size` - (Optional) The required size of the disks. For GB, the unit can be: [100 or 500]. For TB, the unit can be: [1,2,4,8,16]. The default is '1'
 * `disk_size_unit` - (Optional) The disk size unit ['GB' or 'TB']. The default is 'TB'
 * `home_node` - (Optional) The home node that the new aggregate should belong to. The default is the first node.
-* `provider_volume_type` - (Optional) The cloud provider volume type. For AWS: ["gp2", "io1", "st1", "sc1"]. For Azure: ['Premium_LRS','Standard_LRS','StandardSSD_LRS']. For GCP: ['pd-ssd','pd-standard']
+* `provider_volume_type` - (Optional) The cloud provider volume type. For AWS: ['gp3', 'gp2', 'io1', 'st1', 'sc1']. For Azure: ['Premium_LRS','Standard_LRS','StandardSSD_LRS']. For GCP: ['pd-ssd','pd-standard']
 * `capacity_tier` - (Optional) The aggregate's capacity tier for tiering cold data to object storage: ['S3', 'Blob', 'cloudStorage']. The default values for each cloud provider are as follows: Amazon => 'S3', Azure => 'Blob', GCP => 'cloudStorage'. If NONE, the capacity tier won't be set on aggregate creation.
-* `iops` - (Optional) Provisioned IOPS. Needed only when providerVolumeType is "io1"
+* `iops` - (Optional) Provisioned IOPS. Needed only when 'providerVolumeType' is 'io1' or 'gp3'
+* `throughput` - (Optional) Required only when 'providerVolumeType' is 'gp3'.
 
 ## Attributes Reference
 
