@@ -91,6 +91,10 @@ func dataSourceCVOVolume() *schema.Resource {
 				Type:     schema.TypeInt,
 				Optional: true,
 			},
+			"throughput": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
 			"provider_volume_type": {
 				Type:     schema.TypeString,
 				Optional: true,

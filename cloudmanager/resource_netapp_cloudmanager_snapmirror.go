@@ -85,6 +85,16 @@ func resourceCVOSnapMirror() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
+			"iops": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
+			"throughput": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
 		},
 	}
 }

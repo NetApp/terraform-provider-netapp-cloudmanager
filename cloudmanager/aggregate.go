@@ -19,6 +19,7 @@ type createAggregateRequest struct {
 	ProviderVolumeType   string   `structs:"providerVolumeType,omitempty"`
 	CapacityTier         string   `structs:"capacityTier,omitempty"`
 	Iops                 int      `structs:"iops,omitempty"`
+	Throughput           int      `structs:"throughput,omitempty"`
 }
 
 // diskSize struct
@@ -72,6 +73,7 @@ type providerVolume struct {
 	DiskType   string   `json:"diskType"`
 	Encrypted  bool     `json:"encrypted"`
 	Iops       int      `json:"iops"`
+	Throughput int      `json:"throughput"`
 }
 
 type disk struct {
@@ -168,7 +170,6 @@ func (c *Client) createAggregate(request *createAggregateRequest) (aggregateResu
 		return aggregateResult{}, err
 	}
 	baseURL = fmt.Sprintf("%s/aggregates", rootURL)
-
 	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("POST", baseURL, params, c.Token, hostType)
 	if err != nil {
 		log.Print("createAggregate request failed")
@@ -319,6 +320,7 @@ func flattenProviderVolumes(v []providerVolume) interface{} {
 		vol["disk_type"] = volume.DiskType
 		vol["encrypted"] = volume.Encrypted
 		vol["iops"] = volume.Iops
+		vol["throughput"] = volume.Throughput
 		vol["size"] = flattenCapacity(volume.Size)
 
 		volumes = append(volumes, vol)

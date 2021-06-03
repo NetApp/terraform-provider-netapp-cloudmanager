@@ -30,6 +30,7 @@ type volumeRequest struct {
 	AutoVsaCapacityManagement bool                   `structs:"autoVsaCapacityManagement"`
 	DiskSize                  size                   `structs:"diskSize,omitempty"`
 	Iops                      int                    `structs:"iops,omitempty"`
+	Throughput                int                    `structs:"throughput,omitempty"`
 	WorkingEnvironmentType    string                 `structs:"workingEnvironmentType,omitempty"`
 	ShareInfo                 shareInfoRequest       `structs:"shareInfo,omitempty"`
 	ShareInfoUpdate           shareInfoUpdateRequest `structs:"shareInfo,omitempty"`
@@ -50,7 +51,6 @@ type volumeResponse struct {
 	CapacityTier           string              `json:"capacityTier,omitempty"`
 	TieringPolicy          string              `json:"tieringPolicy,omitempty"`
 	ProviderVolumeType     string              `json:"providerVolumeType"`
-	Iops                   int                 `json:"iops"`
 	ShareInfo              []shareInfoResponse `json:"shareInfo"`
 	MountPoint             string              `json:"mountPoint"`
 	IscsiEnabled           bool                `json:"iscsiEnabled"`
@@ -85,6 +85,7 @@ type quoteRequest struct {
 	TieringPolicy          string           `structs:"tieringPolicy,omitempty"`
 	VerifyNameUniqueness   bool             `structs:"verifyNameUniqueness"`
 	Iops                   int              `structs:"iops,omitempty"`
+	Throughput             int              `structs:"throughput,omitempty"`
 	WorkingEnvironmentType string           `structs:"workingEnvironmentType"`
 }
 

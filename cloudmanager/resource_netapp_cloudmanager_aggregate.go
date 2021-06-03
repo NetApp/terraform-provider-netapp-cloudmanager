@@ -79,6 +79,11 @@ func resourceAggregate() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"throughput": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -110,13 +115,25 @@ func resourceAggregateCreate(d *schema.ResourceData, meta interface{}) error {
 	if a, ok := d.GetOk("home_node"); ok {
 		aggregate.HomeNode = a.(string)
 	}
-	if a, ok := d.GetOk("provider_yolume_type"); ok {
+	if a, ok := d.GetOk("provider_volume_type"); ok {
 		aggregate.ProviderVolumeType = a.(string)
 		if aggregate.ProviderVolumeType == "io1" {
 			if a, ok := d.GetOk("iops"); ok {
 				aggregate.Iops = a.(int)
 			} else {
 				log.Printf("CreateAggregate: provider_volume_type is io1, but iops is not configured.")
+			}
+		}
+		if aggregate.ProviderVolumeType == "gp3" {
+			if a, ok := d.GetOk("iops"); ok {
+				aggregate.Iops = a.(int)
+			} else {
+				log.Printf("CreateAggregate: provider_volume_type is gp3, but iops is not configured.")
+			}
+			if a, ok := d.GetOk("throughput"); ok {
+				aggregate.Throughput = a.(int)
+			} else {
+				log.Printf("CreateAggregate: provider_volume_type is gp3, but throughput is not configured.")
 			}
 		}
 	}

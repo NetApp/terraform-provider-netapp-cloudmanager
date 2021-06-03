@@ -33,6 +33,8 @@ type replicationVolume struct {
 	DestinationSvmName            string  `structs:"destinationSvmName,omitempty"`
 	DestinationProviderVolumeType string  `structs:"destinationProviderVolumeType,omitempty"`
 	DestinationCapacityTier       string  `structs:"destinationCapacityTier,omitempty"`
+	Iops                          int     `structs:"iops,omitempty"`
+	Throughput                    int     `structs:"throughput,omitempty"`
 }
 
 type interclusterlif struct {
@@ -132,7 +134,7 @@ func (c *Client) buildSnapMirrorCreate(snapMirror snapMirrorRequest, sourceWorki
 	}
 
 	if destWorkingEnvironmentType != "ON_PREM" {
-		quote := c.buildQuoteRequest(snapMirror, volDestQuote, snapMirror.ReplicationVolume.DestinationVolumeName, snapMirror.ReplicationVolume.DestinationSvmName, snapMirror.ReplicationRequest.DestinationWorkingEnvironmentID)
+		quote := c.buildQuoteRequest(snapMirror, volDestQuote, snapMirror.ReplicationRequest.SourceWorkingEnvironmentID, snapMirror.ReplicationVolume.DestinationVolumeName, snapMirror.ReplicationVolume.DestinationSvmName, snapMirror.ReplicationRequest.DestinationWorkingEnvironmentID)
 
 		quoteResponse, err := c.quoteVolume(quote)
 		if err != nil {
@@ -145,6 +147,12 @@ func (c *Client) buildSnapMirrorCreate(snapMirror snapMirrorRequest, sourceWorki
 		} else {
 			snapMirror.ReplicationVolume.AdvancedMode = false
 			snapMirror.ReplicationVolume.DestinationAggregateName = quoteResponse["aggregateName"].(string)
+		}
+		if quote.Iops != 0 {
+			snapMirror.ReplicationVolume.Iops = quote.Iops
+		}
+		if quote.Throughput != 0 {
+			snapMirror.ReplicationVolume.Throughput = quote.Throughput
 		}
 	}
 
@@ -170,7 +178,7 @@ func (c *Client) buildSnapMirrorCreate(snapMirror snapMirrorRequest, sourceWorki
 	return snapMirror, nil
 }
 
-func (c *Client) buildQuoteRequest(snapMirror snapMirrorRequest, vol volumeResponse, name string, svm string, workingEnvironmentID string) quoteRequest {
+func (c *Client) buildQuoteRequest(snapMirror snapMirrorRequest, vol volumeResponse, sourceWorkingEnvironmentID string, name string, svm string, workingEnvironmentID string) quoteRequest {
 	var quote quoteRequest
 
 	quote.Name = name
@@ -182,10 +190,22 @@ func (c *Client) buildQuoteRequest(snapMirror snapMirrorRequest, vol volumeRespo
 	quote.EnableCompression = vol.EnableCompression
 	quote.VerifyNameUniqueness = true
 	quote.ReplicationFlow = true
-	quote.Iops = vol.Iops
 	quote.WorkingEnvironmentID = workingEnvironmentID
 	quote.SvmName = svm
 	quote.CapacityTier = snapMirror.ReplicationVolume.DestinationCapacityTier
+
+	aggregate, err := c.getAggregate(aggregateRequest{WorkingEnvironmentID: sourceWorkingEnvironmentID}, vol.AggregateName)
+	if err != nil {
+		log.Printf("Error getting aggregate. aggregate name = %v", vol.AggregateName)
+	}
+
+	// Iops and Throughput values are the same if the volumes under the same aggregate
+	if aggregate.ProviderVolumes[0].DiskType == "gp3" || aggregate.ProviderVolumes[0].DiskType == "io1" || aggregate.ProviderVolumes[0].DiskType == "io2" {
+		quote.Iops = aggregate.ProviderVolumes[0].Iops
+	}
+	if aggregate.ProviderVolumes[0].DiskType == "gp3" {
+		quote.Throughput = aggregate.ProviderVolumes[0].Throughput
+	}
 
 	if snapMirror.ReplicationVolume.DestinationProviderVolumeType == "" {
 		quote.ProviderVolumeType = vol.ProviderVolumeType
