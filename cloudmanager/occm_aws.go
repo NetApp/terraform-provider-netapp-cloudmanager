@@ -369,7 +369,9 @@ func (c *Client) getAWSInstance(occmDetails createOCCMDetails, id string) (strin
 	if err != nil {
 		return "", err
 	}
-
+	log.Print("getAWSInstance result:")
+	log.Printf("%#v", res)
+	log.Printf("user input id: %#v", id)
 	for _, instanceID := range res {
 		if instanceID == id {
 			return instanceID, nil
