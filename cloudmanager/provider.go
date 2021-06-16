@@ -11,7 +11,7 @@ func Provider() terraform.ResourceProvider {
 		Schema: map[string]*schema.Schema{
 			"refresh_token": {
 				Type:        schema.TypeString,
-				Required:    true,
+				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("CLOUDMANAGER_REFRESH_TOKEN", nil),
 				Description: "The refresh_token for OCCM operations.",
 			},
@@ -21,6 +21,18 @@ func Provider() terraform.ResourceProvider {
 				DefaultFunc: schema.EnvDefaultFunc("CLOUDMANAGER_ENVIRONMENT", nil),
 				Description: "The environment for OCCM operations.",
 				Default:     "prod",
+			},
+			"sa_secret_key": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("CLOUDMANAGER_SA_SECRET_KEY", nil),
+				Description: "The environment for OCCM operations.",
+			},
+			"sa_client_id": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("CLOUDMANAGER_SA_CLIENT_ID", nil),
+				Description: "The environment for OCCM operations.",
 			},
 		},
 
@@ -53,6 +65,8 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	config := configStuct{
 		RefreshToken: d.Get("refresh_token").(string),
 		Environment:  d.Get("environment").(string),
+		SaSecretKey:  d.Get("sa_secret_key").(string),
+		SaClientID:   d.Get("sa_client_id").(string),
 	}
 
 	return config.clientFun()

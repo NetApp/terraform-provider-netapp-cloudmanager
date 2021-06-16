@@ -8,6 +8,8 @@ import (
 // Config is a struct for user input
 type configStuct struct {
 	RefreshToken string
+	SaSecretKey  string
+	SaClientID   string
 	Environment  string
 	CVOHostName  string
 }
@@ -20,7 +22,8 @@ func (c *configStuct) clientFun() (*Client, error) {
 		client = &Client{
 			CloudManagerHost:     "https://cloudmanager.cloud.netapp.com",
 			AuthHost:             "https://netapp-cloud-account.auth0.com/oauth/token",
-			Audience:             "https://api.cloud.netapp.com/",
+			SaAuthHost:           "https://cloudmanager.cloud.netapp.com/auth/oauth/token",
+			Audience:             "https://api.cloud.netapp.com",
 			Auth0Client:          "Mu0V1ywgYteI6w1MbD15fKfVIUrNXGWC",
 			AMIFilter:            "Setup-As-Service-AMI-Prod*",
 			AWSAccount:           "952013314444",
@@ -34,7 +37,8 @@ func (c *configStuct) clientFun() (*Client, error) {
 		client = &Client{
 			CloudManagerHost:        "https://staging.cloudmanager.cloud.netapp.com",
 			AuthHost:                "https://staging-netapp-cloud-account.auth0.com/oauth/token",
-			Audience:                "https://api.cloud.netapp.com/",
+			SaAuthHost:              "https://staging.cloudmanager.cloud.netapp.com/auth/oauth/token",
+			Audience:                "https://api.cloud.netapp.com",
 			Auth0Client:             "O6AHa7kedZfzHaxN80dnrIcuPBGEUvEv",
 			AMIFilter:               "Setup-As-Service-AMI-*",
 			AWSAccount:              "282316784512",
@@ -48,7 +52,13 @@ func (c *configStuct) clientFun() (*Client, error) {
 		return &Client{}, fmt.Errorf("expected environment to be one of [prod stage], %s", c.Environment)
 	}
 
-	client.SetRefreshToken(c.RefreshToken)
+	if c.SaSecretKey != "" && c.SaClientID != "" {
+		client.SetServiceCredential(c.SaSecretKey, c.SaClientID)
+	} else if c.RefreshToken != "" {
+		client.SetRefreshToken(c.RefreshToken)
+	} else {
+		return &Client{}, fmt.Errorf("expected refresh_token or sa_secret_key and sa_client_id")
+	}
 
 	return client, nil
 }

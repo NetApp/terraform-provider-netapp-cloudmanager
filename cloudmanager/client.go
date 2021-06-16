@@ -30,6 +30,9 @@ var ourlog = logrus.WithFields(logrus.Fields{
 type Client struct {
 	CloudManagerHost        string
 	AuthHost                string
+	SaAuthHost              string
+	SaSecretKey             string
+	SaClientID              string
 	CVOHostName             string
 	HostType                string
 	MaxConcurrentRequests   int
@@ -640,8 +643,11 @@ func (c *Client) init() {
 	c.restapiClient = &restapi.Client{
 		CloudManagerHost:     c.CloudManagerHost,
 		AuthHost:             c.AuthHost,
+		SaAuthHost:           c.SaAuthHost,
 		CVOHostName:          c.CVOHostName,
 		RefreshToken:         c.RefreshToken,
+		SaSecretKey:          c.SaSecretKey,
+		SaClientID:           c.SaClientID,
 		Audience:             c.Audience,
 		GCPDeploymentManager: c.GCPDeploymentManager,
 		CVSHostName:          c.CVSHostName,
@@ -656,6 +662,17 @@ func (c *Client) SetRefreshToken(refreshToken string) {
 // GetRefreshToken returns the API version that will be used for CVO/OCCM API requests
 func (c *Client) GetRefreshToken() string {
 	return c.RefreshToken
+}
+
+// SetServiceCredential for the client to use for requests to the CVO/OCCM API
+func (c *Client) SetServiceCredential(SaSecretKey string, SaClientID string) {
+	c.SaSecretKey = SaSecretKey
+	c.SaClientID = SaClientID
+}
+
+// GetServiceCredential returns the service account secret key and secret client id that will be used for CVO/OCCM API requests
+func (c *Client) GetServiceCredential() (string, string) {
+	return c.SaSecretKey, c.SaClientID
 }
 
 func (c *Client) waitForAvailableSlot() {

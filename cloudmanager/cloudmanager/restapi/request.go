@@ -108,7 +108,9 @@ func (r *Request) BuildHTTPReq(host string, token string, audience string, baseU
 	}
 	if accountID != "" {
 		log.Print(" inside account TOKEN")
-		req.Header.Set("X-User-Token", "Bearer "+token)
+		if token != "" {
+			req.Header.Set("X-User-Token", "Bearer "+token)
+		}
 		req.Header.Set("X-Tenancy-Account-Id", accountID)
 	}
 	if clientID != "" {

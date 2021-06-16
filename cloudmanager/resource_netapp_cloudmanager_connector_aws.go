@@ -158,7 +158,7 @@ func resourceOCCMAWSCreate(d *schema.ResourceData, meta interface{}) error {
 		if occmDetails.ProxyURL != "" {
 			occmDetails.ProxyUserName = o.(string)
 		} else {
-			return fmt.Errorf("Mission proxy_url")
+			return fmt.Errorf("Missing proxy_url")
 		}
 	}
 
@@ -166,7 +166,7 @@ func resourceOCCMAWSCreate(d *schema.ResourceData, meta interface{}) error {
 		if occmDetails.ProxyURL != "" {
 			occmDetails.ProxyPassword = o.(string)
 		} else {
-			return fmt.Errorf("Mission proxy_url")
+			return fmt.Errorf("Missing proxy_url")
 		}
 	}
 
