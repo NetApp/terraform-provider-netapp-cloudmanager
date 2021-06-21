@@ -365,31 +365,26 @@ func (c *Client) createAWSInstance(occmDetails createOCCMDetails) (string, error
 	return instanceID, nil
 }
 
-func (c *Client) getAWSInstance(occmDetails createOCCMDetails, id string) (string, error) {
+func (c *Client) getAWSInstance(occmDetails createOCCMDetails, id string) (createOCCMDetails, error) {
 
 	log.Print("getAWSInstance")
-	if occmDetails.AMI == "" {
-		var err error
-		occmDetails.AMI, err = c.CallAMIGet(occmDetails)
-		if err != nil {
-			return "", err
-		}
-	}
 
 	res, err := c.CallAWSInstanceGet(occmDetails)
+	returnOCCM := createOCCMDetails{}
 	if err != nil {
-		return "", err
+		return createOCCMDetails{}, err
 	}
-	log.Print("getAWSInstance result:")
-	log.Printf("%#v", res)
-	log.Printf("user input id: %#v", id)
-	for _, instanceID := range res {
-		if instanceID == id {
-			return instanceID, nil
+	log.Printf("getAWSInstance result: %#v", res)
+	for _, instance := range res {
+		if *instance.InstanceId == id {
+			returnOCCM.AMI = *instance.ImageId
+			returnOCCM.InstanceID = *instance.InstanceId
+			returnOCCM.InstanceType = *instance.InstanceType
+			return returnOCCM, nil
 		}
 	}
 
-	return "", nil
+	return createOCCMDetails{}, nil
 }
 
 func (c *Client) createOCCM(occmDetails createOCCMDetails, proxyCertificates []string) (OCCMMResult, error) {

@@ -432,7 +432,6 @@ func (c *Client) CallDeleteAzureVM(occmDetails deleteOCCMDetails) error {
 
 // CallAMIGet can be used to make a request to get AWS AMI
 func (c *Client) CallAMIGet(occmDetails createOCCMDetails) (string, error) {
-
 	sess := session.Must(session.NewSession(aws.NewConfig().WithRegion(occmDetails.Region)))
 	svc := ec2.New(sess)
 	input := &ec2.DescribeImagesInput{
@@ -545,7 +544,7 @@ func (c *Client) CallVNetGetCidr(subscriptionID string, resourceGroup string, vn
 }
 
 // CallAWSInstanceGet can be used to make a request to get AWS Instance
-func (c *Client) CallAWSInstanceGet(occmDetails createOCCMDetails) ([]string, error) {
+func (c *Client) CallAWSInstanceGet(occmDetails createOCCMDetails) ([]ec2.Instance, error) {
 
 	sess := session.Must(session.NewSession(aws.NewConfig().WithRegion(occmDetails.Region)))
 	svc := ec2.New(sess)
@@ -575,12 +574,6 @@ func (c *Client) CallAWSInstanceGet(occmDetails createOCCMDetails) ([]string, er
 					aws.String(occmDetails.Name),
 				},
 			},
-			{
-				Name: aws.String("image-id"),
-				Values: []*string{
-					aws.String(occmDetails.AMI),
-				},
-			},
 		},
 	}
 
@@ -595,13 +588,14 @@ func (c *Client) CallAWSInstanceGet(occmDetails createOCCMDetails) ([]string, er
 		return nil, err
 	}
 
-	var resIDS []string
+	var res []ec2.Instance
 	for _, reservation := range result.Reservations {
-		resIDS = append(resIDS, *reservation.Instances[0].InstanceId)
-
+		for _, instance := range reservation.Instances {
+			res = append(res, *instance)
+		}
 	}
 
-	return resIDS, nil
+	return res, nil
 }
 
 // CallAPIMethod can be used to make a request to any CVO/OCCM API method, receiving results as byte
