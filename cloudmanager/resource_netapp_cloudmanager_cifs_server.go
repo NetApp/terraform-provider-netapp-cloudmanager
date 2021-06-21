@@ -139,7 +139,7 @@ func resourceCVOCIFSCreate(d *schema.ResourceData, meta interface{}) error {
 
 	workingEnvDetail, err := client.getWorkingEnvironmentDetail(d)
 	if err != nil {
-		return nil
+		return err
 	}
 	cifs.WorkingEnvironmentID = workingEnvDetail.PublicID
 	cifs.WorkingEnvironmentType = workingEnvDetail.WorkingEnvironmentType

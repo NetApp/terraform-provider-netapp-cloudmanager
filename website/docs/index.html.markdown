@@ -33,6 +33,8 @@ and therefore may undergo significant changes as the community improves it.
 ```
 provider "netapp-cloudmanager" {
   refresh_token         = var.cloudmanager_refresh_token
+  sa_secret_key         = var.cloudmanager_sa_secret_key
+  sa_client_id          = var.cloudmanager_sa_client_id
 }
 ```
 
@@ -40,7 +42,9 @@ provider "netapp-cloudmanager" {
 
 The following arguments are used to configure the netapp-cloudmanager provider:
 
-* `refresh_token` - (Required) This is the refresh token for NetApp Cloud Manager API operations. Get the token from [NetApp Cloud Central](https://services.cloud.netapp.com/refresh-token)
+* `refresh_token` - (Optional) This is the refresh token for NetApp Cloud Manager API operations. Get the token from [NetApp Cloud Central](https://services.cloud.netapp.com/refresh-token). If sa_client_id and sa_secret_key are provided, the service account will be used and this will be ignored.
+* `sa_client_id` - (Optional) This is the service account client ID for NetApp Cloud Manager API operations. The service account can be created on [NetApp Cloud Central](https://services.cloud.netapp.com/). The client id and secret key will be provided on service account creation.
+* `sa_secret_key` - (Optional) This is the service account client ID for NetApp Cloud Manager API operations. The service account can be created on [NetApp Cloud Central](https://services.cloud.netapp.com/). The client id and secret key will be provided on service account creation.
 
 ## Required Privileges
 

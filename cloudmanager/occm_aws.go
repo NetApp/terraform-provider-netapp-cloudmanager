@@ -90,6 +90,7 @@ type accesTokenRequest struct {
 	Audience     string `structs:"audience"`
 	GrantType    string `structs:"grant_type"`
 	RefreshToken string `structs:"refresh_token"`
+	ClientSecret string `structs:"client_secret"`
 	ClientID     string `structs:"client_id"`
 }
 
@@ -192,14 +193,24 @@ func (c *Client) getUserData(registerAgentTOService registerAgentTOServiceReques
 func (c *Client) getAccessToken() (accesTokenResult, error) {
 
 	log.Print("getAccessToken")
+	var hostType string
 
-	hostType := "AuthHost"
 	var accesTokenRequest accesTokenRequest
-
+	if c.SaSecretKey != "" && c.SaClientID != "" {
+		log.Print("Use service account to generate access_token")
+		hostType = "SaAuthHost"
+		accesTokenRequest.GrantType = "client_credentials"
+		accesTokenRequest.ClientSecret = c.SaSecretKey
+		accesTokenRequest.ClientID = c.SaClientID
+	} else if c.RefreshToken != "" {
+		hostType = "AuthHost"
+		accesTokenRequest.GrantType = "refresh_token"
+		accesTokenRequest.RefreshToken = c.RefreshToken
+		accesTokenRequest.ClientID = c.Auth0Client
+	} else {
+		return accesTokenResult{}, fmt.Errorf("getAccessToken request without params (refresh_token, or sa_secret_key and sa_client_id")
+	}
 	accesTokenRequest.Audience = c.Audience
-	accesTokenRequest.GrantType = "refresh_token"
-	accesTokenRequest.RefreshToken = c.RefreshToken
-	accesTokenRequest.ClientID = c.Auth0Client
 
 	params := structs.Map(accesTokenRequest)
 	statusCode, response, _, err := c.CallAPIMethod("POST", "", params, "", hostType)
@@ -354,31 +365,26 @@ func (c *Client) createAWSInstance(occmDetails createOCCMDetails) (string, error
 	return instanceID, nil
 }
 
-func (c *Client) getAWSInstance(occmDetails createOCCMDetails, id string) (string, error) {
+func (c *Client) getAWSInstance(occmDetails createOCCMDetails, id string) (createOCCMDetails, error) {
 
 	log.Print("getAWSInstance")
-	if occmDetails.AMI == "" {
-		var err error
-		occmDetails.AMI, err = c.CallAMIGet(occmDetails)
-		if err != nil {
-			return "", err
-		}
-	}
 
 	res, err := c.CallAWSInstanceGet(occmDetails)
+	returnOCCM := createOCCMDetails{}
 	if err != nil {
-		return "", err
+		return createOCCMDetails{}, err
 	}
-	log.Print("getAWSInstance result:")
-	log.Printf("%#v", res)
-	log.Printf("user input id: %#v", id)
-	for _, instanceID := range res {
-		if instanceID == id {
-			return instanceID, nil
+	log.Printf("getAWSInstance result: %#v", res)
+	for _, instance := range res {
+		if *instance.InstanceId == id {
+			returnOCCM.AMI = *instance.ImageId
+			returnOCCM.InstanceID = *instance.InstanceId
+			returnOCCM.InstanceType = *instance.InstanceType
+			return returnOCCM, nil
 		}
 	}
 
-	return "", nil
+	return createOCCMDetails{}, nil
 }
 
 func (c *Client) createOCCM(occmDetails createOCCMDetails, proxyCertificates []string) (OCCMMResult, error) {

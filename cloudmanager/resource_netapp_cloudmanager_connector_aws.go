@@ -158,7 +158,7 @@ func resourceOCCMAWSCreate(d *schema.ResourceData, meta interface{}) error {
 		if occmDetails.ProxyURL != "" {
 			occmDetails.ProxyUserName = o.(string)
 		} else {
-			return fmt.Errorf("Mission proxy_url")
+			return fmt.Errorf("Missing proxy_url")
 		}
 	}
 
@@ -166,7 +166,7 @@ func resourceOCCMAWSCreate(d *schema.ResourceData, meta interface{}) error {
 		if occmDetails.ProxyURL != "" {
 			occmDetails.ProxyPassword = o.(string)
 		} else {
-			return fmt.Errorf("Mission proxy_url")
+			return fmt.Errorf("Missing proxy_url")
 		}
 	}
 
@@ -252,13 +252,13 @@ func resourceOCCMAWSRead(d *schema.ResourceData, meta interface{}) error {
 
 	id := d.Id()
 
-	resID, err := client.getAWSInstance(occmDetails, id)
+	res, err := client.getAWSInstance(occmDetails, id)
 	if err != nil {
 		log.Print("Error getting occm")
 		return err
 	}
 
-	if resID != id {
+	if res.InstanceID != id {
 		return fmt.Errorf("Expected occm ID %v, Response could not find", id)
 	}
 
@@ -306,13 +306,13 @@ func resourceOCCMAWSExists(d *schema.ResourceData, meta interface{}) (bool, erro
 		occmDetails.AMI = o.(string)
 	}
 
-	resID, err := client.getAWSInstance(occmDetails, id)
+	res, err := client.getAWSInstance(occmDetails, id)
 	if err != nil {
 		log.Print("Error getting occm")
 		return false, err
 	}
 
-	if resID != id {
+	if res.InstanceID != id {
 		d.SetId("")
 		return false, nil
 	}

@@ -11,8 +11,11 @@ import (
 type Client struct {
 	CloudManagerHost     string
 	AuthHost             string
+	SaAuthHost           string
 	CVOHostName          string
 	RefreshToken         string
+	SaClientID           string
+	SaSecretKey          string
 	Audience             string
 	GCPDeploymentManager string
 	CVSHostName          string
@@ -34,6 +37,10 @@ func (c *Client) Do(baseURL string, hostType string, token string, paramsNil boo
 		host = c.CloudManagerHost
 	} else if hostType == "AuthHost" {
 		host = c.AuthHost
+		accountID = ""
+	} else if hostType == "SaAuthHost" {
+		host = c.SaAuthHost
+		accountID = ""
 	} else if hostType == "GCPDeploymentManager" {
 		host = c.GCPDeploymentManager
 		gcpType = true
@@ -70,6 +77,5 @@ func (c *Client) Do(baseURL string, hostType string, token string, paramsNil boo
 	}
 
 	statusCode = httpRes.StatusCode
-
 	return statusCode, res, onCloudRequestID, nil
 }

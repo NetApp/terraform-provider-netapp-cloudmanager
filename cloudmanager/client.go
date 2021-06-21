@@ -30,6 +30,9 @@ var ourlog = logrus.WithFields(logrus.Fields{
 type Client struct {
 	CloudManagerHost        string
 	AuthHost                string
+	SaAuthHost              string
+	SaSecretKey             string
+	SaClientID              string
 	CVOHostName             string
 	HostType                string
 	MaxConcurrentRequests   int
@@ -429,7 +432,6 @@ func (c *Client) CallDeleteAzureVM(occmDetails deleteOCCMDetails) error {
 
 // CallAMIGet can be used to make a request to get AWS AMI
 func (c *Client) CallAMIGet(occmDetails createOCCMDetails) (string, error) {
-
 	sess := session.Must(session.NewSession(aws.NewConfig().WithRegion(occmDetails.Region)))
 	svc := ec2.New(sess)
 	input := &ec2.DescribeImagesInput{
@@ -542,7 +544,7 @@ func (c *Client) CallVNetGetCidr(subscriptionID string, resourceGroup string, vn
 }
 
 // CallAWSInstanceGet can be used to make a request to get AWS Instance
-func (c *Client) CallAWSInstanceGet(occmDetails createOCCMDetails) ([]string, error) {
+func (c *Client) CallAWSInstanceGet(occmDetails createOCCMDetails) ([]ec2.Instance, error) {
 
 	sess := session.Must(session.NewSession(aws.NewConfig().WithRegion(occmDetails.Region)))
 	svc := ec2.New(sess)
@@ -572,12 +574,6 @@ func (c *Client) CallAWSInstanceGet(occmDetails createOCCMDetails) ([]string, er
 					aws.String(occmDetails.Name),
 				},
 			},
-			{
-				Name: aws.String("image-id"),
-				Values: []*string{
-					aws.String(occmDetails.AMI),
-				},
-			},
 		},
 	}
 
@@ -592,13 +588,14 @@ func (c *Client) CallAWSInstanceGet(occmDetails createOCCMDetails) ([]string, er
 		return nil, err
 	}
 
-	var resIDS []string
+	var res []ec2.Instance
 	for _, reservation := range result.Reservations {
-		resIDS = append(resIDS, *reservation.Instances[0].InstanceId)
-
+		for _, instance := range reservation.Instances {
+			res = append(res, *instance)
+		}
 	}
 
-	return resIDS, nil
+	return res, nil
 }
 
 // CallAPIMethod can be used to make a request to any CVO/OCCM API method, receiving results as byte
@@ -640,8 +637,11 @@ func (c *Client) init() {
 	c.restapiClient = &restapi.Client{
 		CloudManagerHost:     c.CloudManagerHost,
 		AuthHost:             c.AuthHost,
+		SaAuthHost:           c.SaAuthHost,
 		CVOHostName:          c.CVOHostName,
 		RefreshToken:         c.RefreshToken,
+		SaSecretKey:          c.SaSecretKey,
+		SaClientID:           c.SaClientID,
 		Audience:             c.Audience,
 		GCPDeploymentManager: c.GCPDeploymentManager,
 		CVSHostName:          c.CVSHostName,
@@ -656,6 +656,17 @@ func (c *Client) SetRefreshToken(refreshToken string) {
 // GetRefreshToken returns the API version that will be used for CVO/OCCM API requests
 func (c *Client) GetRefreshToken() string {
 	return c.RefreshToken
+}
+
+// SetServiceCredential for the client to use for requests to the CVO/OCCM API
+func (c *Client) SetServiceCredential(SaSecretKey string, SaClientID string) {
+	c.SaSecretKey = SaSecretKey
+	c.SaClientID = SaClientID
+}
+
+// GetServiceCredential returns the service account secret key and secret client id that will be used for CVO/OCCM API requests
+func (c *Client) GetServiceCredential() (string, string) {
+	return c.SaSecretKey, c.SaClientID
 }
 
 func (c *Client) waitForAvailableSlot() {
