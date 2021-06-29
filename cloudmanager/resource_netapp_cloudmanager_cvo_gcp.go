@@ -3,6 +3,7 @@ package cloudmanager
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
@@ -368,31 +369,60 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 			cvoDetails.HAParams.MediatorZone = c.(string)
 		}
 		if c, ok := d.GetOk("vpc0_node_and_data_connectivity"); ok {
-			cvoDetails.HAParams.VPC0NodeAndDataConnectivity = fmt.Sprintf("projects/%s/global/networks/%s", networkProjectID, c.(string))
-
+			hasSelfLink := strings.Contains(c.(string), "https://www.googleapis.com/compute/")
+			if hasSelfLink != true {
+				c = fmt.Sprintf("projects/%s/global/networks/%s", networkProjectID, c.(string))
+			}
+			cvoDetails.HAParams.VPC0NodeAndDataConnectivity = c.(string)
 		}
 		if c, ok := d.GetOk("vpc1_cluster_connectivity"); ok {
-			cvoDetails.HAParams.VPC1ClusterConnectivity = fmt.Sprintf("projects/%s/global/networks/%s", networkProjectID, c.(string))
-
+			hasSelfLink := strings.Contains(c.(string), "https://www.googleapis.com/compute/")
+			if hasSelfLink != true {
+				c = fmt.Sprintf("projects/%s/global/networks/%s", networkProjectID, c.(string))
+			}
+			cvoDetails.HAParams.VPC1ClusterConnectivity = c.(string)
 		}
 		if c, ok := d.GetOk("vpc2_ha_connectivity"); ok {
-			cvoDetails.HAParams.VPC2HAConnectivity = fmt.Sprintf("projects/%s/global/networks/%s", networkProjectID, c.(string))
-
+			hasSelfLink := strings.Contains(c.(string), "https://www.googleapis.com/compute/")
+			if hasSelfLink != true {
+				c = fmt.Sprintf("projects/%s/global/networks/%s", networkProjectID, c.(string))
+			}
+			cvoDetails.HAParams.VPC2HAConnectivity = c.(string)
 		}
 		if c, ok := d.GetOk("vpc3_data_replication"); ok {
-			cvoDetails.HAParams.VPC3DataReplication = fmt.Sprintf("projects/%s/global/networks/%s", networkProjectID, c.(string))
+			hasSelfLink := strings.Contains(c.(string), "https://www.googleapis.com/compute/")
+			if hasSelfLink != true {
+				c = fmt.Sprintf("projects/%s/global/networks/%s", networkProjectID, c.(string))
+			}
+			cvoDetails.HAParams.VPC3DataReplication = c.(string)
 		}
 		if c, ok := d.GetOk("subnet0_node_and_data_connectivity"); ok {
-			cvoDetails.HAParams.Subnet0NodeAndDataConnectivity = fmt.Sprintf("projects/%s/regions/%s/subnetworks/%s", networkProjectID, cvoDetails.Region[0:len(cvoDetails.Region)-2], c.(string))
+			hasSelfLink := strings.Contains(c.(string), "https://www.googleapis.com/compute/")
+			if hasSelfLink != true {
+				c = fmt.Sprintf("projects/%s/regions/%s/subnetworks/%s", networkProjectID, cvoDetails.Region[0:len(cvoDetails.Region)-2], c.(string))
+			}
+			cvoDetails.HAParams.Subnet0NodeAndDataConnectivity = c.(string)
 		}
 		if c, ok := d.GetOk("subnet1_cluster_connectivity"); ok {
-			cvoDetails.HAParams.Subnet1ClusterConnectivity = fmt.Sprintf("projects/%s/regions/%s/subnetworks/%s", networkProjectID, cvoDetails.Region[0:len(cvoDetails.Region)-2], c.(string))
+			hasSelfLink := strings.Contains(c.(string), "https://www.googleapis.com/compute/")
+			if hasSelfLink != true {
+				c = fmt.Sprintf("projects/%s/regions/%s/subnetworks/%s", networkProjectID, cvoDetails.Region[0:len(cvoDetails.Region)-2], c.(string))
+			}
+			cvoDetails.HAParams.Subnet1ClusterConnectivity = c.(string)
 		}
 		if c, ok := d.GetOk("subnet2_ha_connectivity"); ok {
-			cvoDetails.HAParams.Subnet2HAConnectivity = fmt.Sprintf("projects/%s/regions/%s/subnetworks/%s", networkProjectID, cvoDetails.Region[0:len(cvoDetails.Region)-2], c.(string))
+			hasSelfLink := strings.Contains(c.(string), "https://www.googleapis.com/compute/")
+			if hasSelfLink != true {
+				c = fmt.Sprintf("projects/%s/regions/%s/subnetworks/%s", networkProjectID, cvoDetails.Region[0:len(cvoDetails.Region)-2], c.(string))
+			}
+			cvoDetails.HAParams.Subnet2HAConnectivity = c.(string)
 		}
 		if c, ok := d.GetOk("subnet3_data_replication"); ok {
-			cvoDetails.HAParams.Subnet3DataReplication = fmt.Sprintf("projects/%s/regions/%s/subnetworks/%s", networkProjectID, cvoDetails.Region[0:len(cvoDetails.Region)-2], c.(string))
+			hasSelfLink := strings.Contains(c.(string), "https://www.googleapis.com/compute/")
+			if hasSelfLink != true {
+				c = fmt.Sprintf("projects/%s/regions/%s/subnetworks/%s", networkProjectID, cvoDetails.Region[0:len(cvoDetails.Region)-2], c.(string))
+			}
+			cvoDetails.HAParams.Subnet3DataReplication = c.(string)
 		}
 		if c, ok := d.GetOk("vpc0_firewall_rule_name"); ok {
 			cvoDetails.HAParams.VPC0FirewallRuleName = c.(string)
