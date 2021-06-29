@@ -14,11 +14,12 @@ func resourceCVOGCP() *schema.Resource {
 		Create: resourceCVOGCPCreate,
 		Read:   resourceCVOGCPRead,
 		Delete: resourceCVOGCPDelete,
+		Update: resourceCVOGCPUpdate,
 		Exists: resourceCVOGCPExists,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
+		CustomizeDiff: resourceCVOGCPCustomizeDiff,
 		Schema: map[string]*schema.Schema{
 			"name": {
 				Type:     schema.TypeString,
@@ -153,21 +154,19 @@ func resourceCVOGCP() *schema.Resource {
 			"gcp_label": {
 				Type:     schema.TypeSet,
 				Optional: true,
-				ForceNew: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"label_key": {
 							Type:     schema.TypeString,
 							Required: true,
-							ForceNew: true,
 						},
 						"label_value": {
 							Type:     schema.TypeString,
 							Optional: true,
-							ForceNew: true,
 						},
 					},
 				},
+				// ValidateFunc: func(val interface{}, )
 			},
 			"firewall_rule": {
 				Type:     schema.TypeString,
@@ -494,6 +493,28 @@ func resourceCVOGCPDelete(d *schema.ResourceData, meta interface{}) error {
 		return deleteErr
 	}
 
+	return nil
+}
+
+func resourceCVOGCPUpdate(d *schema.ResourceData, meta interface{}) error {
+	log.Printf("Updating CVO: %#v", d)
+
+	// check if gcp_label has changes
+	if d.HasChange("gcp_label") {
+		respErr := updateCVOUserTags(d, meta, "gcp_label")
+		if respErr != nil {
+			return respErr
+		}
+		return resourceCVOGCPRead(d, meta)
+	}
+	return nil
+}
+
+func resourceCVOGCPCustomizeDiff(diff *schema.ResourceDiff, v interface{}) error {
+	respErr := checkUserTagDiff(diff, "gcp_label", "label_key")
+	if respErr != nil {
+		return respErr
+	}
 	return nil
 }
 

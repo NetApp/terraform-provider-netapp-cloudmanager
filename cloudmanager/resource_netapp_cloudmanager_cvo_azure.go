@@ -14,11 +14,12 @@ func resourceCVOAzure() *schema.Resource {
 		Create: resourceCVOAzureCreate,
 		Read:   resourceCVOAzureRead,
 		Delete: resourceCVOAzureDelete,
+		Update: resourceCVOAzureUpdate,
 		Exists: resourceCVOAzureExists,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
+		CustomizeDiff: resourceCVOAzureCustomizeDiff,
 		Schema: map[string]*schema.Schema{
 			"name": {
 				Type:     schema.TypeString,
@@ -184,18 +185,15 @@ func resourceCVOAzure() *schema.Resource {
 			"azure_tag": {
 				Type:     schema.TypeSet,
 				Optional: true,
-				ForceNew: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"tag_key": {
 							Type:     schema.TypeString,
 							Required: true,
-							ForceNew: true,
 						},
 						"tag_value": {
 							Type:     schema.TypeString,
 							Optional: true,
-							ForceNew: true,
 						},
 					},
 				},
@@ -256,7 +254,7 @@ func resourceCVOAzureCreate(d *schema.ResourceData, meta interface{}) error {
 	if c, ok := d.GetOk("azure_tag"); ok {
 		tags := c.(*schema.Set)
 		if tags.Len() > 0 {
-			cvoDetails.AzureTags = expandAzureTags(tags)
+			cvoDetails.AzureTags = expandUserTags(tags)
 		}
 	}
 	cvoDetails.DiskSize.Size = d.Get("disk_size").(int)
@@ -378,6 +376,28 @@ func resourceCVOAzureDelete(d *schema.ResourceData, meta interface{}) error {
 		return deleteErr
 	}
 
+	return nil
+}
+
+func resourceCVOAzureUpdate(d *schema.ResourceData, meta interface{}) error {
+	log.Printf("Updating CVO: %#v", d)
+
+	// check if aws_tag has changes
+	if d.HasChange("azure_tag") {
+		respErr := updateCVOUserTags(d, meta, "azure_tag")
+		if respErr != nil {
+			return respErr
+		}
+		return resourceCVOAzureRead(d, meta)
+	}
+	return nil
+}
+
+func resourceCVOAzureCustomizeDiff(diff *schema.ResourceDiff, v interface{}) error {
+	respErr := checkUserTagDiff(diff, "azure_tag", "tag_key")
+	if respErr != nil {
+		return respErr
+	}
 	return nil
 }
 

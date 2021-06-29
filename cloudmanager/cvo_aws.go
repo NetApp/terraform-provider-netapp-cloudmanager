@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/fatih/structs"
-	"github.com/hashicorp/terraform/helper/schema"
 )
 
 // AWSLicenseTypes is the AWS License types
@@ -40,7 +39,7 @@ type createCVOAWSDetails struct {
 	EnableCompliance            bool                    `structs:"enableCompliance"`
 	EnableMonitoring            bool                    `structs:"enableMonitoring"`
 	AwsEncryptionParameters     awsEncryptionParameters `structs:"awsEncryptionParameters,omitempty"`
-	AwsTags                     []awsTags               `structs:"awsTags,omitempty"`
+	AwsTags                     []userTags              `structs:"awsTags,omitempty"`
 	IsHA                        bool
 	HAParams                    haParamsAWS `structs:"haParams,omitempty"`
 }
@@ -80,12 +79,6 @@ type vsaMetadata struct {
 // awsEncryptionParameters the input for requesting a CVO
 type awsEncryptionParameters struct {
 	KmsKeyID string `structs:"kmsKeyId,omitempty"`
-}
-
-// awsTags the input for requesting a CVO
-type awsTags struct {
-	TagKey   string `structs:"tagKey"`
-	TagValue string `structs:"tagValue,omitempty"`
 }
 
 // deleteCVODetails the users input for deleting a cvo
@@ -345,20 +338,6 @@ func (c *Client) deleteCVO(id string, isHA bool) error {
 	}
 
 	return nil
-}
-
-// expandAWSTags converts set to awsEncryptionParameters struct
-func expandAWSTags(set *schema.Set) []awsTags {
-	tags := []awsTags{}
-
-	for _, v := range set.List() {
-		tag := v.(map[string]interface{})
-		awsTag := awsTags{}
-		awsTag.TagKey = tag["tag_key"].(string)
-		awsTag.TagValue = tag["tag_value"].(string)
-		tags = append(tags, awsTag)
-	}
-	return tags
 }
 
 // validateCVOParams validates params

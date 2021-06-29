@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/fatih/structs"
-	"github.com/hashicorp/terraform/helper/schema"
 )
 
 // AzureLicenseTypes is the Azure License types
@@ -38,9 +37,9 @@ type createCVOAzureDetails struct {
 	EnableCompliance            bool        `structs:"enableCompliance"`
 	EnableMonitoring            bool        `structs:"enableMonitoring"`
 	AllowDeployInExistingRg     bool        `structs:"allowDeployInExistingRg,omitempty"`
-	AzureTags                   []azureTags `structs:"azureTags,omitempty"`
+	AzureTags                   []userTags  `structs:"azureTags,omitempty"`
 	IsHA                        bool
-	ResourceGroup               string	    `structs:"resourceGroup,omitempty"`
+	ResourceGroup               string `structs:"resourceGroup,omitempty"`
 	VnetResourceGroup           string
 	VnetForInternal             string
 	SerialNumber                string        `structs:"serialNumber,omitempty"`
@@ -51,12 +50,6 @@ type createCVOAzureDetails struct {
 type haParamsAzure struct {
 	PlatformSerialNumberNode1 string `structs:"platformSerialNumberNode1,omitempty"`
 	PlatformSerialNumberNode2 string `structs:"platformSerialNumberNode2,omitempty"`
-}
-
-// azureTags the input for requesting a CVO
-type azureTags struct {
-	TagKey   string `structs:"tagKey"`
-	TagValue string `structs:"tagValue,omitempty"`
 }
 
 // cvoListAzure the users input for getting cvo
@@ -316,20 +309,6 @@ func (c *Client) deleteCVOAzure(id string, isHA bool) error {
 	}
 
 	return nil
-}
-
-// expandAzureTags converts set to azureTags struct
-func expandAzureTags(set *schema.Set) []azureTags {
-	tags := []azureTags{}
-
-	for _, v := range set.List() {
-		tag := v.(map[string]interface{})
-		azureTag := azureTags{}
-		azureTag.TagKey = tag["tag_key"].(string)
-		azureTag.TagValue = tag["tag_value"].(string)
-		tags = append(tags, azureTag)
-	}
-	return tags
 }
 
 // validateCVOParams validates params
