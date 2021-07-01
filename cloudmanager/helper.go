@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fatih/structs"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -30,6 +31,17 @@ type workingEnvironmentResult struct {
 	OnPremWorkingEnvironments   []workingEnvironmentInfo `json:"onPremWorkingEnvironments"`
 	AzureVsaWorkingEnvironments []workingEnvironmentInfo `json:"azureVsaWorkingEnvironments"`
 	GcpVsaWorkingEnvironments   []workingEnvironmentInfo `json:"gcpVsaWorkingEnvironments"`
+}
+
+// userTags the input for requesting a CVO
+type userTags struct {
+	TagKey   string `structs:"tagKey"`
+	TagValue string `structs:"tagValue,omitempty"`
+}
+
+// ModifyUserTagsRequest the input for requesting tags modificaiton
+type modifyUserTagsRequest struct {
+	Tags []userTags `structs:"tags"`
 }
 
 // Check HTTP response code, return error if HTTP request is not successed.
@@ -412,4 +424,106 @@ func (c *Client) findWorkingEnvironmentForID(id string) (workingEnvironmentInfo,
 	log.Printf("Cannot find the working environment %s", id)
 
 	return workingEnvironmentInfo{}, err
+}
+
+// customized check diff user-tags (aws_tag, azure_tag, gcp_label)
+func checkUserTagDiff(diff *schema.ResourceDiff, tagName string, keyName string) error {
+	if diff.HasChange(tagName) {
+		_, expectTag := diff.GetChange(tagName)
+		etags := expectTag.(*schema.Set)
+		if etags.Len() > 0 {
+			log.Println("etags len: ", etags.Len())
+			// check each of the tag_key in the list is unique
+			respErr := checkUserTagKeyUnique(etags, keyName)
+			if respErr != nil {
+				return respErr
+			}
+		}
+	}
+	return nil
+}
+
+// check each of the tag_key or label_key in the list is unique
+func checkUserTagKeyUnique(etags *schema.Set, keyName string) error {
+	m := make(map[string]bool)
+	for _, v := range etags.List() {
+		tag := v.(map[string]interface{})
+		tkey := tag[keyName].(string)
+		if _, ok := m[tkey]; !ok {
+			m[tkey] = true
+		} else {
+			return fmt.Errorf("Tag key %s is not unique", tkey)
+		}
+	}
+	return nil
+}
+
+// expandUserTags converts set to userTags struct
+func expandUserTags(set *schema.Set) []userTags {
+	tags := []userTags{}
+
+	for _, v := range set.List() {
+		tag := v.(map[string]interface{})
+		userTag := userTags{}
+		userTag.TagKey = tag["tag_key"].(string)
+		userTag.TagValue = tag["tag_value"].(string)
+		tags = append(tags, userTag)
+	}
+	return tags
+}
+
+// modify the CVO user-tags
+func (c *Client) callUpdateUserTags(request modifyUserTagsRequest, id string, isHA bool) error {
+	apiRoot, _, err := c.getAPIRoot(id)
+	baseURL := fmt.Sprintf("%s/working-environments/%s/user-tags", apiRoot, id)
+
+	hostType := "CloudManagerHost"
+	params := structs.Map(request)
+
+	accessTokenResult, err := c.getAccessToken()
+	if err != nil {
+		log.Print("in updateCVOUserTags request, failed to get AccessToken")
+		return err
+	}
+	c.Token = accessTokenResult.Token
+
+	statusCode, response, _, err := c.CallAPIMethod("PUT", baseURL, params, c.Token, hostType)
+	if err != nil {
+		log.Print("updateCVOUserTags request failed: ", statusCode)
+		log.Print("call api response: ", response)
+		return err
+	}
+
+	responseError := apiResponseChecker(statusCode, response, "updateCVOUserTags")
+	if responseError != nil {
+		return responseError
+	}
+	return nil
+}
+
+// update CVO user-tags
+func updateCVOUserTags(d *schema.ResourceData, meta interface{}, tagName string) error {
+	client := meta.(*Client)
+	client.ClientID = d.Get("client_id").(string)
+	var request modifyUserTagsRequest
+	if c, ok := d.GetOk(tagName); ok {
+		tags := c.(*schema.Set)
+		if tags.Len() > 0 {
+			if tagName == "gcp_label" {
+				request.Tags = expandGCPLabelsToUserTags(tags)
+			} else {
+				request.Tags = expandUserTags(tags)
+			}
+			log.Print("Update user-tags: ", request.Tags)
+		}
+	}
+	// Update tags
+	isHA := d.Get("is_ha").(bool)
+	id := d.Id()
+	updateErr := client.callUpdateUserTags(request, id, isHA)
+	if updateErr != nil {
+		return updateErr
+	}
+	log.Printf("Updated %s %s: %v", id, tagName, request.Tags)
+	return nil
 }

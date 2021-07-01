@@ -206,7 +206,7 @@ func resourceOCCMAWSCreate(d *schema.ResourceData, meta interface{}) error {
 	if o, ok := d.GetOk("aws_tag"); ok {
 		tags := o.(*schema.Set)
 		if tags.Len() > 0 {
-			occmDetails.AwsTags = expandAWSTags(tags)
+			occmDetails.AwsTags = expandUserTags(tags)
 		}
 	}
 

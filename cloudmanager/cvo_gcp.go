@@ -181,6 +181,20 @@ func expandGCPLabels(set *schema.Set) []gcpLabels {
 	return labels
 }
 
+// expandGCPLabelsToUseTags
+func expandGCPLabelsToUserTags(set *schema.Set) []userTags {
+	tags := []userTags{}
+
+	for _, v := range set.List() {
+		label := v.(map[string]interface{})
+		userTag := userTags{}
+		userTag.TagKey = label["label_key"].(string)
+		userTag.TagValue = label["label_value"].(string)
+		tags = append(tags, userTag)
+	}
+	return tags
+}
+
 // validateCVOGCPParams validates params
 func validateCVOGCPParams(cvoDetails createCVOGCPDetails) error {
 	if cvoDetails.VsaMetadata.UseLatestVersion == true && cvoDetails.VsaMetadata.OntapVersion != "latest" {

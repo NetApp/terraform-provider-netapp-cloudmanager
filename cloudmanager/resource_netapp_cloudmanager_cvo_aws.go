@@ -13,11 +13,12 @@ func resourceCVOAWS() *schema.Resource {
 		Create: resourceCVOAWSCreate,
 		Read:   resourceCVOAWSRead,
 		Delete: resourceCVOAWSDelete,
+		Update: resourceCVOAWSUpdate,
 		Exists: resourceCVOAWSExists,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
+		CustomizeDiff: resourceCVOAWSCustomizeDiff,
 		Schema: map[string]*schema.Schema{
 			"name": {
 				Type:     schema.TypeString,
@@ -195,18 +196,15 @@ func resourceCVOAWS() *schema.Resource {
 			"aws_tag": {
 				Type:     schema.TypeSet,
 				Optional: true,
-				ForceNew: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"tag_key": {
 							Type:     schema.TypeString,
 							Required: true,
-							ForceNew: true,
 						},
 						"tag_value": {
 							Type:     schema.TypeString,
 							Optional: true,
-							ForceNew: true,
 						},
 					},
 				},
@@ -322,7 +320,7 @@ func resourceCVOAWSCreate(d *schema.ResourceData, meta interface{}) error {
 	if c, ok := d.GetOk("aws_tag"); ok {
 		tags := c.(*schema.Set)
 		if tags.Len() > 0 {
-			cvoDetails.AwsTags = expandAWSTags(tags)
+			cvoDetails.AwsTags = expandUserTags(tags)
 		}
 	}
 	cvoDetails.EbsVolumeSize.Size = d.Get("ebs_volume_size").(int)
@@ -467,6 +465,28 @@ func resourceCVOAWSDelete(d *schema.ResourceData, meta interface{}) error {
 		return deleteErr
 	}
 
+	return nil
+}
+
+func resourceCVOAWSUpdate(d *schema.ResourceData, meta interface{}) error {
+	log.Printf("Updating CVO: %#v", d)
+
+	// check if aws_tag has changes
+	if d.HasChange("aws_tag") {
+		respErr := updateCVOUserTags(d, meta, "aws_tag")
+		if respErr != nil {
+			return respErr
+		}
+		return resourceCVOAWSRead(d, meta)
+	}
+	return nil
+}
+
+func resourceCVOAWSCustomizeDiff(diff *schema.ResourceDiff, v interface{}) error {
+	respErr := checkUserTagDiff(diff, "aws_tag", "tag_key")
+	if respErr != nil {
+		return respErr
+	}
 	return nil
 }
 
