@@ -39,9 +39,25 @@ type userTags struct {
 	TagValue string `structs:"tagValue,omitempty"`
 }
 
-// ModifyUserTagsRequest the input for requesting tags modificaiton
+// modifyUserTagsRequest the input for requesting tags modificaiton
 type modifyUserTagsRequest struct {
 	Tags []userTags `structs:"tags"`
+}
+
+// setPasswordRequest the input for for setting password
+type setPasswordRequest struct {
+	Password string `structs:"password"`
+}
+
+// licenseAndInstanceTypeModificationRequest the input for license and instance type modification
+type licenseAndInstanceTypeModificationRequest struct {
+	InstanceType string `structs:"instanceType"`
+	LicenseType  string `structs:"licenseType"`
+}
+
+// changeTierLevelRequest the input for tier level change
+type changeTierLevelRequest struct {
+	Level string `structs:"level"`
 }
 
 // Check HTTP response code, return error if HTTP request is not successed.
@@ -472,29 +488,28 @@ func expandUserTags(set *schema.Set) []userTags {
 	return tags
 }
 
-// modify the CVO user-tags
-func (c *Client) callUpdateUserTags(request modifyUserTagsRequest, id string, isHA bool) error {
+func (c *Client) callCMUpdateAPI(method string, request interface{}, baseURL string, id string, functionName string) error {
 	apiRoot, _, err := c.getAPIRoot(id)
-	baseURL := fmt.Sprintf("%s/working-environments/%s/user-tags", apiRoot, id)
+	baseURL = apiRoot + baseURL
 
 	hostType := "CloudManagerHost"
 	params := structs.Map(request)
 
 	accessTokenResult, err := c.getAccessToken()
 	if err != nil {
-		log.Print("in updateCVOUserTags request, failed to get AccessToken")
+		log.Printf("in %s request, failed to get AccessToken", functionName)
 		return err
 	}
 	c.Token = accessTokenResult.Token
 
-	statusCode, response, _, err := c.CallAPIMethod("PUT", baseURL, params, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod(method, baseURL, params, c.Token, hostType)
 	if err != nil {
-		log.Print("updateCVOUserTags request failed: ", statusCode)
+		log.Printf("%s request failed: %d", functionName, statusCode)
 		log.Print("call api response: ", response)
 		return err
 	}
 
-	responseError := apiResponseChecker(statusCode, response, "updateCVOUserTags")
+	responseError := apiResponseChecker(statusCode, response, functionName)
 	if responseError != nil {
 		return responseError
 	}
@@ -518,12 +533,71 @@ func updateCVOUserTags(d *schema.ResourceData, meta interface{}, tagName string)
 		}
 	}
 	// Update tags
-	isHA := d.Get("is_ha").(bool)
 	id := d.Id()
-	updateErr := client.callUpdateUserTags(request, id, isHA)
+	baseURL := fmt.Sprintf("/working-environments/%s/user-tags", id)
+	updateErr := client.callCMUpdateAPI("PUT", request, baseURL, id, "updateCVOUserTags")
 	if updateErr != nil {
 		return updateErr
 	}
 	log.Printf("Updated %s %s: %v", id, tagName, request.Tags)
+	return nil
+}
+
+// set the cluster password of a specific cloud volumes ONTAP
+func updateCVOSVMPassword(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*Client)
+	client.ClientID = d.Get("client_id").(string)
+	var request setPasswordRequest
+	request.Password = d.Get("svm_password").(string)
+	log.Print("Update svm_password: ", request.Password)
+	// Update password
+	id := d.Id()
+	baseURL := fmt.Sprintf("/working-environments/%s/set-password", id)
+	updateErr := client.callCMUpdateAPI("PUT", request, baseURL, id, "updateCVOSVMPassword")
+	if updateErr != nil {
+		return updateErr
+	}
+	log.Printf("Updated %s svm_password: %v", id, request.Password)
+	return nil
+}
+
+// set the license_type and instance type of a specific cloud volumes ONTAP
+func updateCVOLicenseInstanceType(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*Client)
+	client.ClientID = d.Get("client_id").(string)
+	var request licenseAndInstanceTypeModificationRequest
+	if c, ok := d.GetOk("instance_type"); ok {
+		request.InstanceType = c.(string)
+	}
+	if c, ok := d.GetOk("license_type"); ok {
+		request.LicenseType = c.(string)
+	}
+
+	// Update license type and instance type
+	id := d.Id()
+	baseURL := fmt.Sprintf("/working-environments/%s/license-instance-type", id)
+	updateErr := client.callCMUpdateAPI("PUT", request, baseURL, id, "updateCVOLicenseInstanceType")
+	if updateErr != nil {
+		return updateErr
+	}
+	log.Printf("Updated %s license and instance type: %v", id, request)
+	return nil
+}
+
+// update tier_level of a specific cloud volumes ONTAP
+func updateCVOTierLevel(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*Client)
+	client.ClientID = d.Get("client_id").(string)
+	var request changeTierLevelRequest
+	if c, ok := d.GetOk("tier_level"); ok {
+		request.Level = c.(string)
+	}
+	id := d.Id()
+	baseURL := fmt.Sprintf("/working-environments/%s/change-tier-level", id)
+	updateErr := client.callCMUpdateAPI("POST", request, baseURL, id, "updateCVOTierLevel")
+	if updateErr != nil {
+		return updateErr
+	}
+	log.Printf("Updated %s tier_level: %v", id, request)
 	return nil
 }

@@ -77,14 +77,12 @@ func resourceCVOAWS() *schema.Resource {
 			"license_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				Default:      "cot-standard-paygo",
 				ValidateFunc: validation.StringInSlice(AWSLicenseTypes, false),
 			},
 			"instance_type": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 				Default:  "m5.2xlarge",
 			},
 			"platform_serial_number": {
@@ -105,13 +103,11 @@ func resourceCVOAWS() *schema.Resource {
 			"svm_password": {
 				Type:      schema.TypeString,
 				Required:  true,
-				ForceNew:  true,
 				Sensitive: true,
 			},
 			"tier_level": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				Default:      "normal",
 				ValidateFunc: validation.StringInSlice([]string{"normal", "ia", "ia-single", "intelligent"}, false),
 			},
@@ -470,6 +466,30 @@ func resourceCVOAWSDelete(d *schema.ResourceData, meta interface{}) error {
 
 func resourceCVOAWSUpdate(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("Updating CVO: %#v", d)
+
+	// check if svm_password is changed
+	if d.HasChange("svm_password") {
+		respErr := updateCVOSVMPassword(d, meta)
+		if respErr != nil {
+			return respErr
+		}
+	}
+
+	// check if license_type and instance type are changed
+	if d.HasChange("instance_type") || d.HasChange("license_type") {
+		respErr := updateCVOLicenseInstanceType(d, meta)
+		if respErr != nil {
+			return respErr
+		}
+	}
+
+	// check if tier_level is changed
+	if d.HasChange("tier_level") && d.Get("capacity_tier").(string) == "S3" {
+		respErr := updateCVOTierLevel(d, meta)
+		if respErr != nil {
+			return respErr
+		}
+	}
 
 	// check if aws_tag has changes
 	if d.HasChange("aws_tag") {

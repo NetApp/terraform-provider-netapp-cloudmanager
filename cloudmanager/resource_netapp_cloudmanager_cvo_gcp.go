@@ -88,14 +88,12 @@ func resourceCVOGCP() *schema.Resource {
 			"license_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				Default:      "gcp-cot-standard-paygo",
 				ValidateFunc: validation.StringInSlice(GCPLicenseTypes, false),
 			},
 			"instance_type": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 				Default:  "n1-standard-8",
 			},
 			"subnet_id": {
@@ -123,13 +121,11 @@ func resourceCVOGCP() *schema.Resource {
 			"svm_password": {
 				Type:      schema.TypeString,
 				Required:  true,
-				ForceNew:  true,
 				Sensitive: true,
 			},
 			"tier_level": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				Default:      "standard",
 				ValidateFunc: validation.StringInSlice([]string{"standard", "nearline", "coldline"}, false),
 			},
@@ -498,6 +494,30 @@ func resourceCVOGCPDelete(d *schema.ResourceData, meta interface{}) error {
 
 func resourceCVOGCPUpdate(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("Updating CVO: %#v", d)
+
+	// check if svm_password is changed
+	if d.HasChange("svm_password") {
+		respErr := updateCVOSVMPassword(d, meta)
+		if respErr != nil {
+			return respErr
+		}
+	}
+
+	// check if license_type and instance type are changed
+	if d.HasChange("instance_type") || d.HasChange("license_type") {
+		respErr := updateCVOLicenseInstanceType(d, meta)
+		if respErr != nil {
+			return respErr
+		}
+	}
+
+	// check if tier_level is changed
+	if d.HasChange("tier_level") && d.Get("capacity_tier").(string) == "cloudStorage" {
+		respErr := updateCVOTierLevel(d, meta)
+		if respErr != nil {
+			return respErr
+		}
+	}
 
 	// check if gcp_label has changes
 	if d.HasChange("gcp_label") {
