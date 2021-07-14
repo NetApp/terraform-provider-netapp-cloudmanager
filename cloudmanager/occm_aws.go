@@ -519,3 +519,56 @@ func (c *Client) deleteOCCM(request deleteOCCMDetails) error {
 
 	return nil
 }
+
+// only tags can be updated. Other update functionalities to be added.
+func (c *Client) updateOCCM(occmDetails createOCCMDetails, proxyCertificates []string, deleteTags []userTags, addModifyTags []userTags) error {
+
+	log.Print("updating OCCM")
+	if occmDetails.AMI == "" {
+
+		ami, err := c.CallAMIGet(occmDetails)
+		if err != nil {
+			return err
+		}
+		occmDetails.AMI = ami
+	}
+
+	var registerAgentTOService registerAgentTOServiceRequest
+	registerAgentTOService.Name = occmDetails.Name
+	registerAgentTOService.Placement.Region = occmDetails.Region
+	registerAgentTOService.Placement.Subnet = occmDetails.SubnetID
+	registerAgentTOService.Company = occmDetails.Company
+	if occmDetails.ProxyURL != "" {
+		registerAgentTOService.Extra.Proxy.ProxyURL = occmDetails.ProxyURL
+	}
+
+	if occmDetails.ProxyUserName != "" {
+		registerAgentTOService.Extra.Proxy.ProxyUserName = occmDetails.ProxyUserName
+	}
+
+	if occmDetails.ProxyPassword != "" {
+		registerAgentTOService.Extra.Proxy.ProxyPassword = occmDetails.ProxyPassword
+	}
+
+	userData, err := c.getUserData(registerAgentTOService, proxyCertificates)
+	if err != nil {
+		return err
+	}
+	c.UserData = userData
+	if len(addModifyTags) > 0 {
+		occmDetails.AwsTags = addModifyTags
+		err = c.CallAWSTagCreate(occmDetails)
+		if err != nil {
+			return err
+		}
+	}
+	if len(deleteTags) > 0 {
+		occmDetails.AwsTags = deleteTags
+		err = c.CallAWSTagDelete(occmDetails)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
