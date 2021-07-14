@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -114,7 +115,11 @@ func (r *Request) BuildHTTPReq(host string, token string, audience string, baseU
 		req.Header.Set("X-Tenancy-Account-Id", accountID)
 	}
 	if clientID != "" {
-		req.Header.Set("X-Agent-Id", clientID+"clients")
+		if strings.HasSuffix(clientID, "clients") {
+			req.Header.Set("X-Agent-Id", clientID)
+		} else {
+			req.Header.Set("X-Agent-Id", clientID+"clients")
+		}
 	}
 
 	return req, nil

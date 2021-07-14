@@ -676,3 +676,75 @@ func (c *Client) waitForAvailableSlot() {
 func (c *Client) releaseSlot() {
 	<-c.requestSlots
 }
+
+// CallAWSTagCreate creates tag
+func (c *Client) CallAWSTagCreate(occmDetails createOCCMDetails) error {
+	sess := session.Must(session.NewSession(aws.NewConfig().WithRegion(occmDetails.Region)))
+
+	svc := ec2.New(sess)
+
+	tags := []*ec2.Tag{}
+	if len(occmDetails.AwsTags) > 0 {
+		for _, awsTag := range occmDetails.AwsTags {
+			tag := &ec2.Tag{
+				Key:   aws.String(awsTag.TagKey),
+				Value: aws.String(awsTag.TagValue),
+			}
+			tags = append(tags, tag)
+		}
+	}
+
+	input := &ec2.CreateTagsInput{
+		Resources: []*string{
+			aws.String(occmDetails.InstanceID),
+		},
+		Tags: tags,
+	}
+
+	result, err := svc.CreateTags(input)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			return aerr
+		}
+		return err
+	}
+
+	fmt.Println(result)
+	return nil
+}
+
+// CallAWSTagDelete deletes tag
+func (c *Client) CallAWSTagDelete(occmDetails createOCCMDetails) error {
+	sess := session.Must(session.NewSession(aws.NewConfig().WithRegion(occmDetails.Region)))
+
+	svc := ec2.New(sess)
+
+	tags := []*ec2.Tag{}
+	if len(occmDetails.AwsTags) > 0 {
+		for _, awsTag := range occmDetails.AwsTags {
+			tag := &ec2.Tag{
+				Key:   aws.String(awsTag.TagKey),
+				Value: aws.String(awsTag.TagValue),
+			}
+			tags = append(tags, tag)
+		}
+	}
+
+	input := &ec2.DeleteTagsInput{
+		Resources: []*string{
+			aws.String(occmDetails.InstanceID),
+		},
+		Tags: tags,
+	}
+
+	result, err := svc.DeleteTags(input)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			return aerr
+		}
+		return err
+	}
+
+	fmt.Println(result)
+	return nil
+}

@@ -15,6 +15,7 @@ func resourceOCCMAWS() *schema.Resource {
 		Read:   resourceOCCMAWSRead,
 		Delete: resourceOCCMAWSDelete,
 		Exists: resourceOCCMAWSExists,
+		Update: resourceOCCMAWSUpdate,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -115,18 +116,15 @@ func resourceOCCMAWS() *schema.Resource {
 			"aws_tag": {
 				Type:     schema.TypeSet,
 				Optional: true,
-				ForceNew: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"tag_key": {
 							Type:     schema.TypeString,
 							Required: true,
-							ForceNew: true,
 						},
 						"tag_value": {
 							Type:     schema.TypeString,
 							Optional: true,
-							ForceNew: true,
 						},
 					},
 				},
@@ -318,4 +316,47 @@ func resourceOCCMAWSExists(d *schema.ResourceData, meta interface{}) (bool, erro
 	}
 
 	return true, nil
+}
+
+// resourceOCCMAWSUpdate updates occm. Currently only tags can be updated.
+func resourceOCCMAWSUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*Client)
+
+	occmDetails := createOCCMDetails{}
+	deleteAwsTags := []userTags{}
+	addModifyAwsTags := []userTags{}
+	if d.HasChange("aws_tag") {
+		old, new := d.GetChange("aws_tag")
+		oldTags := old.(*schema.Set)
+		newTags := new.(*schema.Set)
+		addModifyTags := newTags.Difference(oldTags)
+		// the firt difference function gives the set that only in old tags but not in new tags, which includes tags to be deleted or updated.
+		// the second difference function excludes the tags to be modified.
+		deleteTags := oldTags.Difference(newTags)
+		deleteTags = deleteTags.Difference(addModifyTags)
+		if deleteTags.Len() > 0 {
+			deleteAwsTags = expandUserTags(deleteTags)
+		}
+		if addModifyTags.Len() > 0 {
+			addModifyAwsTags = expandUserTags(addModifyTags)
+		}
+	}
+
+	occmDetails.Region = d.Get("region").(string)
+	occmDetails.Name = d.Get("name").(string)
+	occmDetails.InstanceType = d.Get("instance_type").(string)
+	occmDetails.SubnetID = d.Get("subnet_id").(string)
+	occmDetails.SecurityGroupID = d.Get("security_group_id").(string)
+	occmDetails.KeyName = d.Get("key_name").(string)
+	occmDetails.IamInstanceProfileName = d.Get("iam_instance_profile_name").(string)
+	occmDetails.Company = d.Get("company").(string)
+	occmDetails.InstanceID = d.Id()
+
+	err := client.updateOCCM(occmDetails, nil, deleteAwsTags, addModifyAwsTags)
+
+	if err != nil {
+		log.Print("Error updating instance")
+		return err
+	}
+	return nil
 }
