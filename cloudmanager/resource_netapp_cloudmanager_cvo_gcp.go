@@ -320,6 +320,8 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 	hasSelfLink := strings.HasPrefix(subnetID, "https://www.googleapis.com/compute/") || strings.HasPrefix(subnetID, "projects/")
 	if hasSelfLink != true {
 		cvoDetails.SubnetID = fmt.Sprintf("projects/%s/regions/%s/subnetworks/%s", networkProjectID, cvoDetails.Region[0:len(cvoDetails.Region)-2], subnetID)
+	} else {
+		cvoDetails.SubnetID = subnetID
 	}
 	cvoDetails.SubnetPath = cvoDetails.SubnetID
 
