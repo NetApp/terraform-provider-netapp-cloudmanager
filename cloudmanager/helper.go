@@ -549,7 +549,6 @@ func updateCVOSVMPassword(d *schema.ResourceData, meta interface{}) error {
 	client.ClientID = d.Get("client_id").(string)
 	var request setPasswordRequest
 	request.Password = d.Get("svm_password").(string)
-	log.Print("Update svm_password: ", request.Password)
 	// Update password
 	id := d.Id()
 	baseURL := fmt.Sprintf("/working-environments/%s/set-password", id)
@@ -557,7 +556,7 @@ func updateCVOSVMPassword(d *schema.ResourceData, meta interface{}) error {
 	if updateErr != nil {
 		return updateErr
 	}
-	log.Printf("Updated %s svm_password: %v", id, request.Password)
+	log.Printf("Updated %s svm_password", id)
 	return nil
 }
 
