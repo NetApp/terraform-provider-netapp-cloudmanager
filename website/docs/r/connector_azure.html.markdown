@@ -57,7 +57,7 @@ The following arguments are supported:
 * `admin_password` - (Required) The password for the Connector.
 * `vnet_resource_group` - (Optional) The resource group in Azure associated with the virtual network. If not provided, it’s assumed that the VNet is within the previously specified resource group.
 * `network_security_resource_group` - (Optional) The resource group in Azure associated with the security group. If not provided, it’s assumed that the security group is within the previously specified resource group.
-* `virtual_machine_size` - (Optional) The virtual machine type. (for example, Standard_D2s_v3). At least 4 CPU and 16 GB of memory are required.
+* `virtual_machine_size` - (Optional) The virtual machine type. (for example, Standard_DS3_v2). At least 4 CPU and 16 GB of memory are required.
 * `proxy_url` - (Optional) The proxy URL, if using a proxy to connect to the internet.
 * `proxy_user_name` - (Optional) The proxy user name, if using a proxy to connect to the internet.
 * `proxy_password` - (Optional) The proxy password, if using a proxy to connect to the internet.

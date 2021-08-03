@@ -14,30 +14,31 @@ var AzureLicenseTypes = []string{"azure-cot-standard-paygo", "azure-cot-premium-
 
 // createCVOAzureDetails the users input for creating a CVO
 type createCVOAzureDetails struct {
-	Name                        string      `structs:"name"`
-	DataEncryptionType          string      `structs:"dataEncryptionType"`
-	WorkspaceID                 string      `structs:"tenantId,omitempty"`
-	Region                      string      `structs:"region"`
-	SubscriptionID              string      `structs:"subscriptionId"`
-	VnetID                      string      `structs:"vnetId,omitempty"`
-	SvmPassword                 string      `structs:"svmPassword"`
-	VsaMetadata                 vsaMetadata `structs:"vsaMetadata"`
-	DiskSize                    diskSize    `structs:"diskSize"`
-	StorageType                 string      `structs:"storageType"`
-	SubnetID                    string      `structs:"subnetId"`
-	Cidr                        string      `structs:"cidr"`
-	CapacityTier                string      `structs:"capacityTier,omitempty"`
-	TierLevel                   string      `structs:"tierLevel,omitempty"`
-	NssAccount                  string      `structs:"nssAccount,omitempty"`
-	WritingSpeedState           string      `structs:"writingSpeedState,omitempty"`
-	OptimizedNetworkUtilization bool        `structs:"optimizedNetworkUtilization"`
-	SecurityGroupID             string      `structs:"securityGroupId,omitempty"`
-	CloudProviderAccount        string      `structs:"cloudProviderAccount,omitempty"`
-	BackupVolumesToCbs          bool        `structs:"backupVolumesToCbs"`
-	EnableCompliance            bool        `structs:"enableCompliance"`
-	EnableMonitoring            bool        `structs:"enableMonitoring"`
-	AllowDeployInExistingRg     bool        `structs:"allowDeployInExistingRg,omitempty"`
-	AzureTags                   []userTags  `structs:"azureTags,omitempty"`
+	Name                        string                    `structs:"name"`
+	DataEncryptionType          string                    `structs:"dataEncryptionType"`
+	WorkspaceID                 string                    `structs:"tenantId,omitempty"`
+	Region                      string                    `structs:"region"`
+	SubscriptionID              string                    `structs:"subscriptionId"`
+	VnetID                      string                    `structs:"vnetId,omitempty"`
+	SvmPassword                 string                    `structs:"svmPassword"`
+	VsaMetadata                 vsaMetadata               `structs:"vsaMetadata"`
+	DiskSize                    diskSize                  `structs:"diskSize"`
+	StorageType                 string                    `structs:"storageType"`
+	SubnetID                    string                    `structs:"subnetId"`
+	Cidr                        string                    `structs:"cidr"`
+	CapacityTier                string                    `structs:"capacityTier,omitempty"`
+	TierLevel                   string                    `structs:"tierLevel,omitempty"`
+	AzureEncryptionParameters   azureEncryptionParameters `structs:"azureEncryptionParameters,omitempty"`
+	NssAccount                  string                    `structs:"nssAccount,omitempty"`
+	WritingSpeedState           string                    `structs:"writingSpeedState,omitempty"`
+	OptimizedNetworkUtilization bool                      `structs:"optimizedNetworkUtilization"`
+	SecurityGroupID             string                    `structs:"securityGroupId,omitempty"`
+	CloudProviderAccount        string                    `structs:"cloudProviderAccount,omitempty"`
+	BackupVolumesToCbs          bool                      `structs:"backupVolumesToCbs"`
+	EnableCompliance            bool                      `structs:"enableCompliance"`
+	EnableMonitoring            bool                      `structs:"enableMonitoring"`
+	AllowDeployInExistingRg     bool                      `structs:"allowDeployInExistingRg,omitempty"`
+	AzureTags                   []userTags                `structs:"azureTags,omitempty"`
 	IsHA                        bool
 	ResourceGroup               string `structs:"resourceGroup,omitempty"`
 	VnetResourceGroup           string
@@ -46,10 +47,15 @@ type createCVOAzureDetails struct {
 	HAParams                    haParamsAzure `structs:"haParams,omitempty"`
 }
 
+type azureEncryptionParameters struct {
+	Key string `structs:"key,omitempty"`
+}
+
 // haParamsAzure the input for requesting a CVO
 type haParamsAzure struct {
 	PlatformSerialNumberNode1 string `structs:"platformSerialNumberNode1,omitempty"`
 	PlatformSerialNumberNode2 string `structs:"platformSerialNumberNode2,omitempty"`
+	EnableHTTPS               bool   `structs:"enableHttps"`
 }
 
 // cvoListAzure the users input for getting cvo
@@ -324,7 +330,7 @@ func validateCVOAzureParams(cvoDetails createCVOAzureDetails) error {
 	}
 
 	if cvoDetails.IsHA == false && (cvoDetails.HAParams.PlatformSerialNumberNode1 != "" || cvoDetails.HAParams.PlatformSerialNumberNode2 != "") {
-		return fmt.Errorf("both platform_serial_number_node1 and platform_serial_number_node2 parameters are required when having ha type as true and license_type as azure-ha-cot-premium-byol")
+		return fmt.Errorf("both platform_serial_number_node1 and platform_serial_number_node2 parameters are not required when having ha type as false")
 	}
 
 	if cvoDetails.VsaMetadata.LicenseType == "azure-cot-premium-byol" {

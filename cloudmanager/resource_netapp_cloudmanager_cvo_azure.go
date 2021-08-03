@@ -68,6 +68,11 @@ func resourceCVOAzure() *schema.Resource {
 				Default:      "TB",
 				ValidateFunc: validation.StringInSlice([]string{"GB", "TB"}, false),
 			},
+			"azure_encryption_parameters": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"ontap_version": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -215,6 +220,12 @@ func resourceCVOAzure() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"ha_enable_https": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+				Default:  false,
+			},
 			"client_id": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -260,6 +271,11 @@ func resourceCVOAzureCreate(d *schema.ResourceData, meta interface{}) error {
 	cvoDetails.VsaMetadata.LicenseType = d.Get("license_type").(string)
 	cvoDetails.VsaMetadata.InstanceType = d.Get("instance_type").(string)
 
+	if cvoDetails.DataEncryptionType == "AZURE" {
+		if c, ok := d.GetOk("azure_encryption_parameters"); ok {
+			cvoDetails.AzureEncryptionParameters.Key = c.(string)
+		}
+	}
 	if c, ok := d.GetOk("cidr"); ok {
 		cvoDetails.Cidr = c.(string)
 	}
@@ -295,15 +311,17 @@ func resourceCVOAzureCreate(d *schema.ResourceData, meta interface{}) error {
 		cvoDetails.SerialNumber = c.(string)
 	}
 
-	if c, ok := d.GetOk("platform_serial_number_node1"); ok {
-		cvoDetails.HAParams.PlatformSerialNumberNode1 = c.(string)
-	}
-
-	if c, ok := d.GetOk("platform_serial_number_node2"); ok {
-		cvoDetails.HAParams.PlatformSerialNumberNode2 = c.(string)
-	}
-
 	cvoDetails.IsHA = d.Get("is_ha").(bool)
+	if cvoDetails.IsHA == true {
+		if c, ok := d.GetOk("platform_serial_number_node1"); ok {
+			cvoDetails.HAParams.PlatformSerialNumberNode1 = c.(string)
+		}
+
+		if c, ok := d.GetOk("platform_serial_number_node2"); ok {
+			cvoDetails.HAParams.PlatformSerialNumberNode2 = c.(string)
+		}
+		cvoDetails.HAParams.EnableHTTPS = d.Get("ha_enable_https").(bool)
+	}
 
 	err := validateCVOAzureParams(cvoDetails)
 	if err != nil {

@@ -62,6 +62,16 @@ func resourceCVOAWS() *schema.Resource {
 				Default:      "TB",
 				ValidateFunc: validation.StringInSlice([]string{"GB", "TB"}, false),
 			},
+			"aws_encryption_kms_key_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"aws_encryption_kms_key_arn": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"ontap_version": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -325,6 +335,17 @@ func resourceCVOAWSCreate(d *schema.ResourceData, meta interface{}) error {
 	cvoDetails.VsaMetadata.UseLatestVersion = d.Get("use_latest_version").(bool)
 	cvoDetails.VsaMetadata.LicenseType = d.Get("license_type").(string)
 	cvoDetails.VsaMetadata.InstanceType = d.Get("instance_type").(string)
+
+	if cvoDetails.DataEncryptionType == "AWS" {
+		// Only one of KMS key id or KMS arn should be specified
+		if c, ok := d.GetOk("aws_encryption_kms_key_id"); ok {
+			cvoDetails.AwsEncryptionParameters.KmsKeyID = c.(string)
+		}
+
+		if c, ok := d.GetOk("aws_encryption_kms_key_arn"); ok {
+			cvoDetails.AwsEncryptionParameters.KmsKeyArn = c.(string)
+		}
+	}
 
 	if c, ok := d.GetOk("vpc_id"); ok {
 		cvoDetails.VpcID = c.(string)

@@ -78,7 +78,8 @@ type vsaMetadata struct {
 
 // awsEncryptionParameters the input for requesting a CVO
 type awsEncryptionParameters struct {
-	KmsKeyID string `structs:"kmsKeyId,omitempty"`
+	KmsKeyID  string `structs:"kmsKeyId,omitempty"`
+	KmsKeyArn string `structs:"kmsKeyArn,omitempty"`
 }
 
 // deleteCVODetails the users input for deleting a cvo

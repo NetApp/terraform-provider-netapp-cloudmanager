@@ -580,9 +580,10 @@ func resourceCVOVolumeUpdate(d *schema.ResourceData, meta interface{}) error {
 	}
 	if d.HasChange("permission") || d.HasChange("users") {
 		volume.ShareInfoUpdate.ShareName = d.Get("share_name").(string)
+		volume.ShareInfoUpdate.AccessControlList = make([]accessControlList, 1)
 		volume.ShareInfoUpdate.AccessControlList[0].Permission = d.Get("permission").(string)
-		users := make([]string, 0, d.Get("Users").(*schema.Set).Len())
-		for _, x := range d.Get("Users").(*schema.Set).List() {
+		users := make([]string, 0, d.Get("users").(*schema.Set).Len())
+		for _, x := range d.Get("users").(*schema.Set).List() {
 			users = append(users, x.(string))
 		}
 		volume.ShareInfoUpdate.AccessControlList[0].Users = users
