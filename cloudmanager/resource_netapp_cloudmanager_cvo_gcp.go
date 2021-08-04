@@ -58,7 +58,7 @@ func resourceCVOGCP() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Default:      "pd-ssd",
-				ValidateFunc: validation.StringInSlice([]string{"pd-standard", "pd-ssd"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"pd-balanced", "pd-standard", "pd-ssd"}, false),
 			},
 			"gcp_volume_size": {
 				Type:     schema.TypeInt,
