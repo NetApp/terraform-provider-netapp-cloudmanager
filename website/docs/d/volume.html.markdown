@@ -41,7 +41,7 @@ The following attributes are exported in addition to the arguments listed above:
 * `svm_name` - The name of the SVM.
 * `size` - The volume size, supported with decimal numbers.
 * `size_unit` - ['Byte' or 'KB' or 'MB' or 'GB' or 'TB'].
-* `provider_volume_type` - The underlying cloud provider volume type. For AWS: ['gp3', 'gp2', 'io1', 'st1', 'sc1']. For Azure: ['Premium_LRS','Standard_LRS','StandardSSD_LRS']. For GCP: ['pd-ssd','pd-standard']
+* `provider_volume_type` - The underlying cloud provider volume type. For AWS: ['gp3', 'gp2', 'io1', 'st1', 'sc1']. For Azure: ['Premium_LRS','Standard_LRS','StandardSSD_LRS']. For GCP: ['pd-balanced', 'pd-ssd','pd-standard']
 * `enable_thin_provisioning` - Enable thin provisioning. The default is 'true'.
 * `enable_compression` - Enable compression. The default is 'true'.
 * `enable_deduplication` - Enable deduplication. The default is 'true'.

@@ -64,7 +64,7 @@ func resourceOCCMAzure() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
-				Default:  "Standard_D2s_v3",
+				Default:  "Standard_DS3_v2",
 			},
 			"network_security_group_name": {
 				Type:     schema.TypeString,
