@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"strings"
 
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -17,7 +18,7 @@ func resourceOCCMAWS() *schema.Resource {
 		Exists: resourceOCCMAWSExists,
 		Update: resourceOCCMAWSUpdate,
 		Importer: &schema.ResourceImporter{
-			State: schema.ImportStatePassthrough,
+			State: resourceOCCMAWSImport,
 		},
 
 		Schema: map[string]*schema.Schema{
@@ -256,8 +257,71 @@ func resourceOCCMAWSRead(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	if res.InstanceID != id {
+	if *res.InstanceId != id {
 		return fmt.Errorf("Expected occm ID %v, Response could not find", id)
+	}
+
+	if occmDetails.Region == "" {
+		occmDetails.Region = *res.Placement.AvailabilityZone
+		occmDetails.Region = occmDetails.Region[:len(occmDetails.Region)-1]
+		d.Set("region", occmDetails.Region)
+	}
+	occmDetails.InstanceID = *res.InstanceId
+	disableAPITermination, err := client.CallAWSDescribeInstanceAttribute(occmDetails)
+	if err != nil {
+		return err
+	}
+	d.Set("enable_termination_protection", disableAPITermination)
+	d.Set("instance_type", res.InstanceType)
+	d.Set("subnet_id", res.SubnetId)
+	d.Set("security_group_id", res.SecurityGroups[0].GroupId)
+	d.Set("key_name", res.KeyName)
+	iamInstanceProfile := *res.IamInstanceProfile.Arn
+	slashIndex := strings.Index(iamInstanceProfile, "/")
+	iamInstanceProfile = iamInstanceProfile[slashIndex+1:]
+	d.Set("iam_instance_profile_name", iamInstanceProfile)
+	if _, ok := d.GetOk("ami"); ok {
+		d.Set("ami", res.ImageId)
+	}
+	// The following tags are ignored.
+	excludedTags := [...]string{"Name", "OCCMInstance", "Owner", "PrincipalId"}
+	tags := make([]map[string]string, 0)
+	for _, tag := range res.Tags {
+		var exclusion bool
+		for _, exTag := range excludedTags {
+			if *tag.Key == exTag {
+				exclusion = true
+			}
+		}
+		if exclusion == false {
+			tagMap := make(map[string]string)
+			tagMap["tag_key"] = *tag.Key
+			tagMap["tag_value"] = *tag.Value
+			tags = append(tags, tagMap)
+		}
+		if *tag.Key == "Name" {
+			d.Set("name", *tag.Value)
+		}
+	}
+	d.Set("aws_tag", tags)
+
+	if res.PublicIpAddress == nil {
+		d.Set("associate_public_ip_address", false)
+	} else {
+		d.Set("associate_public_ip_address", true)
+	}
+
+	if v, ok := d.GetOk("client_id"); ok {
+		client.ClientID = v.(string)
+	}
+
+	if _, ok := d.GetOk("company"); !ok {
+		company, err := client.getCompany()
+		if err != nil {
+			log.Printf("Error when reading system info from cloudmanager.")
+			return err
+		}
+		d.Set("company", company)
 	}
 
 	return nil
@@ -310,7 +374,7 @@ func resourceOCCMAWSExists(d *schema.ResourceData, meta interface{}) (bool, erro
 		return false, err
 	}
 
-	if res.InstanceID != id {
+	if *res.InstanceId != id {
 		d.SetId("")
 		return false, nil
 	}
@@ -359,4 +423,17 @@ func resourceOCCMAWSUpdate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 	return nil
+}
+
+func resourceOCCMAWSImport(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
+	parts := strings.Split(d.Id(), ":")
+	if len(parts) != 2 {
+		return []*schema.ResourceData{}, fmt.Errorf("Wrong format of resource: %s. Please follow 'client_id/connector_id'", d.Id())
+	}
+
+	d.SetId(parts[1])
+	d.Set("client_id", parts[0])
+
+	return []*schema.ResourceData{d}, nil
+
 }

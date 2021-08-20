@@ -81,3 +81,6 @@ The following attributes are exported in addition to the arguments listed above:
 
 With netapp-cloudmanager_connector_aws, every resource has a unique ID, but names are not necessarily unique.
 
+## Connector Import
+The id used to import is constructed with two attributes: client id and connector id. The format is CLIENT_ID:CONNECTOR_ID
+
