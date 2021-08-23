@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/fatih/structs"
 )
 
@@ -365,14 +366,14 @@ func (c *Client) createAWSInstance(occmDetails createOCCMDetails) (string, error
 	return instanceID, nil
 }
 
-func (c *Client) getAWSInstance(occmDetails createOCCMDetails, id string) (createOCCMDetails, error) {
+func (c *Client) getAWSInstance(occmDetails createOCCMDetails, id string) (ec2.Instance, error) {
 
 	log.Print("getAWSInstance")
 
 	res, err := c.CallAWSInstanceGet(occmDetails)
 	returnOCCM := createOCCMDetails{}
 	if err != nil {
-		return createOCCMDetails{}, err
+		return ec2.Instance{}, nil
 	}
 	log.Printf("getAWSInstance result: %#v", res)
 	for _, instance := range res {
@@ -380,11 +381,10 @@ func (c *Client) getAWSInstance(occmDetails createOCCMDetails, id string) (creat
 			returnOCCM.AMI = *instance.ImageId
 			returnOCCM.InstanceID = *instance.InstanceId
 			returnOCCM.InstanceType = *instance.InstanceType
-			return returnOCCM, nil
+			return instance, nil
 		}
 	}
-
-	return createOCCMDetails{}, nil
+	return ec2.Instance{}, nil
 }
 
 func (c *Client) createOCCM(occmDetails createOCCMDetails, proxyCertificates []string) (OCCMMResult, error) {
@@ -438,7 +438,6 @@ func (c *Client) checkOCCMStatus() (occmAgent, error) {
 	baseURL := fmt.Sprintf("/agents-mgmt/agent/%sclients", c.ClientID)
 
 	hostType := "CloudManagerHost"
-
 	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
 	if err != nil {
 		log.Print("checkOCCMStatus request failed ", statusCode)
@@ -571,4 +570,30 @@ func (c *Client) updateOCCM(occmDetails createOCCMDetails, proxyCertificates []s
 	}
 
 	return nil
+}
+
+func (c *Client) getCompany() (string, error) {
+	if c.Token == "" {
+		accesTokenResult, err := c.getAccessToken()
+		if err != nil {
+			return "", err
+		}
+		c.Token = accesTokenResult.Token
+	}
+	hostType := "CloudManagerHost"
+	baseURL := "/occm/api/occm/system/about"
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+	if err != nil {
+		log.Print("getCompany request failed ", statusCode)
+		return "", err
+	}
+	responseError := apiResponseChecker(statusCode, response, "getCompany")
+	if responseError != nil {
+		return "", responseError
+	}
+	var f interface{}
+	json.Unmarshal(response, &f)
+	m := f.(map[string]interface{})
+	siteIdentifier := m["siteIdentifier"].(map[string]interface{})
+	return siteIdentifier["company"].(string), nil
 }

@@ -98,7 +98,6 @@ func (c *Client) CallAWSInstanceCreate(occmDetails createOCCMDetails) (string, e
 			tags = append(tags, tag)
 		}
 	}
-
 	// Specify the details of the instance that you want to create.
 	runInstancesInput := &ec2.RunInstancesInput{
 		BlockDeviceMappings: []*ec2.BlockDeviceMapping{
@@ -465,8 +464,6 @@ func (c *Client) CallAMIGet(occmDetails createOCCMDetails) (string, error) {
 		}
 	}
 
-	log.Print("CallAMIGet ", *result)
-
 	return latestAMI, nil
 }
 
@@ -545,7 +542,21 @@ func (c *Client) CallVNetGetCidr(subscriptionID string, resourceGroup string, vn
 
 // CallAWSInstanceGet can be used to make a request to get AWS Instance
 func (c *Client) CallAWSInstanceGet(occmDetails createOCCMDetails) ([]ec2.Instance, error) {
-
+	if occmDetails.Region == "" {
+		regions, err := c.CallAWSRegionGet(occmDetails)
+		if err != nil {
+			return nil, err
+		}
+		var res []ec2.Instance
+		for _, region := range regions {
+			regionReservation, err := c.CallAWSGetReservationsForRegion(region)
+			if err != nil {
+				return nil, err
+			}
+			res = append(res, regionReservation...)
+		}
+		return res, nil
+	}
 	sess := session.Must(session.NewSession(aws.NewConfig().WithRegion(occmDetails.Region)))
 	svc := ec2.New(sess)
 	input := &ec2.DescribeInstancesInput{
@@ -595,6 +606,30 @@ func (c *Client) CallAWSInstanceGet(occmDetails createOCCMDetails) ([]ec2.Instan
 		}
 	}
 
+	return res, nil
+}
+
+// CallAWSRegionGet describe all regions.
+func (c *Client) CallAWSRegionGet(occmDetails createOCCMDetails) ([]string, error) {
+	sess := session.Must(session.NewSession())
+	svc := ec2.New(sess)
+
+	result, err := svc.DescribeRegions(nil)
+	if err != nil {
+		log.Printf("CallAWSRegionGet error: %#v", err)
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			default:
+				return nil, aerr
+			}
+		}
+		return nil, err
+	}
+
+	var res []string
+	for _, region := range result.Regions {
+		res = append(res, *region.RegionName)
+	}
 	return res, nil
 }
 
@@ -747,4 +782,60 @@ func (c *Client) CallAWSTagDelete(occmDetails createOCCMDetails) error {
 
 	fmt.Println(result)
 	return nil
+}
+
+// CallAWSDescribeInstanceAttribute returns disableAPITermination.
+func (c *Client) CallAWSDescribeInstanceAttribute(occmDetails createOCCMDetails) (bool, error) {
+	sess := session.Must(session.NewSession(aws.NewConfig().WithRegion(occmDetails.Region)))
+	svc := ec2.New(sess)
+	input := &ec2.DescribeInstanceAttributeInput{
+		Attribute:  aws.String("disableApiTermination"),
+		InstanceId: aws.String(occmDetails.InstanceID),
+	}
+
+	result, err := svc.DescribeInstanceAttribute(input)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			default:
+				return false, aerr
+			}
+		}
+		return false, err
+	}
+	disableAPITermination := *result.DisableApiTermination.Value
+	if err != nil {
+		return false, err
+	}
+
+	return disableAPITermination, nil
+}
+
+// CallAWSGetReservationsForRegion gets reservations for a region.
+func (c *Client) CallAWSGetReservationsForRegion(region string) ([]ec2.Instance, error) {
+
+	var res []ec2.Instance
+
+	sess := session.Must(session.NewSession(aws.NewConfig().WithRegion(region)))
+	svc := ec2.New(sess)
+	input := &ec2.DescribeInstancesInput{}
+
+	result, err := svc.DescribeInstances(input)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			default:
+				return nil, aerr
+			}
+		}
+		return nil, err
+	}
+
+	for _, reservation := range result.Reservations {
+		for _, instance := range reservation.Instances {
+			res = append(res, *instance)
+		}
+	}
+
+	return res, err
 }
