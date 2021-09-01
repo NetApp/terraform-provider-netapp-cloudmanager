@@ -57,6 +57,13 @@ func resourceOCCMAWS() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
+					v := val.(string)
+					if strings.Contains(v, " ") {
+						errs = append(errs, fmt.Errorf("%q must not contain space, got: %s", key, v))
+					}
+					return
+				},
 			},
 			"iam_instance_profile_name": {
 				Type:     schema.TypeString,
@@ -274,7 +281,27 @@ func resourceOCCMAWSRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("enable_termination_protection", disableAPITermination)
 	d.Set("instance_type", res.InstanceType)
 	d.Set("subnet_id", res.SubnetId)
-	d.Set("security_group_id", res.SecurityGroups[0].GroupId)
+	var sgIDs string
+	var remoteSgIDsArray []string
+	for _, sgID := range res.SecurityGroups {
+		remoteSgIDsArray = append(remoteSgIDsArray, *sgID.GroupId)
+	}
+	// preserve order of the ids in state file
+	localSgIDs := d.Get("security_group_id").(string)
+	localSgIDsArray := strings.Split(localSgIDs, ",")
+	m := make(map[string]bool)
+
+	for _, item := range localSgIDsArray {
+		m[item] = true
+	}
+
+	for _, item := range remoteSgIDsArray {
+		if _, ok := m[item]; !ok {
+			localSgIDsArray = append(localSgIDsArray, item)
+		}
+	}
+	sgIDs = strings.Join(localSgIDsArray, ",")
+	d.Set("security_group_id", sgIDs)
 	d.Set("key_name", res.KeyName)
 	iamInstanceProfile := *res.IamInstanceProfile.Arn
 	slashIndex := strings.Index(iamInstanceProfile, "/")
