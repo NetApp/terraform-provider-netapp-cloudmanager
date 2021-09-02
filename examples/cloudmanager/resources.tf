@@ -173,3 +173,17 @@ resource "netapp-cloudmanager_aggregate" "cl-aggregate" {
   disk_size_size = 500
   disk_size_unit = "GB"
 }
+resource "netapp-cloudmanager_aws_fsx" "cl-fsx-aws" {
+  provider = netapp-cloudmanager
+  name = "fsxTest"
+  region = "us-east-2"
+  workspace_id = "workspace-abaaFgcQ"
+  tenant_id = "account-j3aZttuL"
+  storage_capacity_size = 1024
+  storage_capacity_size_unit = "GiB"
+  aws_credentials_name = "tomerCred"
+  primary_subnet_id = "subnet-123456"
+  secondary_subnet_id = "subnet-56789"
+  throughput_capacity = 512
+  fsx_admin_password = "Netapp234"
+}

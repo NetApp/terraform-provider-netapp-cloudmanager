@@ -78,3 +78,18 @@ resource "netapp-cloudmanager_volume" "cifs-volume-1" {
   capacity_tier= "S3"
   tiering_policy = "auto"
 }
+
+resource "netapp-cloudmanager_aws_fsx" "cl-fsx-aws" {
+  provider = netapp-cloudmanager
+  name = "fsxTest"
+  region = "us-east-2"
+  workspace_id = "workspace-abaaFgcQ"
+  tenant_id = "account-j3aZttuL"
+  storage_capacity_size = 1024
+  storage_capacity_size_unit = "GiB"
+  aws_credentials_name = "tomerCred"
+  primary_subnet_id = "subnet-123456"
+  secondary_subnet_id = "subnet-56789"
+  throughput_capacity = 512
+  fsx_admin_password = "Netapp234"
+}

@@ -25,6 +25,7 @@ and therefore may undergo significant changes as the community improves it.
 * Create volumes of any type: NFS, CIFS, or iSCSI
 * Create snapmirror relationship
 * Create Netapp Support Site account
+* Create a AWS working environment for FSX
 
 ## Example Usage
 
