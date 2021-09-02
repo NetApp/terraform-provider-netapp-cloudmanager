@@ -10,3 +10,4 @@ FEATURES:
 * **New Resource:** `netapp-cloudmanager_cvo_gcp`
 * **New Resource:** `netapp-cloudmanager_aggregate`
 * **New Resource:** `netapp-cloudmanager_volume`
+* **New Resource:** `netapp-cloudmanager_aws_fsx`
