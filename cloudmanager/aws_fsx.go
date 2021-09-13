@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/fatih/structs"
+	"github.com/hashicorp/terraform/helper/schema"
 )
 
 // createAWSFSXDetails the users input for creating a FSX
@@ -24,8 +25,14 @@ type createAWSFSXDetails struct {
 	RouteTableIds          []string        `structs:"routeTableIds,omitempty"`
 	ThroughputCapacity     int             `structs:"throughputCapacity,omitempty"`
 	SecurityGroupIds       []string        `structs:"securityGroupIds,omitempty"`
-	AwsFSXTags             []userTags      `structs:"tags,omitempty"`
+	AwsFSXTags             []fsxTags       `structs:"tags,omitempty"`
 	TenantID               string
+}
+
+// fsxTags the input for requesting a FSX AWS
+type fsxTags struct {
+	TagKey   string `structs:"key"`
+	TagValue string `structs:"value,omitempty"`
 }
 
 // storageCapacity the input for requesting a FSX AWS
@@ -44,6 +51,20 @@ type deleteAWSFSXDetails struct {
 type fsxResult struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
+}
+
+// expandFSXTags converts set to userTags struct
+func expandFSXTags(set *schema.Set) []fsxTags {
+	tags := []fsxTags{}
+
+	for _, v := range set.List() {
+		tag := v.(map[string]interface{})
+		fsxTag := fsxTags{}
+		fsxTag.TagKey = tag["tag_key"].(string)
+		fsxTag.TagValue = tag["tag_value"].(string)
+		tags = append(tags, fsxTag)
+	}
+	return tags
 }
 
 func (c *Client) getAWSCredentialsID(name string, tenantID string) (string, error) {
