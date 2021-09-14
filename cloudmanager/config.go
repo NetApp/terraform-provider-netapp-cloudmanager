@@ -12,6 +12,7 @@ type configStuct struct {
 	SaClientID   string
 	Environment  string
 	CVOHostName  string
+	Simulator    bool
 }
 
 // Client is the main function to connect to the APi
@@ -60,5 +61,8 @@ func (c *configStuct) clientFun() (*Client, error) {
 		return &Client{}, fmt.Errorf("expected refresh_token or sa_secret_key and sa_client_id")
 	}
 
+	if c.Simulator {
+		client.SetSimulator(c.Simulator)
+	}
 	return client, nil
 }

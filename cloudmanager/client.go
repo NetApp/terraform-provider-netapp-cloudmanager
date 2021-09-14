@@ -60,6 +60,7 @@ type Client struct {
 	instanceInput *restapi.Client
 	restapiClient *restapi.Client
 	requestSlots  chan int
+	Simulator     bool
 }
 
 // CallAWSInstanceCreate can be used to make a request to create AWS Instance
@@ -710,6 +711,16 @@ func (c *Client) waitForAvailableSlot() {
 
 func (c *Client) releaseSlot() {
 	<-c.requestSlots
+}
+
+// SetSimulator for the client to use for tests on simulator
+func (c *Client) SetSimulator(simulator bool) {
+	c.Simulator = simulator
+}
+
+// GetSimulator returns if it is set running on simulator
+func (c *Client) GetSimulator() bool {
+	return c.Simulator
 }
 
 // CallAWSTagCreate creates tag
