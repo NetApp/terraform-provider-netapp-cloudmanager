@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/fatih/structs"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -51,6 +52,23 @@ type deleteAWSFSXDetails struct {
 type fsxResult struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
+}
+
+// fsxStatusResult for creating a fsx
+type fsxStatusResult struct {
+	ProviderDetails providerDetails `json:"providerDetails"`
+	Error           string          `json:"error"`
+}
+
+// providerDetails for creating a fsx
+type providerDetails struct {
+	Status status `json:"status"`
+}
+
+// status for creating a fsx
+type status struct {
+	Status    string `json:"status"`
+	Lifecycle string `json:"lifecycle"`
 }
 
 // expandFSXTags converts set to userTags struct
@@ -181,6 +199,8 @@ func (c *Client) createAWSFSX(fsxDetails createAWSFSXDetails) (fsxResult, error)
 
 	baseURL := fmt.Sprintf("/fsx-ontap/working-environments/%s", fsxDetails.TenantID)
 
+	creationWaitTime := 60
+	creationRetryCount := 60
 	hostType := "CloudManagerHost"
 	params := structs.Map(fsxDetails)
 
@@ -201,7 +221,74 @@ func (c *Client) createAWSFSX(fsxDetails createAWSFSXDetails) (fsxResult, error)
 		return fsxResult{}, err
 	}
 
+	err = c.waitOnCompletionFSX(result.ID, fsxDetails.TenantID, "FSX", "create", creationRetryCount, creationWaitTime)
+	if err != nil {
+		return fsxResult{}, err
+	}
+
 	return result, nil
+}
+
+func (c *Client) checkTaskStatusFSX(id string, tenantID string) (providerDetails, string, error) {
+
+	log.Printf("checkTaskStatusFSX: %s", tenantID)
+
+	baseURL := fmt.Sprintf("/fsx-ontap/working-environments/%s/%s?provider-details=true", tenantID, id)
+
+	hostType := "CloudManagerHost"
+
+	var statusCode int
+	var response []byte
+	networkRetries := 3
+	for {
+		code, result, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+		if err != nil {
+			if networkRetries > 0 {
+				time.Sleep(1 * time.Second)
+				networkRetries--
+			} else {
+				log.Print("checkTaskStatusFSX request failed ", code)
+				return providerDetails{}, "", err
+			}
+		} else {
+			statusCode = code
+			response = result
+			break
+		}
+	}
+
+	responseError := apiResponseChecker(statusCode, response, "checkTaskStatusFSX")
+	if responseError != nil {
+		return providerDetails{}, "", responseError
+	}
+
+	var result fsxStatusResult
+	if err := json.Unmarshal(response, &result); err != nil {
+		log.Print("Failed to unmarshall response from checkTaskStatusFSX ", err)
+		return providerDetails{}, "", err
+	}
+
+	return result.ProviderDetails, result.Error, nil
+}
+
+func (c *Client) waitOnCompletionFSX(id string, tenantID string, actionName string, task string, retries int, waitInterval int) error {
+	for {
+		fsxStatus, failureErrorMessage, err := c.checkTaskStatusFSX(id, tenantID)
+		if err != nil {
+			return err
+		}
+		if fsxStatus.Status.Status == "ON" && fsxStatus.Status.Lifecycle != "CREATING" {
+			return nil
+		} else if fsxStatus.Status.Status == "FAILED" {
+			return fmt.Errorf("Failed to %s %s, error: %s", task, actionName, failureErrorMessage)
+		} else if retries == 0 {
+			log.Print("Taking too long to ", task, actionName)
+			return fmt.Errorf("Taking too long for %s to %s or not properly setup", actionName, task)
+		}
+		log.Printf("Sleep for %d seconds", waitInterval)
+		time.Sleep(time.Duration(waitInterval) * time.Second)
+		retries--
+	}
 }
 
 func (c *Client) deleteAWSFSX(id string, tenantID string) error {
