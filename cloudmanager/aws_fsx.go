@@ -50,8 +50,10 @@ type deleteAWSFSXDetails struct {
 
 // fsxResult the users input for creating a FSX AWS
 type fsxResult struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+	ID              string          `json:"id"`
+	Name            string          `json:"name"`
+	Region          string          `json:"region"`
+	ProviderDetails providerDetails `json:"providerDetails"`
 }
 
 // fsxStatusResult for creating a fsx
@@ -168,6 +170,51 @@ func (c *Client) getAWSFSX(id string, tenantID string) (string, error) {
 	}
 
 	return "", nil
+}
+
+func (c *Client) getAWSFSXByID(id string, tenantID string) (fsxResult, error) {
+
+	log.Print("getAWSFSXByID")
+
+	accessTokenResult, err := c.getAccessToken()
+	if err != nil {
+		log.Print("in getAWSFSXByID request, failed to get AccessToken")
+		return fsxResult{}, err
+	}
+	c.Token = accessTokenResult.Token
+
+	if tenantID == "" {
+		id, err := c.getTenant()
+		if err != nil {
+			log.Print("getTenant request failed ", err)
+			return fsxResult{}, err
+		}
+		log.Print("tenant result ", id)
+		tenantID = id
+	}
+
+	baseURL := fmt.Sprintf("/fsx-ontap/working-environments/%s/%s?provider-details=true", tenantID, id)
+
+	hostType := "CloudManagerHost"
+
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+	if err != nil {
+		log.Print("getAWSFSXByID request failed ", statusCode, err)
+		return fsxResult{}, err
+	}
+
+	responseError := apiResponseChecker(statusCode, response, "getAWSFSXByID")
+	if responseError != nil {
+		return fsxResult{}, responseError
+	}
+
+	var result fsxResult
+	if err := json.Unmarshal(response, &result); err != nil {
+		log.Print("Failed to unmarshall response from getAWSFSXByID ", err)
+		return fsxResult{}, err
+	}
+
+	return result, nil
 }
 
 func (c *Client) createAWSFSX(fsxDetails createAWSFSXDetails) (fsxResult, error) {
