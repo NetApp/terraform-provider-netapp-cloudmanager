@@ -331,14 +331,22 @@ func resourceCVOAzureCreate(d *schema.ResourceData, meta interface{}) error {
 
 	cvoDetails.VnetForInternal = d.Get("vnet_id").(string)
 
+	resourceGroup := cvoDetails.ResourceGroup
 	if c, ok := d.GetOk("vnet_resource_group"); ok {
 		cvoDetails.VnetResourceGroup = c.(string)
-		cvoDetails.VnetID = fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s", cvoDetails.SubscriptionID, cvoDetails.VnetResourceGroup, cvoDetails.VnetForInternal)
-		cvoDetails.SubnetID = fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s/subnets/%s", cvoDetails.SubscriptionID, cvoDetails.VnetResourceGroup, cvoDetails.VnetForInternal, d.Get("subnet_id").(string))
-	} else {
-		cvoDetails.VnetID = fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s", cvoDetails.SubscriptionID, cvoDetails.ResourceGroup, cvoDetails.VnetForInternal)
-		cvoDetails.SubnetID = fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s/subnets/%s", cvoDetails.SubscriptionID, cvoDetails.ResourceGroup, cvoDetails.VnetForInternal, d.Get("subnet_id").(string))
+		resourceGroup = cvoDetails.VnetResourceGroup
 	}
+
+	resourceGroupPath := fmt.Sprintf("subscriptions/%s/resourceGroups/%s", cvoDetails.SubscriptionID, resourceGroup)
+	vnetFormat := "/%s/providers/Microsoft.Network/virtualNetworks/%s"
+	if client.GetSimulator() {
+		log.Print("In simulator env...")
+		vnetFormat = "%s/%s"
+	}
+
+	vnet := fmt.Sprintf(vnetFormat, resourceGroupPath, cvoDetails.VnetForInternal)
+	cvoDetails.VnetID = vnet
+	cvoDetails.SubnetID = fmt.Sprintf("%s/subnets/%s", vnet, d.Get("subnet_id").(string))
 
 	res, err := client.createCVOAzure(cvoDetails)
 	if err != nil {

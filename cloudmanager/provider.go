@@ -34,6 +34,13 @@ func Provider() terraform.ResourceProvider {
 				DefaultFunc: schema.EnvDefaultFunc("CLOUDMANAGER_SA_CLIENT_ID", nil),
 				Description: "The environment for OCCM operations.",
 			},
+			"simulator": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("CLOUDMANAGER_SIMULATOR", nil),
+				Description: "The environment for OCCM operations.",
+				Default:     false,
+			},
 		},
 
 		ResourcesMap: map[string]*schema.Resource{
@@ -68,6 +75,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		Environment:  d.Get("environment").(string),
 		SaSecretKey:  d.Get("sa_secret_key").(string),
 		SaClientID:   d.Get("sa_client_id").(string),
+		Simulator:    d.Get("simulator").(bool),
 	}
 
 	return config.clientFun()

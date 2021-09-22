@@ -148,7 +148,7 @@ func resourceAWSFSXCreate(d *schema.ResourceData, meta interface{}) error {
 	if c, ok := d.GetOk("tags"); ok {
 		tags := c.(*schema.Set)
 		if tags.Len() > 0 {
-			fsxDetails.AwsFSXTags = expandUserTags(tags)
+			fsxDetails.AwsFSXTags = expandFSXTags(tags)
 		}
 	}
 	fsxDetails.StorageCapacity.Size = d.Get("storage_capacity_size").(int)

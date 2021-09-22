@@ -401,6 +401,11 @@ func resourceOCCMAWSExists(d *schema.ResourceData, meta interface{}) (bool, erro
 		return false, err
 	}
 
+	if res.InstanceId == nil {
+		d.SetId("")
+		return false, nil
+	}
+
 	if *res.InstanceId != id {
 		d.SetId("")
 		return false, nil
