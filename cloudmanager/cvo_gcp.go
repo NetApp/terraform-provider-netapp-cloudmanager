@@ -11,7 +11,9 @@ import (
 )
 
 // GCPLicenseTypes is the GCP License types
-var GCPLicenseTypes = []string{"gcp-cot-standard-paygo", "gcp-cot-explore-paygo", "gcp-cot-premium-paygo", "gcp-cot-premium-byol", "gcp-ha-cot-standard-paygo", "gcp-ha-cot-premium-paygo", "gcp-ha-cot-explore-paygo", "gcp-ha-cot-premium-byol"}
+var GCPLicenseTypes = []string{"gcp-cot-standard-paygo", "gcp-cot-explore-paygo", "gcp-cot-premium-paygo",
+	"gcp-cot-premium-byol", "gcp-ha-cot-standard-paygo", "gcp-ha-cot-premium-paygo", "gcp-ha-cot-explore-paygo",
+	"gcp-ha-cot-premium-byol", "capacity-paygo", "ha-capacity-paygo"}
 
 // createCVOGCPDetails the users input for creating a CVO
 type createCVOGCPDetails struct {
@@ -217,5 +219,17 @@ func validateCVOGCPParams(cvoDetails createCVOGCPDetails) error {
 		}
 	}
 
+	if cvoDetails.VsaMetadata.CapacityPackageName != "" {
+		if cvoDetails.IsHA == true && cvoDetails.VsaMetadata.LicenseType != "ha-capacity-paygo" {
+			return fmt.Errorf("license_type must be ha-capacity-paygo")
+		}
+		if cvoDetails.IsHA == false && cvoDetails.VsaMetadata.LicenseType != "capacity-paygo" {
+			return fmt.Errorf("license_type must be capacity-paygo")
+		}
+	}
+
+	if strings.HasSuffix(cvoDetails.VsaMetadata.LicenseType, "capacity-paygo") && cvoDetails.VsaMetadata.CapacityPackageName == "" {
+		return fmt.Errorf("capacity_package_name is required on selecting Bring Your Own License with capacity based license type or Freemium")
+	}
 	return nil
 }

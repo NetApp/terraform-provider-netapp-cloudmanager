@@ -10,7 +10,9 @@ import (
 )
 
 // AWSLicenseTypes is the AWS License types
-var AWSLicenseTypes = []string{"cot-standard-paygo", "cot-premium-paygo", "cot-explore-paygo", "cot-premium-byol", "ha-cot-standard-paygo", "ha-cot-premium-paygo", "ha-cot-premium-byol", "ha-cot-explore-paygo"}
+var AWSLicenseTypes = []string{"cot-standard-paygo", "cot-premium-paygo", "cot-explore-paygo", "cot-premium-byol",
+	"ha-cot-standard-paygo", "ha-cot-premium-paygo", "ha-cot-premium-byol", "ha-cot-explore-paygo", "capacity-paygo",
+	"ha-capacity-paygo"}
 
 // createCVOAWSDetails the users input for creating a CVO
 type createCVOAWSDetails struct {
@@ -74,6 +76,8 @@ type vsaMetadata struct {
 	LicenseType          string `structs:"licenseType"`
 	InstanceType         string `structs:"instanceType,omitempty"`
 	PlatformSerialNumber string `structs:"platformSerialNumber,omitempty"`
+	CapacityPackageName  string `structs:"capacityPackageName,omitempty"`
+	ProvidedLicense      string `structs:"providedLicense,omitempty"`
 }
 
 // awsEncryptionParameters the input for requesting a CVO
@@ -375,6 +379,20 @@ func validateCVOParams(cvoDetails createCVOAWSDetails) error {
 
 	if cvoDetails.IsHA == true && cvoDetails.SubnetID != "" {
 		return fmt.Errorf("subnet_id not required when having ha as true")
+	}
+
+	if cvoDetails.VsaMetadata.CapacityPackageName != "" {
+		log.Print("Verify cvo parameter capacity_package_name is not empty")
+		if cvoDetails.IsHA == true && cvoDetails.VsaMetadata.LicenseType != "ha-capacity-paygo" {
+			return fmt.Errorf("license_type must be ha-capacity-paygo")
+		}
+		if cvoDetails.IsHA == false && cvoDetails.VsaMetadata.LicenseType != "capacity-paygo" {
+			return fmt.Errorf("license_type must be capacity-paygo")
+		}
+	}
+
+	if strings.HasSuffix(cvoDetails.VsaMetadata.LicenseType, "capacity-paygo") && cvoDetails.VsaMetadata.CapacityPackageName == "" {
+		return fmt.Errorf("capacity_package_name is required on selecting Bring Your Own License with capacity based license type or Freemium")
 	}
 	return nil
 }

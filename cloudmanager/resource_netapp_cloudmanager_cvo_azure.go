@@ -91,6 +91,17 @@ func resourceCVOAzure() *schema.Resource {
 				Default:      "azure-cot-standard-paygo",
 				ValidateFunc: validation.StringInSlice(AzureLicenseTypes, false),
 			},
+			"capacity_package_name": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Essential", "Professional", "Freemium"}, false),
+			},
+			"provided_license": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"instance_type": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -298,6 +309,15 @@ func resourceCVOAzureCreate(d *schema.ResourceData, meta interface{}) error {
 
 	if c, ok := d.GetOk("client_id"); ok {
 		client.ClientID = c.(string)
+	}
+
+	if c, ok := d.GetOk("capacity_package_name"); ok {
+		cvoDetails.VsaMetadata.CapacityPackageName = c.(string)
+		log.Print("Get capacity_package_name")
+	}
+
+	if c, ok := d.GetOk("provided_license"); ok {
+		cvoDetails.VsaMetadata.ProvidedLicense = c.(string)
 	}
 
 	if c, ok := d.GetOk("resource_group"); ok {

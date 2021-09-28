@@ -10,7 +10,9 @@ import (
 )
 
 // AzureLicenseTypes is the Azure License types
-var AzureLicenseTypes = []string{"azure-cot-standard-paygo", "azure-cot-premium-paygo", "azure-cot-premium-byol", "azure-cot-explore-paygo", "azure-ha-cot-standard-paygo", "azure-ha-cot-premium-paygo", "azure-ha-cot-premium-byol"}
+var AzureLicenseTypes = []string{"azure-cot-standard-paygo", "azure-cot-premium-paygo", "azure-cot-premium-byol",
+	"azure-cot-explore-paygo", "azure-ha-cot-standard-paygo", "azure-ha-cot-premium-paygo", "azure-ha-cot-premium-byol",
+	"capacity-paygo", "ha-capacity-paygo"}
 
 // createCVOAzureDetails the users input for creating a CVO
 type createCVOAzureDetails struct {
@@ -339,5 +341,17 @@ func validateCVOAzureParams(cvoDetails createCVOAzureDetails) error {
 		}
 	}
 
+	if cvoDetails.VsaMetadata.CapacityPackageName != "" {
+		if cvoDetails.IsHA == true && cvoDetails.VsaMetadata.LicenseType != "ha-capacity-paygo" {
+			return fmt.Errorf("license_type must be ha-capacity-paygo")
+		}
+		if cvoDetails.IsHA == false && cvoDetails.VsaMetadata.LicenseType != "capacity-paygo" {
+			return fmt.Errorf("license_type must be capacity-paygo")
+		}
+	}
+
+	if strings.HasSuffix(cvoDetails.VsaMetadata.LicenseType, "capacity-paygo") && cvoDetails.VsaMetadata.CapacityPackageName == "" {
+		return fmt.Errorf("capacity_package_name is required on selecting Bring Your Own License with capacity based license type or Freemium")
+	}
 	return nil
 }
