@@ -189,8 +189,12 @@ func (c *Client) CallDeployAzureVM(occmDetails createOCCMDetails) (string, error
 	var template *map[string]interface{}
 	var params *map[string]interface{}
 
-	json.Unmarshal([]byte(c.callTemplate()), &template)
 	json.Unmarshal([]byte(c.callParameters()), &params)
+	if *occmDetails.AssociatePublicIPAddress == false {
+		json.Unmarshal([]byte(c.callTemplateDisablePublicIP()), &template)
+	} else {
+		json.Unmarshal([]byte(c.callTemplate()), &template)
+	}
 
 	(*params)["adminPassword"] = map[string]string{
 		"value": occmDetails.AdminPassword,
