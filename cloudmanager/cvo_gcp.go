@@ -199,17 +199,21 @@ func expandGCPLabelsToUserTags(set *schema.Set) []userTags {
 
 // validateCVOGCPParams validates params
 func validateCVOGCPParams(cvoDetails createCVOGCPDetails) error {
+	if cvoDetails.IsHA && cvoDetails.WritingSpeedState != "" {
+		return fmt.Errorf("writing_speed_state parameter not required for CVO GCP HA")
+	}
+
 	if cvoDetails.VsaMetadata.UseLatestVersion == true && cvoDetails.VsaMetadata.OntapVersion != "latest" {
 		return fmt.Errorf("ontap_version parameter not required when having use_latest_version as true")
 	}
 
-	if cvoDetails.IsHA == true && cvoDetails.VsaMetadata.LicenseType == "gcp-ha-cot-premium-byol" {
+	if cvoDetails.IsHA && cvoDetails.VsaMetadata.LicenseType == "gcp-ha-cot-premium-byol" {
 		if cvoDetails.HAParams.PlatformSerialNumberNode1 == "" || cvoDetails.HAParams.PlatformSerialNumberNode2 == "" {
 			return fmt.Errorf("both platform_serial_number_node1 and platform_serial_number_node2 parameters are required when having ha type as true and license_type as gcp-ha-cot-premium-byol")
 		}
 	}
 
-	if cvoDetails.IsHA == false && (cvoDetails.HAParams.PlatformSerialNumberNode1 != "" || cvoDetails.HAParams.PlatformSerialNumberNode2 != "") {
+	if !cvoDetails.IsHA && (cvoDetails.HAParams.PlatformSerialNumberNode1 != "" || cvoDetails.HAParams.PlatformSerialNumberNode2 != "") {
 		return fmt.Errorf("both platform_serial_number_node1 and platform_serial_number_node2 parameters are only required when having ha type as true and license_type as gcp-ha-cot-premium-byol")
 	}
 
@@ -220,10 +224,10 @@ func validateCVOGCPParams(cvoDetails createCVOGCPDetails) error {
 	}
 
 	if cvoDetails.VsaMetadata.CapacityPackageName != "" {
-		if cvoDetails.IsHA == true && cvoDetails.VsaMetadata.LicenseType != "ha-capacity-paygo" {
+		if cvoDetails.IsHA && cvoDetails.VsaMetadata.LicenseType != "ha-capacity-paygo" {
 			return fmt.Errorf("license_type must be ha-capacity-paygo")
 		}
-		if cvoDetails.IsHA == false && cvoDetails.VsaMetadata.LicenseType != "capacity-paygo" {
+		if !cvoDetails.IsHA && cvoDetails.VsaMetadata.LicenseType != "capacity-paygo" {
 			return fmt.Errorf("license_type must be capacity-paygo")
 		}
 	}
