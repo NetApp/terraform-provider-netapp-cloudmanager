@@ -8,7 +8,7 @@ description: |-
 
 # netapp-cloudmanager_cvo_aws
 
-Provides an netapp-cloudmanager_cvo_aws resource. This can be used to create a new Cloud Volume ONTAP system in AWS (single node or an HA pair).
+Provides a netapp-cloudmanager_cvo_aws resource. This can be used to create a new Cloud Volume ONTAP system in AWS (single node or an HA pair). The environment needs to be configured with the proper credentials before it can be used (run this command: aws configure).
 
 ## Example Usages
 
