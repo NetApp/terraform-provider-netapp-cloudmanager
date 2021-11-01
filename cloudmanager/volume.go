@@ -81,7 +81,7 @@ type quoteRequest struct {
 	SnapshotPolicyName     string           `structs:"snapshotPolicyName"`
 	Name                   string           `structs:"name"`
 	CapacityTier           string           `structs:"capacityTier,omitempty"`
-	ProviderVolumeType     string           `structs:"providerVolumeType"`
+	ProviderVolumeType     string           `structs:"providerVolumeType,omitempty"`
 	TieringPolicy          string           `structs:"tieringPolicy,omitempty"`
 	VerifyNameUniqueness   bool             `structs:"verifyNameUniqueness"`
 	Iops                   int              `structs:"iops,omitempty"`

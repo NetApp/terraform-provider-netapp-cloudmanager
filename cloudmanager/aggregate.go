@@ -106,22 +106,26 @@ type updateAggregateRequest struct {
 }
 
 // get aggregate by workingEnvironmentId+aggregate name
-func (c *Client) getAggregate(request aggregateRequest, name string) (aggregateResult, error) {
-	log.Printf("getAggregate %s...", name)
+func (c *Client) getAggregate(request aggregateRequest, name string, sourceWorkingEnvironmentType string) (aggregateResult, error) {
+	log.Printf("getAggregate %s", name)
 	hostType := "CloudManagerHost"
 
 	var baseURL string
-	rootURL, cloudProviderName, err := c.getAPIRoot(request.WorkingEnvironmentID)
-
-	if err != nil {
-		log.Print("getAggregate: Cannot get API root.")
-		return aggregateResult{}, err
-	}
-
-	if cloudProviderName != "Amazon" {
-		baseURL = fmt.Sprintf("%s/aggregates/%s", rootURL, request.WorkingEnvironmentID)
+	if sourceWorkingEnvironmentType == "ON_PREM" {
+		baseURL = fmt.Sprintf("/occm/api/onprem/aggregates?workingEnvironmentId=%s", request.WorkingEnvironmentID)
 	} else {
-		baseURL = fmt.Sprintf("%s/aggregates?workingEnvironmentId=%s", rootURL, request.WorkingEnvironmentID)
+		rootURL, cloudProviderName, err := c.getAPIRoot(request.WorkingEnvironmentID)
+
+		if err != nil {
+			log.Print("getAggregate: Cannot get API root.")
+			return aggregateResult{}, err
+		}
+
+		if cloudProviderName != "Amazon" {
+			baseURL = fmt.Sprintf("%s/aggregates/%s", rootURL, request.WorkingEnvironmentID)
+		} else {
+			baseURL = fmt.Sprintf("%s/aggregates?workingEnvironmentId=%s", rootURL, request.WorkingEnvironmentID)
+		}
 	}
 
 	var aggregates []aggregateResult
@@ -189,8 +193,14 @@ func (c *Client) createAggregate(request *createAggregateRequest) (aggregateResu
 		return aggregateResult{}, err
 	}
 
+	workingEnvDetail, err := c.getWorkingEnvironmentInfo(request.WorkingEnvironmentID)
+	if err != nil {
+		log.Print("Cannot get working environment information.")
+		return aggregateResult{}, err
+	}
+
 	var aggregate aggregateResult
-	aggregate, err = c.getAggregate(aggregateRequest{WorkingEnvironmentID: request.WorkingEnvironmentID}, request.Name)
+	aggregate, err = c.getAggregate(aggregateRequest{WorkingEnvironmentID: request.WorkingEnvironmentID}, request.Name, workingEnvDetail.WorkingEnvironmentType)
 	if err != nil {
 		return aggregateResult{}, err
 	}

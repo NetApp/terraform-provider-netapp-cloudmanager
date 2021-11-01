@@ -134,8 +134,7 @@ func (c *Client) buildSnapMirrorCreate(snapMirror snapMirrorRequest, sourceWorki
 	}
 
 	if destWorkingEnvironmentType != "ON_PREM" {
-		quote := c.buildQuoteRequest(snapMirror, volDestQuote, snapMirror.ReplicationRequest.SourceWorkingEnvironmentID, snapMirror.ReplicationVolume.DestinationVolumeName, snapMirror.ReplicationVolume.DestinationSvmName, snapMirror.ReplicationRequest.DestinationWorkingEnvironmentID)
-
+		quote := c.buildQuoteRequest(snapMirror, volDestQuote, snapMirror.ReplicationRequest.SourceWorkingEnvironmentID, sourceWorkingEnvironmentType, snapMirror.ReplicationVolume.DestinationVolumeName, snapMirror.ReplicationVolume.DestinationSvmName, snapMirror.ReplicationRequest.DestinationWorkingEnvironmentID)
 		quoteResponse, err := c.quoteVolume(quote)
 		if err != nil {
 			log.Printf("Error quoting destination volume")
@@ -178,7 +177,7 @@ func (c *Client) buildSnapMirrorCreate(snapMirror snapMirrorRequest, sourceWorki
 	return snapMirror, nil
 }
 
-func (c *Client) buildQuoteRequest(snapMirror snapMirrorRequest, vol volumeResponse, sourceWorkingEnvironmentID string, name string, svm string, workingEnvironmentID string) quoteRequest {
+func (c *Client) buildQuoteRequest(snapMirror snapMirrorRequest, vol volumeResponse, sourceWorkingEnvironmentID string, sourceWorkingEnvironmentType string, name string, svm string, workingEnvironmentID string) quoteRequest {
 	var quote quoteRequest
 
 	quote.Name = name
@@ -192,21 +191,24 @@ func (c *Client) buildQuoteRequest(snapMirror snapMirrorRequest, vol volumeRespo
 	quote.ReplicationFlow = true
 	quote.WorkingEnvironmentID = workingEnvironmentID
 	quote.SvmName = svm
-	quote.CapacityTier = snapMirror.ReplicationVolume.DestinationCapacityTier
 
-	aggregate, err := c.getAggregate(aggregateRequest{WorkingEnvironmentID: sourceWorkingEnvironmentID}, vol.AggregateName)
+	aggregate, err := c.getAggregate(aggregateRequest{WorkingEnvironmentID: sourceWorkingEnvironmentID}, vol.AggregateName, sourceWorkingEnvironmentType)
 	if err != nil {
 		log.Printf("Error getting aggregate. aggregate name = %v", vol.AggregateName)
 	}
-
-	// Iops and Throughput values are the same if the volumes under the same aggregate
-	if aggregate.ProviderVolumes[0].DiskType == "gp3" || aggregate.ProviderVolumes[0].DiskType == "io1" || aggregate.ProviderVolumes[0].DiskType == "io2" {
-		quote.Iops = aggregate.ProviderVolumes[0].Iops
+	if len(aggregate.ProviderVolumes) != 0 {
+		// Iops and Throughput values are the same if the volumes under the same aggregate
+		if aggregate.ProviderVolumes[0].DiskType == "gp3" || aggregate.ProviderVolumes[0].DiskType == "io1" || aggregate.ProviderVolumes[0].DiskType == "io2" {
+			quote.Iops = aggregate.ProviderVolumes[0].Iops
+		}
+		if aggregate.ProviderVolumes[0].DiskType == "gp3" {
+			quote.Throughput = aggregate.ProviderVolumes[0].Throughput
+		}
 	}
-	if aggregate.ProviderVolumes[0].DiskType == "gp3" {
-		quote.Throughput = aggregate.ProviderVolumes[0].Throughput
-	}
 
+	if snapMirror.ReplicationVolume.DestinationCapacityTier != "" {
+		quote.CapacityTier = snapMirror.ReplicationVolume.DestinationCapacityTier
+	}
 	if snapMirror.ReplicationVolume.DestinationProviderVolumeType == "" {
 		quote.ProviderVolumeType = vol.ProviderVolumeType
 	} else {

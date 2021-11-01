@@ -57,7 +57,12 @@ func testAccCheckAggregateDestroy(state *terraform.State) error {
 				aggregate.WorkingEnvironmentID = info.PublicID
 			}
 		}
-		response, err := client.getAggregate(aggregate, id)
+
+		workingEnvDetail, err := client.getWorkingEnvironmentInfo(aggregate.WorkingEnvironmentID)
+		if err != nil {
+			return err
+		}
+		response, err := client.getAggregate(aggregate, id, workingEnvDetail.WorkingEnvironmentType)
 		if err == nil {
 			if response.Name != "" {
 				return fmt.Errorf("aggregate (%s) still exists", id)
@@ -95,7 +100,11 @@ func testAccCheckAggregateExists(name string, aggregate *aggregateResult) resour
 			return fmt.Errorf("Cannot find working environment")
 		}
 
-		response, err := client.getAggregate(aggr, id)
+		workingEnvDetail, err := client.getWorkingEnvironmentInfo(aggr.WorkingEnvironmentID)
+		if err != nil {
+			return err
+		}
+		response, err := client.getAggregate(aggr, id, workingEnvDetail.WorkingEnvironmentType)
 		if err != nil {
 			return err
 		}
