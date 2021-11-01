@@ -179,7 +179,7 @@ func resourceAggregateRead(d *schema.ResourceData, meta interface{}) error {
 
 	id := d.Id()
 
-	aggr, err := client.getAggregate(aggregate, id)
+	aggr, err := client.getAggregate(aggregate, id, workingEnv.WorkingEnvironmentType)
 	if err != nil {
 		log.Printf("Error getting aggregate. id = %v", id)
 		return err
@@ -261,7 +261,7 @@ func resourceAggregateExists(d *schema.ResourceData, meta interface{}) (bool, er
 	}
 	aggregate.WorkingEnvironmentID = workingEnv.PublicID
 	id := d.Id()
-	res, err := client.getAggregate(aggregate, id)
+	res, err := client.getAggregate(aggregate, id, workingEnv.WorkingEnvironmentType)
 	if err != nil {
 		log.Print("Error getting aggregate")
 		d.SetId("")

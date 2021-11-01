@@ -468,7 +468,7 @@ func checkUserTagKeyUnique(etags *schema.Set, keyName string) error {
 		if _, ok := m[tkey]; !ok {
 			m[tkey] = true
 		} else {
-			return fmt.Errorf("Tag key %s is not unique", tkey)
+			return fmt.Errorf("%s %s is not unique", keyName, tkey)
 		}
 	}
 	return nil

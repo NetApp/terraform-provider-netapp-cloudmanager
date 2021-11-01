@@ -8,7 +8,7 @@ description: |-
 
 # netapp-cloudmanager_cvo_azure
 
-Provides an netapp-cloudmanager_cvo_azure resource. This can be used to create a new Cloud Volume ONTAP on Azure (Single or HA).
+Provides a netapp-cloudmanager_cvo_azure resource. This can be used to create a new Cloud Volume ONTAP on Azure (Single or HA).
 Requires existence of a Cloud Manager Connector with a role assigned to create Cloud Volumes ONTAP. 'azurerm' provider can be used to create the role and role assignment.
 
 ## Example Usages

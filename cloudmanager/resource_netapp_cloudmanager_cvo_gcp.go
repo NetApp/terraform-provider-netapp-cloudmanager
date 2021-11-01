@@ -147,7 +147,6 @@ func resourceCVOGCP() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
-				Default:  "NORMAL",
 			},
 			"capacity_tier": {
 				Type:         schema.TypeString,
@@ -309,7 +308,6 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 	cvoDetails.VsaMetadata.LicenseType = d.Get("license_type").(string)
 	cvoDetails.VpcID = d.Get("vpc_id").(string)
 	cvoDetails.Project = d.Get("project_id").(string)
-	cvoDetails.WritingSpeedState = d.Get("writing_speed_state").(string)
 	cvoDetails.VsaMetadata.InstanceType = d.Get("instance_type").(string)
 	subnetID := d.Get("subnet_id").(string)
 	if c, ok := d.GetOk("gcp_label"); ok {
@@ -452,6 +450,9 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 		if c, ok := d.GetOk("vpc3_firewall_rule_name"); ok {
 			cvoDetails.HAParams.VPC3FirewallRuleName = c.(string)
 		}
+	} else if cvoDetails.WritingSpeedState == "" {
+		cvoDetails.WritingSpeedState = "NORMAL"
+		d.Set("writing_speed_state", "NORMAL")
 	}
 
 	err := validateCVOGCPParams(cvoDetails)
@@ -551,8 +552,54 @@ func resourceCVOGCPUpdate(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
+func checkIfLabelMissing(cLabels *schema.Set, eLabels *schema.Set) error {
+	// check if current gcp_labels in future gcp_labels
+	for _, currentLabel := range cLabels.List() {
+		found := false
+		clabel := currentLabel.(map[string]interface{})
+		ckey := clabel["label_key"].(string)
+		for _, expectLabel := range eLabels.List() {
+			elabel := expectLabel.(map[string]interface{})
+			ekey := elabel["label_key"].(string)
+			if ekey == ckey {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return fmt.Errorf("label key %s in gcp_label cannot be removed", ckey)
+		}
+	}
+	return nil
+}
+
+func checkLabelDiff(diff *schema.ResourceDiff) error {
+	// gcp_label only can be added and modified on the label values
+	if diff.HasChange("gcp_label") {
+		currentLabel, expectLabel := diff.GetChange("gcp_label")
+
+		if currentLabel != nil {
+			if expectLabel == nil {
+				return fmt.Errorf("gcp_label deletion is not supported")
+			}
+			cLabels := currentLabel.(*schema.Set)
+			eLabels := expectLabel.(*schema.Set)
+			if cLabels.Len() > eLabels.Len() {
+				return fmt.Errorf("gcp_label deletion is not supported")
+			}
+
+			respErr := checkUserTagKeyUnique(eLabels, "label_key")
+			if respErr != nil {
+				return respErr
+			}
+			return checkIfLabelMissing(cLabels, eLabels)
+		}
+	}
+	return nil
+}
+
 func resourceCVOGCPCustomizeDiff(diff *schema.ResourceDiff, v interface{}) error {
-	respErr := checkUserTagDiff(diff, "gcp_label", "label_key")
+	respErr := checkLabelDiff(diff)
 	if respErr != nil {
 		return respErr
 	}

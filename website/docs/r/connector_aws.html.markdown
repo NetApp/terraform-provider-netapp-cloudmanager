@@ -9,7 +9,7 @@ description: |-
 # netapp-cloudmanager_connector_aws
 
 Provides a NetApp_CloudManager Connector AWS resource. This can be used to create a new Cloud Manager Connector in AWS.
-The environment needs to be configured with the proper credentials before it can be used (aws configure).
+The environment needs to be configured with the proper credentials before it can be used (run this command: aws configure).
 The minimum required policy can be found at [Connector deployment policy for AWS](https://s3.amazonaws.com/occm-sample-policies/Policy_for_Setup_As_Service.json)
 
 <!---
