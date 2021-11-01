@@ -64,6 +64,7 @@ func Provider() terraform.ResourceProvider {
 			"netapp-cloudmanager_volume":      dataSourceCVOVolume(),
 			"netapp-cloudmanager_nss_account": dataSourceCVONssAccount(),
 			"netapp-cloudmanager_aws_fsx":     dataSourceAWSFSX(),
+			"netapp-cloudmanager_cvo_aws":     dataSourceCVOAWS(),
 		},
 
 		ConfigureFunc: providerConfigure,
