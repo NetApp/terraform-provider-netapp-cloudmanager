@@ -293,9 +293,8 @@ func resourceCVOAWS() *schema.Resource {
 				ForceNew: true,
 			},
 			"route_table_ids": {
-				Type:     schema.TypeList,
+				Type:     schema.TypeSet,
 				Optional: true,
-				ForceNew: true,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
@@ -427,7 +426,7 @@ func resourceCVOAWSCreate(d *schema.ResourceData, meta interface{}) error {
 		cvoDetails.HAParams.DataFloatingIP2 = d.Get("data_floating_ip2").(string)
 		cvoDetails.HAParams.SvmFloatingIP = d.Get("svm_floating_ip").(string)
 		routeTableIds := d.Get("route_table_ids")
-		for _, routeTableID := range routeTableIds.([]interface{}) {
+		for _, routeTableID := range routeTableIds.(*schema.Set).List() {
 			cvoDetails.HAParams.RouteTableIds = append(cvoDetails.HAParams.RouteTableIds, routeTableID.(string))
 		}
 		if c, ok := d.GetOk("platform_serial_number_node1"); ok {
@@ -472,12 +471,19 @@ func resourceCVOAWSRead(d *schema.ResourceData, meta interface{}) error {
 		client.ClientID = c.(string)
 	}
 
-	_, err := client.getWorkingEnvironmentInfo(id)
+	response, err := client.getCVOAWSByID(id)
 	if err != nil {
-		log.Print("Error getting cvo")
+		log.Print("Error reading cvo aws")
 		return err
 	}
-
+	haProperties := response["haProperties"].(map[string]interface{})
+	var routeTables []string
+	for _, id := range haProperties["routeTables"].([]interface{}) {
+		routeTables = append(routeTables, id.(string))
+	}
+	if _, ok := d.GetOk("route_table_ids"); ok {
+		d.Set("route_table_ids", routeTables)
+	}
 	return nil
 }
 

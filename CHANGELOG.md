@@ -1,13 +1,5 @@
-## 20.10.0 (Unreleased)
+## 21.11.1 (Unreleased)
 
-FEATURES:
+BUG FIXES:
 
-* **New Resource:** `netapp-cloudmanager_connector_aws`
-* **New Resource:** `netapp-cloudmanager_connector_azure`
-* **New Resource:** `netapp-cloudmanager_connector_gcp`
-* **New Resource:** `netapp-cloudmanager_cvo_aws`
-* **New Resource:** `netapp-cloudmanager_cvo_azure`
-* **New Resource:** `netapp-cloudmanager_cvo_gcp`
-* **New Resource:** `netapp-cloudmanager_aggregate`
-* **New Resource:** `netapp-cloudmanager_volume`
-* **New Resource:** `netapp-cloudmanager_aws_fsx`
+* resource/cvo_aws route_table_ids parameter force recreation ([#77](https://github.com/NetApp/terraform-provider-netapp-cloudmanager/issues/77))
