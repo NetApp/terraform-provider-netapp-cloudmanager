@@ -1,4 +1,7 @@
 ## 21.11.1 (Unreleased)
+ENHANCEMENTS:
+
+* resource/cvo for AWS, AZURE and GCP: display svm_name in state file on the CVO creation
 
 BUG FIXES:
 

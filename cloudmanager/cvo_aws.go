@@ -100,6 +100,7 @@ type cvoList struct {
 // cvoResult the users input for creating a cvo
 type cvoResult struct {
 	PublicID string `json:"publicId"`
+	SvmName  string `json:"svmName"`
 }
 
 // tenantResult the users input for creating a cvo

@@ -278,6 +278,11 @@ func resourceCVOGCP() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"svm_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -468,6 +473,7 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	d.SetId(res.PublicID)
+	d.Set("svm_name", res.SvmName)
 
 	log.Printf("Created cvo: %v", res)
 
