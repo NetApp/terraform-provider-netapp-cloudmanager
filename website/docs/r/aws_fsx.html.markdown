@@ -45,6 +45,7 @@ resource "netapp-cloudmanager_aws_fsx" "aws-fsx" {
 The following arguments are supported:
 
 * `name` - (Required) The name of the Cloud Volumes ONTAP working environment.
+* `aws_credentials_name` - (Required) The name of the AWS Credentials account name.
 * `region` - (Required) The region where the working environment will be created.
 * `primary_subnet_id` - (Required) For HA, the subnet ID of the first node.
 * `secondary_subnet_id` - (Required) For HA, the subnet ID of the second node.
