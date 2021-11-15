@@ -28,7 +28,7 @@ data "netapp-cloudmanager_aws_fsx" "aws-fsx" {
 The following arguments are supported:
 
 * `id` - (Required) The unique identifier for the working environment.
-* `tenant_id` - (Required) The ID of the Cloud Manager workspace/tenant where you want to deploy Cloud Volumes ONTAP. If not provided, Cloud Manager uses the first workspace. You can find the ID from the Workspace tab on [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
+* `tenant_id` - (Required) The NetApp account ID that the Connector will be associated with.
 
 ## Attributes Reference
 

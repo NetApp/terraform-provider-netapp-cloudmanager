@@ -50,7 +50,7 @@ The following arguments are supported:
 * `primary_subnet_id` - (Required) For HA, the subnet ID of the first node.
 * `secondary_subnet_id` - (Required) For HA, the subnet ID of the second node.
 * `fsx_admin_password` - (Required) The admin password for Cloud Volumes ONTAP.
-* `tenant_id` - (Optional) The ID of the Cloud Manager workspace/tenant where you want to deploy Cloud Volumes ONTAP. If not provided, Cloud Manager uses the first workspace. You can find the ID from the Workspace tab on [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
+* `tenant_id` - (Required) The NetApp account ID that the Connector will be associated with.
 * `workspace_id` - (Required) The ID of the Cloud Manager workspace of working environment.
 * `kms_key_id` - (Optional) AWS encryption parameters. It is required if using aws encryption.
 * `minimum_ssd_iops` - (Optional) Provisioned SSD IOPS.

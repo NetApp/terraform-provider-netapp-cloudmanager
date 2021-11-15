@@ -153,10 +153,7 @@ func resourceAWSFSXCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 	fsxDetails.StorageCapacity.Size = d.Get("storage_capacity_size").(int)
 	fsxDetails.StorageCapacity.Unit = d.Get("storage_capacity_size_unit").(string)
-
-	if c, ok := d.GetOk("tenant_id"); ok {
-		fsxDetails.TenantID = c.(string)
-	}
+	fsxDetails.TenantID = d.Get("tenant_id").(string)
 
 	securityGroupIds := d.Get("security_group_ids")
 	for _, securityGroupID := range securityGroupIds.([]interface{}) {
@@ -202,10 +199,7 @@ func resourceAWSFSXRead(d *schema.ResourceData, meta interface{}) error {
 
 	id := d.Id()
 
-	var tenantID string
-	if c, ok := d.GetOk("tenant_id"); ok {
-		tenantID = c.(string)
-	}
+	tenantID := d.Get("tenant_id").(string)
 
 	_, err := client.getAWSFSX(id, tenantID)
 	if err != nil {
@@ -223,10 +217,7 @@ func resourceAWSFSXDelete(d *schema.ResourceData, meta interface{}) error {
 
 	id := d.Id()
 
-	var tenantID string
-	if c, ok := d.GetOk("tenant_id"); ok {
-		tenantID = c.(string)
-	}
+	tenantID := d.Get("tenant_id").(string)
 
 	deleteErr := client.deleteAWSFSX(id, tenantID)
 	if deleteErr != nil {
@@ -251,10 +242,7 @@ func resourceAWSFSXExists(d *schema.ResourceData, meta interface{}) (bool, error
 
 	id := d.Id()
 
-	var tenantID string
-	if c, ok := d.GetOk("tenant_id"); ok {
-		tenantID = c.(string)
-	}
+	tenantID := d.Get("tenant_id").(string)
 
 	resID, err := client.getAWSFSX(id, tenantID)
 	if err != nil {
