@@ -1,13 +1,10 @@
-## 20.10.0 (Unreleased)
+## 21.11.1 (Unreleased)
+ENHANCEMENTS:
 
-FEATURES:
+* resource/cvo for AWS, AZURE and GCP: display svm_name in state file on the CVO creation
+* resource/aws_fsx: add name tag as the basic tag on aws_fsx creation
 
-* **New Resource:** `netapp-cloudmanager_connector_aws`
-* **New Resource:** `netapp-cloudmanager_connector_azure`
-* **New Resource:** `netapp-cloudmanager_connector_gcp`
-* **New Resource:** `netapp-cloudmanager_cvo_aws`
-* **New Resource:** `netapp-cloudmanager_cvo_azure`
-* **New Resource:** `netapp-cloudmanager_cvo_gcp`
-* **New Resource:** `netapp-cloudmanager_aggregate`
-* **New Resource:** `netapp-cloudmanager_volume`
-* **New Resource:** `netapp-cloudmanager_aws_fsx`
+BUG FIXES:
+
+* resource/cvo_aws route_table_ids parameter force recreation ([#77](https://github.com/NetApp/terraform-provider-netapp-cloudmanager/issues/77))
+* resource/cvo_azure import function is disabled. Error out if terraform import is used

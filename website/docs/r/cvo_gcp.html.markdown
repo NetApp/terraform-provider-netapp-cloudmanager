@@ -89,4 +89,4 @@ The `gcp_label` block supports:
 The following attributes are exported in addition to the arguments listed above:
 
 * `id` - The unique identifier for the working environment.
-
+* `svm_name` - The name of the SVM.

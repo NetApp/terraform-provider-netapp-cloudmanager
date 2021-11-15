@@ -58,7 +58,7 @@ func getGCPToken(url string, gcpServiceAccountPath string) (string, error) {
 }
 
 // BuildHTTPReq builds an HTTP request to carry out the REST request
-func (r *Request) BuildHTTPReq(host string, token string, audience string, baseURL string, paramsNil bool, accountID string, clientID string, gcpType bool) (*http.Request, error) {
+func (r *Request) BuildHTTPReq(host string, token string, audience string, baseURL string, paramsNil bool, accountID string, clientID string, gcpType bool, cloudmanagerSimulator bool) (*http.Request, error) {
 
 	url := host + baseURL
 	var req *http.Request
@@ -120,6 +120,11 @@ func (r *Request) BuildHTTPReq(host string, token string, audience string, baseU
 		} else {
 			req.Header.Set("X-Agent-Id", clientID+"clients")
 		}
+	}
+	// AWS FSx
+	if cloudmanagerSimulator {
+		req.Header.Set("x-simulator", "true")
+		log.Println("Running on simulator")
 	}
 
 	return req, nil

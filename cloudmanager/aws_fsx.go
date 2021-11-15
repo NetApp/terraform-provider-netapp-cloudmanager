@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/fatih/structs"
-	"github.com/hashicorp/terraform/helper/schema"
 )
 
 // createAWSFSXDetails the users input for creating a FSX
@@ -26,7 +25,7 @@ type createAWSFSXDetails struct {
 	RouteTableIds          []string        `structs:"routeTableIds,omitempty"`
 	ThroughputCapacity     int             `structs:"throughputCapacity,omitempty"`
 	SecurityGroupIds       []string        `structs:"securityGroupIds,omitempty"`
-	AwsFSXTags             []fsxTags       `structs:"tags,omitempty"`
+	AwsFSXTags             []userTags      `structs:"tags,omitempty"`
 	TenantID               string
 }
 
@@ -73,18 +72,14 @@ type status struct {
 	Lifecycle string `json:"lifecycle"`
 }
 
-// expandFSXTags converts set to userTags struct
-func expandFSXTags(set *schema.Set) []fsxTags {
-	tags := []fsxTags{}
-
-	for _, v := range set.List() {
-		tag := v.(map[string]interface{})
-		fsxTag := fsxTags{}
-		fsxTag.TagKey = tag["tag_key"].(string)
-		fsxTag.TagValue = tag["tag_value"].(string)
-		tags = append(tags, fsxTag)
+// check if name tag exists
+func hasNameTag(tags []userTags) bool {
+	for _, v := range tags {
+		if v.TagKey == "name" {
+			return true
+		}
 	}
-	return tags
+	return false
 }
 
 func (c *Client) getAWSCredentialsID(name string, tenantID string) (string, error) {
@@ -132,16 +127,6 @@ func (c *Client) getAWSFSX(id string, tenantID string) (string, error) {
 	}
 	c.Token = accessTokenResult.Token
 
-	if tenantID == "" {
-		id, err := c.getTenant()
-		if err != nil {
-			log.Print("getTenant request failed ", err)
-			return "", err
-		}
-		log.Print("tenant result ", id)
-		tenantID = id
-	}
-
 	baseURL := fmt.Sprintf("/fsx-ontap/working-environments/%s", tenantID)
 
 	hostType := "CloudManagerHost"
@@ -183,16 +168,6 @@ func (c *Client) getAWSFSXByID(id string, tenantID string) (fsxResult, error) {
 	}
 	c.Token = accessTokenResult.Token
 
-	if tenantID == "" {
-		id, err := c.getTenant()
-		if err != nil {
-			log.Print("getTenant request failed ", err)
-			return fsxResult{}, err
-		}
-		log.Print("tenant result ", id)
-		tenantID = id
-	}
-
 	baseURL := fmt.Sprintf("/fsx-ontap/working-environments/%s/%s?provider-details=true", tenantID, id)
 
 	hostType := "CloudManagerHost"
@@ -227,16 +202,6 @@ func (c *Client) createAWSFSX(fsxDetails createAWSFSXDetails) (fsxResult, error)
 		return fsxResult{}, err
 	}
 	c.Token = accessTokenResult.Token
-
-	if fsxDetails.TenantID == "" {
-		tenantID, err := c.getTenant()
-		if err != nil {
-			log.Print("getTenant request failed ", err)
-			return fsxResult{}, err
-		}
-		log.Print("tenant result ", tenantID)
-		fsxDetails.TenantID = tenantID
-	}
 
 	fsxDetails.AWSCredentials, err = c.getAWSCredentialsID(fsxDetails.AWSCredentials, fsxDetails.TenantID)
 	if err != nil {
@@ -348,16 +313,6 @@ func (c *Client) deleteAWSFSX(id string, tenantID string) error {
 		return err
 	}
 	c.Token = accessTokenResult.Token
-
-	if tenantID == "" {
-		id, err := c.getTenant()
-		if err != nil {
-			log.Print("getTenant request failed ", err)
-			return err
-		}
-		log.Print("tenant result ", id)
-		tenantID = id
-	}
 
 	baseURL := fmt.Sprintf("/fsx-ontap/working-environments/%s/%s", tenantID, id)
 

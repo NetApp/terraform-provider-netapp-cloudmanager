@@ -257,13 +257,19 @@ func (c *Client) deleteSnapMirror(snapMirror snapMirrorRequest) error {
 	baseURL := fmt.Sprintf("/occm/api/replication/%s/%s/%s", snapMirror.ReplicationRequest.DestinationWorkingEnvironmentID, snapMirror.ReplicationVolume.DestinationSvmName, snapMirror.ReplicationVolume.DestinationVolumeName)
 	hostType := "CloudManagerHost"
 
-	statusCode, response, _, err := c.CallAPIMethod("DELETE", baseURL, nil, c.Token, hostType)
+	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("DELETE", baseURL, nil, c.Token, hostType)
+	if err != nil {
+		log.Printf("deleteSnapMirror request failed with statusCode:%v, Error:%v", statusCode, err)
+		return err
+	}
+
 	responseError := apiResponseChecker(statusCode, response, "deleteSnapMirror")
 	if responseError != nil {
 		return responseError
 	}
+
+	err = c.waitOnCompletion(onCloudRequestID, "snapmirror", "delete", 10, 10)
 	if err != nil {
-		log.Print("deleteSnapMirror request failed ", statusCode)
 		return err
 	}
 

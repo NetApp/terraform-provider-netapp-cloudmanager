@@ -100,6 +100,7 @@ type cvoList struct {
 // cvoResult the users input for creating a cvo
 type cvoResult struct {
 	PublicID string `json:"publicId"`
+	SvmName  string `json:"svmName"`
 }
 
 // tenantResult the users input for creating a cvo
@@ -141,33 +142,43 @@ func (c *Client) getTenant() (string, error) {
 	return result[0].PublicID, nil
 }
 
-func (c *Client) getCVOAWSByID(id string) error {
+func (c *Client) getCVOAWSByID(id string) (map[string]interface{}, error) {
 
 	log.Print("getCVOAWSByID")
+
+	baseURL, _, err := c.getAPIRoot(id)
+	if err != nil {
+		return nil, err
+	}
 
 	accessTokenResult, err := c.getAccessToken()
 	if err != nil {
 		log.Print("in getCVOAWSByID request, failed to get AccessToken")
-		return err
+		return nil, err
 	}
 	c.Token = accessTokenResult.Token
 
-	baseURL := fmt.Sprintf("/occm/api/working-environments/%s", id)
+	baseURL = fmt.Sprintf("%s/working-environments/%s?fields=*", baseURL, id)
 
 	hostType := "CloudManagerHost"
 
 	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
 	if err != nil {
 		log.Print("getCVOAWSByID request failed ", statusCode)
-		return err
+		return nil, err
 	}
 
 	responseError := apiResponseChecker(statusCode, response, "getCVOAWSByID")
 	if responseError != nil {
-		return responseError
+		return nil, responseError
+	}
+	var result map[string]interface{}
+	if err := json.Unmarshal(response, &result); err != nil {
+		log.Print("Failed to unmarshall response from getCVOAWSByID ", err)
+		return nil, err
 	}
 
-	return nil
+	return result, nil
 }
 
 func (c *Client) getCVOAWS(id string) (string, error) {

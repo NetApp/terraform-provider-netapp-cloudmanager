@@ -659,7 +659,7 @@ func (c *Client) CallAPIMethod(method string, baseURL string, params map[string]
 		Params:                params,
 		GCPDeploymentTemplate: c.GCPDeploymentTemplate,
 		GCPServiceAccountPath: c.GCPServiceAccountPath,
-	})
+	}, c.Simulator)
 	if err != nil {
 		return statusCode, nil, "", err
 	}

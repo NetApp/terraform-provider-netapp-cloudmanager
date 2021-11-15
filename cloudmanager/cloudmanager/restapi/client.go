@@ -24,7 +24,7 @@ type Client struct {
 }
 
 // Do sends the API Request, parses the response as JSON, and returns the HTTP status code as int, onCloudRequestID from header as string, the "result" value as byte
-func (c *Client) Do(baseURL string, hostType string, token string, paramsNil bool, accountID string, clientID string, req *Request) (int, []byte, string, error) {
+func (c *Client) Do(baseURL string, hostType string, token string, paramsNil bool, accountID string, clientID string, req *Request, simulator bool) (int, []byte, string, error) {
 
 	var host string
 	var res []byte
@@ -48,7 +48,7 @@ func (c *Client) Do(baseURL string, hostType string, token string, paramsNil boo
 		host = c.CVSHostName
 	}
 
-	httpReq, err := req.BuildHTTPReq(host, token, c.Audience, baseURL, paramsNil, accountID, clientID, gcpType)
+	httpReq, err := req.BuildHTTPReq(host, token, c.Audience, baseURL, paramsNil, accountID, clientID, gcpType, simulator)
 	if err != nil {
 		return statusCode, res, onCloudRequestID, err
 	}
