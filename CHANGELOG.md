@@ -2,6 +2,7 @@
 ENHANCEMENTS:
 
 * resource/cvo for AWS, AZURE and GCP: display svm_name in state file on the CVO creation
+* resource/aws_fsx: add name tag as the basic tag on aws_fsx creation
 
 BUG FIXES:
 

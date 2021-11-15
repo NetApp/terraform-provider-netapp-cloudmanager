@@ -145,12 +145,24 @@ func resourceAWSFSXCreate(d *schema.ResourceData, meta interface{}) error {
 	fsxDetails.WorkspaceID = d.Get("workspace_id").(string)
 	fsxDetails.ThroughputCapacity = d.Get("throughput_capacity").(int)
 	fsxDetails.FSXAdminPassword = d.Get("fsx_admin_password").(string)
+	addNameTag := true
 	if c, ok := d.GetOk("tags"); ok {
 		tags := c.(*schema.Set)
 		if tags.Len() > 0 {
-			fsxDetails.AwsFSXTags = expandFSXTags(tags)
+			fsxDetails.AwsFSXTags = expandUserTags(tags)
+			if hasNameTag(fsxDetails.AwsFSXTags) {
+				addNameTag = false
+			}
 		}
 	}
+	if addNameTag {
+		// add name tag
+		fsxTag := userTags{}
+		fsxTag.TagKey = "name"
+		fsxTag.TagValue = fsxDetails.Name
+		fsxDetails.AwsFSXTags = append(fsxDetails.AwsFSXTags, fsxTag)
+	}
+	log.Print("fsxdetails: ", fsxDetails)
 	fsxDetails.StorageCapacity.Size = d.Get("storage_capacity_size").(int)
 	fsxDetails.StorageCapacity.Unit = d.Get("storage_capacity_size_unit").(string)
 	fsxDetails.TenantID = d.Get("tenant_id").(string)
