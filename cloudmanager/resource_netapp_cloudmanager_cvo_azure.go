@@ -17,7 +17,7 @@ func resourceCVOAzure() *schema.Resource {
 		Update: resourceCVOAzureUpdate,
 		Exists: resourceCVOAzureExists,
 		Importer: &schema.ResourceImporter{
-			State: schema.ImportStatePassthrough,
+			State: resourceCVOAzureImport,
 		},
 		CustomizeDiff: resourceCVOAzureCustomizeDiff,
 		Schema: map[string]*schema.Schema{
@@ -496,4 +496,8 @@ func resourceCVOAzureExists(d *schema.ResourceData, meta interface{}) (bool, err
 	}
 
 	return true, nil
+}
+
+func resourceCVOAzureImport(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
+	return nil, fmt.Errorf("CVO Azure resource's import function is disabled")
 }
