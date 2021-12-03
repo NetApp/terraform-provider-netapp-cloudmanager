@@ -1,4 +1,7 @@
 ## 21.11.1 (Unreleased)
+NEW RESOURCE:
+* resource/cvo_onnprem: This can be used to register an onprem ONTAP system into CloudManager.
+
 ENHANCEMENTS:
 
 * resource/cvo for AWS, AZURE and GCP: display svm_name in state file on the CVO creation

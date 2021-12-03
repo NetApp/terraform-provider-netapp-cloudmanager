@@ -64,7 +64,7 @@ type changeTierLevelRequest struct {
 func apiResponseChecker(statusCode int, response []byte, funcName string) error {
 
 	if statusCode >= 300 || statusCode < 200 {
-		log.Printf("%s request failed", funcName)
+		log.Printf("%s request failed: %v", funcName, string(response))
 		return fmt.Errorf("code: %d, message: %s", statusCode, string(response))
 	}
 
@@ -90,7 +90,7 @@ func (c *Client) checkTaskStatus(id string) (int, string, error) {
 				time.Sleep(1 * time.Second)
 				networkRetries--
 			} else {
-				log.Print("checkTaskStatus request failed ", code)
+				log.Printf("checkTaskStatus request failed: %v, %v", code, err)
 				return 0, "", err
 			}
 		} else {
