@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/fatih/structs"
+	"github.com/hashicorp/terraform/helper/schema"
 )
 
 type volumeRequest struct {
@@ -35,6 +36,9 @@ type volumeRequest struct {
 	ShareInfo                 shareInfoRequest       `structs:"shareInfo,omitempty"`
 	ShareInfoUpdate           shareInfoUpdateRequest `structs:"shareInfo,omitempty"`
 	IscsiInfo                 iscsiInfo              `structs:"iscsiInfo,omitempty"`
+	FileSystemID              string                 `structs:"fileSystemId,omitempty"`
+	TenantID                  string                 `structs:"tenantId,omitempty"`
+	EnableStorageEfficiency   bool                   `structs:"enableStorageEfficiency,omitempty"`
 }
 
 type volumeResponse struct {
@@ -81,7 +85,7 @@ type quoteRequest struct {
 	SnapshotPolicyName     string           `structs:"snapshotPolicyName"`
 	Name                   string           `structs:"name"`
 	CapacityTier           string           `structs:"capacityTier,omitempty"`
-	ProviderVolumeType     string           `structs:"providerVolumeType,omitempty"`
+	ProviderVolumeType     string           `structs:"providerVolumeType"`
 	TieringPolicy          string           `structs:"tieringPolicy,omitempty"`
 	VerifyNameUniqueness   bool             `structs:"verifyNameUniqueness"`
 	Iops                   int              `structs:"iops,omitempty"`
@@ -138,11 +142,21 @@ type initiator struct {
 }
 
 func (c *Client) createVolume(vol volumeRequest, createAggregateIfNotFound bool) error {
-	baseURL, _, err := c.getAPIRoot(vol.WorkingEnvironmentID)
+	var id string
+	if vol.FileSystemID != "" {
+		id = vol.FileSystemID
+	} else {
+		id = vol.WorkingEnvironmentID
+	}
+	baseURL, _, err := c.getAPIRoot(id)
 	if err != nil {
 		return err
 	}
-	baseURL = fmt.Sprintf("%s/volumes?createAggregateIfNotFound=%s", baseURL, strconv.FormatBool(createAggregateIfNotFound))
+	if vol.FileSystemID != "" {
+		baseURL = fmt.Sprintf("%s/volumes", baseURL)
+	} else {
+		baseURL = fmt.Sprintf("%s/volumes?createAggregateIfNotFound=%s", baseURL, strconv.FormatBool(createAggregateIfNotFound))
+	}
 	hostType := "CloudManagerHost"
 	param := structs.Map(vol)
 	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("POST", baseURL, param, c.Token, hostType)
@@ -163,11 +177,17 @@ func (c *Client) createVolume(vol volumeRequest, createAggregateIfNotFound bool)
 }
 
 func (c *Client) deleteVolume(vol volumeRequest) error {
-	baseURL, _, err := c.getAPIRoot(vol.WorkingEnvironmentID)
+	var id string
+	if vol.FileSystemID != "" {
+		id = vol.FileSystemID
+	} else {
+		id = vol.WorkingEnvironmentID
+	}
+	baseURL, _, err := c.getAPIRoot(id)
 	if err != nil {
 		return err
 	}
-	baseURL = fmt.Sprintf("%s/volumes/%s/%s/%s", baseURL, vol.WorkingEnvironmentID, vol.SvmName, vol.Name)
+	baseURL = fmt.Sprintf("%s/volumes/%s/%s/%s", baseURL, id, vol.SvmName, vol.Name)
 	hostType := "CloudManagerHost"
 
 	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("DELETE", baseURL, nil, c.Token, hostType)
@@ -188,11 +208,21 @@ func (c *Client) deleteVolume(vol volumeRequest) error {
 func (c *Client) getVolume(vol volumeRequest) ([]volumeResponse, error) {
 	var result []volumeResponse
 	hostType := "CloudManagerHost"
-	baseURL, _, err := c.getAPIRoot(vol.WorkingEnvironmentID)
+	var id string
+	if vol.FileSystemID != "" {
+		id = vol.FileSystemID
+	} else {
+		id = vol.WorkingEnvironmentID
+	}
+	baseURL, _, err := c.getAPIRoot(id)
 	if err != nil {
 		return result, err
 	}
-	baseURL = fmt.Sprintf("%s/volumes?workingEnvironmentId=%s", baseURL, vol.WorkingEnvironmentID)
+	if vol.FileSystemID != "" {
+		baseURL = fmt.Sprintf("%s/volumes?fileSystemId=%s", baseURL, id)
+	} else {
+		baseURL = fmt.Sprintf("%s/volumes?workingEnvironmentId=%s", baseURL, id)
+	}
 
 	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
 	if err != nil {
@@ -248,11 +278,17 @@ func (c *Client) getVolumeByID(request volumeRequest) (volumeResponse, error) {
 
 func (c *Client) updateVolume(request volumeRequest) error {
 	hostType := "CloudManagerHost"
-	baseURL, _, err := c.getAPIRoot(request.WorkingEnvironmentID)
+	var id string
+	if request.FileSystemID != "" {
+		id = request.FileSystemID
+	} else {
+		id = request.WorkingEnvironmentID
+	}
+	baseURL, _, err := c.getAPIRoot(id)
 	if err != nil {
 		return err
 	}
-	baseURL = fmt.Sprintf("%s/volumes/%s/%s/%s", baseURL, request.WorkingEnvironmentID, request.SvmName, request.Name)
+	baseURL = fmt.Sprintf("%s/volumes/%s/%s/%s", baseURL, id, request.SvmName, request.Name)
 	params := structs.Map(request)
 	statusCode, response, _, err := c.CallAPIMethod("PUT", baseURL, params, c.Token, hostType)
 
@@ -371,14 +407,14 @@ func (c *Client) getIgroups(request igroup) ([]igroup, error) {
 	return result, nil
 }
 
-func (c *Client) checkCifsExists(workingEnvironmentID string, svm string) (bool, error) {
+func (c *Client) checkCifsExists(id string, svm string) (bool, error) {
 	hostType := "CloudManagerHost"
-	baseURL, _, err := c.getAPIRoot(workingEnvironmentID)
+	baseURL, _, err := c.getAPIRoot(id)
 	var result []map[string]interface{}
 	if err != nil {
 		return false, err
 	}
-	baseURL = fmt.Sprintf("%s/working-environments/%s/cifs?svm=%s", baseURL, workingEnvironmentID, svm)
+	baseURL = fmt.Sprintf("%s/working-environments/%s/cifs?svm=%s", baseURL, id, svm)
 	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
 	if err != nil {
 		log.Print("chkeckCifsExists request failed ", statusCode)
@@ -412,4 +448,61 @@ func convertSizeUnit(size float64, from string, to string) float64 {
 		size = size / 1073741824
 	}
 	return size
+}
+
+func (c *Client) setCommonAttributes(d *schema.ResourceData, volume *volumeRequest) error {
+	volume.Name = d.Get("name").(string)
+	volume.Size.Size = d.Get("size").(float64)
+	volume.Size.Unit = d.Get("unit").(string)
+	volume.SnapshotPolicyName = d.Get("snapshot_policy_name").(string)
+	var weid string
+	if fsid, ok := d.GetOk("file_system_id"); ok {
+		weid = fsid.(string)
+	} else {
+		weid = volume.WorkingEnvironmentID
+	}
+
+	if v, ok := d.GetOk("export_policy_type"); ok {
+		volume.ExportPolicyInfo.PolicyType = v.(string)
+	}
+	if v, ok := d.GetOk("export_policy_ip"); ok {
+		ips := make([]string, 0, v.(*schema.Set).Len())
+		for _, x := range v.(*schema.Set).List() {
+			ips = append(ips, x.(string))
+		}
+		volume.ExportPolicyInfo.Ips = ips
+	}
+	if v, ok := d.GetOk("export_policy_nfs_version"); ok {
+		nfs := make([]string, 0, v.(*schema.Set).Len())
+		for _, x := range v.(*schema.Set).List() {
+			nfs = append(nfs, x.(string))
+		}
+		volume.ExportPolicyInfo.NfsVersion = nfs
+	}
+
+	volumeProtocol := d.Get("volume_protocol").(string)
+	if volumeProtocol == "cifs" {
+
+		exist, err := c.checkCifsExists(weid, volume.SvmName)
+		if err != nil {
+			return err
+		}
+		if !exist {
+			return fmt.Errorf("cifs has not been set up yet")
+		}
+		if v, ok := d.GetOk("share_name"); ok {
+			volume.ShareInfo.ShareName = v.(string)
+		}
+		if v, ok := d.GetOk("permission"); ok {
+			volume.ShareInfo.AccessControl.Permission = v.(string)
+		}
+		if v, ok := d.GetOk("users"); ok {
+			users := make([]string, 0, v.(*schema.Set).Len())
+			for _, x := range v.(*schema.Set).List() {
+				users = append(users, x.(string))
+			}
+			volume.ShareInfo.AccessControl.Users = users
+		}
+	}
+	return nil
 }
