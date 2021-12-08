@@ -58,6 +58,7 @@ func Provider() terraform.ResourceProvider {
 			"netapp-cloudmanager_anf_volume":      resourceCVSANFVolume(),
 			"netapp-cloudmanager_cvs_gcp_volume":  resourceCVSGCPVolume(),
 			"netapp-cloudmanager_aws_fsx":         resourceAWSFSX(),
+			"netapp-cloudmanager_aws_fsx_volume":  resourceFsxVolume(),
 			"netapp-cloudmanager_cvo_onprem":      resourceCVOOnPrem(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{

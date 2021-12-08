@@ -258,6 +258,7 @@ func (c *Client) findWorkingEnvironmentByName(name string) (workingEnvironmentIn
 
 // get WE directly from REST API using a given ID
 func (c *Client) findWorkingEnvironmentByID(id string) (workingEnvironmentInfo, error) {
+
 	workingEnvInfo, err := c.getWorkingEnvironmentInfo(id)
 	if err != nil {
 		return workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by working_environment_id %s", id)
@@ -269,6 +270,57 @@ func (c *Client) findWorkingEnvironmentByID(id string) (workingEnvironmentInfo, 
 	return workingEnvDetail, nil
 }
 
+func (c *Client) getFSXWorkingEnvironmentInfo(tenantID string, id string) (workingEnvironmentInfo, error) {
+	baseURL := fmt.Sprintf("/fsx-ontap/working-environments/%s/%s", tenantID, id)
+	hostType := "CloudManagerHost"
+	var result workingEnvironmentInfo
+
+	if c.Token == "" {
+		accesTokenResult, err := c.getAccessToken()
+		if err != nil {
+			return workingEnvironmentInfo{}, err
+		}
+		c.Token = accesTokenResult.Token
+	}
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+	if err != nil {
+		log.Printf("getFSXWorkingEnvironmentInfo %s request failed (%d)", id, statusCode)
+		log.Printf("error: %#v", err)
+		return workingEnvironmentInfo{}, err
+	}
+	responseError := apiResponseChecker(statusCode, response, "getFSXWorkingEnvironmentInfo")
+	if responseError != nil {
+		return workingEnvironmentInfo{}, responseError
+	}
+
+	var system map[string]interface{}
+	if err := json.Unmarshal(response, &system); err != nil {
+		log.Print("Failed to unmarshall response from getFSXWorkingEnvironmentInfo ", err)
+		return workingEnvironmentInfo{}, err
+	}
+	result.Name = system["name"].(string)
+
+	baseURL = fmt.Sprintf("/occm/api/fsx/working-environments/%s/svms", id)
+	statusCode, response, _, err = c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+	if err != nil {
+		log.Printf("getFSXWorkingEnvironmentInfo %s request failed (%d)", id, statusCode)
+		return workingEnvironmentInfo{}, err
+	}
+	responseError = apiResponseChecker(statusCode, response, "getFSXWorkingEnvironmentInfo")
+	if responseError != nil {
+		return workingEnvironmentInfo{}, responseError
+	}
+	var info []map[string]interface{}
+	if err := json.Unmarshal(response, &info); err != nil {
+		log.Print("Failed to unmarshall response from getWorkingEnvironmentInfo ", err)
+		return workingEnvironmentInfo{}, err
+	}
+	//assume there is only one svm in fsx
+	result.SvmName = info[0]["name"].(string)
+
+	return result, nil
+}
+
 func (c *Client) getAPIRoot(workingEnvironmentID string) (string, string, error) {
 
 	if c.Token == "" {
@@ -278,6 +330,11 @@ func (c *Client) getAPIRoot(workingEnvironmentID string) (string, string, error)
 			return "", "", err
 		}
 		c.Token = accesTokenResult.Token
+	}
+
+	// fsx working environment starts with "fs-" prefix.
+	if strings.HasPrefix(workingEnvironmentID, "fs-") {
+		return "/occm/api/fsx", "", nil
 	}
 	workingEnvDetail, err := c.getWorkingEnvironmentInfo(workingEnvironmentID)
 	if err != nil {
@@ -330,6 +387,14 @@ func (c *Client) getAPIRootForWorkingEnvironment(isHA bool, workingEnvironmentID
 func (c *Client) getWorkingEnvironmentDetail(d *schema.ResourceData) (workingEnvironmentInfo, error) {
 	var workingEnvDetail workingEnvironmentInfo
 	var err error
+
+	if a, ok := d.GetOk("file_system_id"); ok {
+		workingEnvDetail, err = c.getFSXWorkingEnvironmentInfo(d.Get("tenant_id").(string), a.(string))
+		if err != nil {
+			return workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by working_environment_id %s", a.(string))
+		}
+		return workingEnvDetail, nil
+	}
 
 	if a, ok := d.GetOk("working_environment_id"); ok {
 		WorkingEnvironmentID := a.(string)

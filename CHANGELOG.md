@@ -1,7 +1,9 @@
-## 21.11.1 (Unreleased)
-NEW RESOURCE:
+## 21.11.2 (Unreleased)
+NEW FEATURES:
+* resource/aws_fsx_volume: create, update and delete FSx volume.
 * resource/cvo_onnprem: This can be used to register an onprem ONTAP system into CloudManager.
 
+## 21.11.1
 ENHANCEMENTS:
 
 * resource/cvo for AWS, AZURE and GCP: display svm_name in state file on the CVO creation
