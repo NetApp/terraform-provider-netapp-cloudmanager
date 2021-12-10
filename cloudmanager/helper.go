@@ -33,6 +33,130 @@ type workingEnvironmentResult struct {
 	GcpVsaWorkingEnvironments   []workingEnvironmentInfo `json:"gcpVsaWorkingEnvironments"`
 }
 
+type workingEnvironmentOntapClusterPropertiesResponse struct {
+	ActionsRequired                interface{}            `json:"actionsRequired"`
+	ActiveActions                  interface{}            `json:"activeActions"`
+	AwsProperties                  interface{}            `json:"awsProperties"` // aws
+	CapacityFeatures               interface{}            `json:"capacityFeatures"`
+	CbsProperties                  interface{}            `json:"cbsProperties"`
+	CloudSyncProperties            interface{}            `json:"cloudSyncProperties"` // aws
+	CloudProviderName              string                 `json:"cloudProviderName"`
+	ClusterProperties              interface{}            `json:"clusterProperties"`
+	ComplianceProperties           interface{}            `json:"complianceProperties"`
+	CreatorUserEmail               string                 `json:"creatorUserEmail"`
+	CronJobSchedules               interface{}            `json:"cronJobSchedules"` // aws
+	EncryptionProperties           interface{}            `json:"encryptionProperties"`
+	FpolicyProperties              interface{}            `json:"fpolicyProperties"`
+	HAProperties                   interface{}            `json:"haProperties"`
+	InterClusterLifs               interface{}            `json:"interClusterLifs"` // aws
+	IsHA                           bool                   `json:"isHA"`
+	LicensesInformation            interface{}            `json:"licensesInformation"`
+	MonitoringProperties           interface{}            `json:"monitoringProperties"`
+	Name                           string                 `json:"name"`
+	OntapClusterProperties         ontapClusterProperties `json:"ontapClusterProperties"`
+	ProviderProperties             interface{}            `json:"providerProperties"`
+	PublicID                       string                 `json:"publicId"`
+	ReplicationProperties          interface{}            `json:"replicationProperties"`
+	ReservedSize                   interface{}            `json:"reservedSize"`
+	SaasProperties                 interface{}            `json:"saasProperties"`
+	Schedules                      interface{}            `json:"schedules"`
+	SnapshotPolicies               interface{}            `json:"snapshotPolicies"`
+	Status                         cvoStatus              `json:"status"`
+	SupportRegistrationInformation []interface{}          `json:"supportRegistrationInformation"`
+	SupportRegistrationProperties  interface{}            `json:"supportRegistrationProperties"`
+	SupportedFeatures              interface{}            `json:"supportedFeatures"`
+	SvmName                        string                 `json:"svmName"`
+	Svms                           interface{}            `json:"svms"`
+	TenantID                       string                 `json:"tenantId"`
+	WorkingEnvironmentType         string                 `json:"workingEnvironmentType"`
+}
+
+type ontapClusterProperties struct {
+	BroadcastDomainInfo              []broadcastDomainInfo `json:"broadcastDomainInfo"`
+	CanConfigureCapacityTier         bool                  `json:"canConfigureCapacityTier"`
+	CapacityTierInfo                 capacityTierInfo      `json:"capacityTierInfo"`
+	ClusterName                      string                `json:"clusterName"`
+	ClusterUUID                      string                `json:"clusterUuid"`
+	CreationTime                     interface{}           `json:"creationTime"`
+	Evaluation                       bool                  `json:"evaluation"`
+	IsSpaceReportingLogical          bool                  `json:"isSpaceReportingLogical"`
+	LastModifiedOffbox               interface{}           `json:"lastModifiedOffbox"`
+	LicensePackageName               interface{}           `json:"licensePackageName"`
+	LicenseType                      licenseType           `json:"licenseType"`
+	Nodes                            []node                `json:"nodes"`
+	OffboxTarget                     bool                  `json:"offboxTarget"`
+	OntapVersion                     string                `json:"ontapVersion"`
+	SystemManagerURL                 string                `json:"systemManagerUrl"`
+	UpgradeVersions                  []upgradeVersion      `json:"upgradeVersions"`
+	UsedCapacity                     capacityLimit         `json:"usedCapacity"`
+	UserName                         string                `json:"userName"`
+	VscanFileOperationDefaultProfile string                `json:"vscanFileOperationDefaultProfile"`
+	WormEnabled                      bool                  `json:"wormEnabled"`
+	WritingSpeedState                string                `json:"writingSpeedState"`
+}
+
+type broadcastDomainInfo struct {
+	BroadcastDomain string `json:"broadcastDomain"`
+	IPSpace         string `json:"ipSpace"`
+	Mtu             int    `json:"mtu"`
+}
+
+type capacityTierInfo struct {
+	CapacityTierUsedSize capacityLimit `json:"capacityTierUsedSize"`
+	S3BucketName         string        `json:"s3BucketName"`
+	TierLevel            string        `json:"tierLeve"`
+}
+
+type node struct {
+	CloudProviderID      string      `json:"cloudProviderId"`
+	Health               bool        `json:"health"`
+	InTakeover           bool        `json:"inTakeover"`
+	Lifs                 []lif       `json:"lifs"`
+	Name                 string      `json:"name"`
+	PlatformLicense      interface{} `json:"platformLicense"`
+	PlatformSerialNumber interface{} `json:"platformSerialNumber"`
+	SerialNumber         string      `json:"serialNumber"`
+	SystemID             string      `json:"systemId"`
+}
+
+type upgradeVersion struct {
+	ImageVersion      string `json:"imageVersion"`
+	LastModified      int    `json:"lastModified"`
+	AutoUpdateAllowed bool   `json:"autoUpdateAllowed"`
+}
+
+type licenseType struct {
+	CapacityLimit capacityLimit `json:"capacityLimit"`
+	Name          string        `json:"name"`
+}
+
+type capacityLimit struct {
+	Size float64 `json:"size"`
+	Unit string  `json:"unit"`
+}
+
+type lif struct {
+	DataProtocols []string `json:"dataProtocols"`
+	IP            string   `json:"ip"`
+	LifType       string   `json:"lifType"`
+	Netmask       string   `json:"netmask"`
+	NodeName      string   `json:"nodeName"`
+	PrivateIP     bool     `json:"privateIp"`
+}
+
+type cvoStatus struct {
+	ExtendedFailureReason interface{}   `json:"extendedFailureReason"`
+	FailureCauses         failureCauses `json:"failureCauses"`
+	Message               string        `json:"message"`
+	Status                string        `json:"status"`
+}
+
+type failureCauses struct {
+	InvalidCloudProviderCredentials bool `json:"invalidCloudProviderCredentials"`
+	InvalidOntapCredentials         bool `json:"invalidOntapCredentials"`
+	NoCloudProviderConnection       bool `json:"noCloudProviderConnection"`
+}
+
 // userTags the input for requesting a CVO
 type userTags struct {
 	TagKey   string `structs:"tagKey"`
@@ -58,6 +182,18 @@ type licenseAndInstanceTypeModificationRequest struct {
 // changeTierLevelRequest the input for tier level change
 type changeTierLevelRequest struct {
 	Level string `structs:"level"`
+}
+
+// upgradeOntapVersionRequest
+type upgradeOntapVersionRequest struct {
+	UpdateType      string `structs:"updateType"`
+	UpdateParameter string `structs:"updateParameter"`
+}
+
+// set config flag
+type setFlagRequest struct {
+	Value     bool   `structs:"value"`
+	ValueType string `structs:"valueType"`
 }
 
 // Check HTTP response code, return error if HTTP request is not successed.
@@ -150,13 +286,28 @@ func (c *Client) getWorkingEnvironmentInfo(id string) (workingEnvironmentInfo, e
 		}
 		c.Token = accesTokenResult.Token
 	}
-	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
-	if err != nil {
-		log.Printf("getWorkingEnvironmentInfo %s request failed (%d)", id, statusCode)
-		return workingEnvironmentInfo{}, err
+	var statusCode int
+	var response []byte
+	networkRetries := 3
+	for {
+		code, result, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+		if err != nil {
+			if networkRetries > 0 {
+				time.Sleep(1 * time.Second)
+				networkRetries--
+			} else {
+				log.Printf("getWorkingEnvironmentInfo: ID %s request failed. Err: %v", id, err)
+				return workingEnvironmentInfo{}, err
+			}
+		} else {
+			statusCode = code
+			response = result
+			break
+		}
 	}
 	responseError := apiResponseChecker(statusCode, response, "getWorkingEnvironmentInfo")
 	if responseError != nil {
+		log.Printf("apiResponseChecker error %v", responseError)
 		return workingEnvironmentInfo{}, responseError
 	}
 
@@ -507,6 +658,45 @@ func (c *Client) findWorkingEnvironmentForID(id string) (workingEnvironmentInfo,
 	return workingEnvironmentInfo{}, err
 }
 
+// get working environment properties
+func (c *Client) getWorkingEnvironmentProperties(apiRoot string, id string, field string) (workingEnvironmentOntapClusterPropertiesResponse, error) {
+	hostType := "CloudManagerHost"
+	baseURL := fmt.Sprintf("%s/working-environments/%s?fields=%s", apiRoot, id, field)
+	log.Printf("Call %s", baseURL)
+
+	var statusCode int
+	var response []byte
+	networkRetries := 3
+	for {
+		code, result, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+		if err != nil {
+			if networkRetries > 0 {
+				time.Sleep(1 * time.Second)
+				networkRetries--
+			} else {
+				log.Printf("getWorkingEnvironmentProperties %s request failed (%d) %s", baseURL, statusCode, err)
+				return workingEnvironmentOntapClusterPropertiesResponse{}, err
+			}
+		} else {
+			statusCode = code
+			response = result
+			break
+		}
+	}
+	responseError := apiResponseChecker(statusCode, response, "getWorkingEnvironmentProperties")
+	if responseError != nil {
+		return workingEnvironmentOntapClusterPropertiesResponse{}, responseError
+	}
+
+	var result workingEnvironmentOntapClusterPropertiesResponse
+	if err := json.Unmarshal(response, &result); err != nil {
+		log.Print("Failed to unmarshall response from getWorkingEnvironmentProperties ", err)
+		return workingEnvironmentOntapClusterPropertiesResponse{}, err
+	}
+	log.Printf("Get cvo properities result %+v", result)
+	return result, nil
+}
+
 // customized check diff user-tags (aws_tag, azure_tag, gcp_label)
 func checkUserTagDiff(diff *schema.ResourceDiff, tagName string, keyName string) error {
 	if diff.HasChange(tagName) {
@@ -560,12 +750,14 @@ func (c *Client) callCMUpdateAPI(method string, request interface{}, baseURL str
 	hostType := "CloudManagerHost"
 	params := structs.Map(request)
 
-	accessTokenResult, err := c.getAccessToken()
-	if err != nil {
-		log.Printf("in %s request, failed to get AccessToken", functionName)
-		return err
+	if c.Token == "" {
+		accessTokenResult, err := c.getAccessToken()
+		if err != nil {
+			log.Printf("in %s request, failed to get AccessToken", functionName)
+			return err
+		}
+		c.Token = accessTokenResult.Token
 	}
-	c.Token = accessTokenResult.Token
 
 	statusCode, response, _, err := c.CallAPIMethod(method, baseURL, params, c.Token, hostType)
 	if err != nil {
@@ -663,5 +855,183 @@ func updateCVOTierLevel(d *schema.ResourceData, meta interface{}) error {
 		return updateErr
 	}
 	log.Printf("Updated %s tier_level: %v", id, request)
+	return nil
+}
+
+func (c *Client) waitOnCompletionOntapImageUpgrade(apiRoot string, id string, targetVersion string, retryCount int, waitInterval int) error {
+	// check upgrade status
+	log.Print("Check CVO ontap image upgrade status")
+
+	for {
+		cvoResp, err := c.getWorkingEnvironmentProperties(apiRoot, id, "status,ontapClusterProperties")
+		if err != nil {
+			return err
+		}
+		if cvoResp.Status.Status != "UPDATING" && cvoResp.OntapClusterProperties.OntapVersion != "" {
+			if strings.Contains(targetVersion, cvoResp.OntapClusterProperties.OntapVersion) {
+				log.Print("ONTAP image upgrade is done")
+				return nil
+			}
+			log.Printf("Update ontap image failed on checking version (%s, %s)", cvoResp.OntapClusterProperties.OntapVersion, targetVersion)
+			return fmt.Errorf("Update ontap version failed. Current version %s", cvoResp.OntapClusterProperties.OntapVersion)
+		}
+		if retryCount <= 0 {
+			log.Print("Taking too long for status to be active")
+			return fmt.Errorf("Taking too long for CVO to be active or not properly setup")
+		}
+		log.Printf("Update %s status %s...(%d)", targetVersion, cvoResp.Status.Status, retryCount)
+		time.Sleep(time.Duration(waitInterval) * time.Second)
+		retryCount--
+	}
+}
+
+// check if ontap_version is the list of upgrade available versions
+func (c *Client) upgradeOntapVersionAvailable(apiRoot string, id string, ontapVersion string) (string, error) {
+	log.Print("upgradeOntapVersionAvailable: Check if target version is in the upgrade version list")
+
+	var upgradeOntapVersions []upgradeVersion
+
+	WEProperties, err := c.getWorkingEnvironmentProperties(apiRoot, id, "ontapClusterProperties.fields(upgradeVersions)")
+	if err != nil {
+		return "", fmt.Errorf("upgradeOntapVersionAvailable %s not able to get the properties %v", id, err)
+	}
+	log.Printf("Get current ontap version: %s", WEProperties.OntapClusterProperties.OntapVersion)
+
+	upgradeOntapVersions = WEProperties.OntapClusterProperties.UpgradeVersions
+
+	if upgradeOntapVersions != nil {
+		for _, ugVersion := range upgradeOntapVersions {
+			version := ugVersion.ImageVersion
+			if strings.Contains(ontapVersion, version) {
+				return version, nil
+			}
+		}
+		return "", fmt.Errorf("Working environment %s: ontap version %s is not in the upgrade versions list (%+v)", id, ontapVersion, upgradeOntapVersions)
+	}
+	return "", fmt.Errorf("Working environment %s: no upgrade version availble", id)
+}
+
+func (c *Client) setConfigFlag(request setFlagRequest, keyPath string) error {
+	log.Print("setConfigFlag: set flag to allow ONTAP image upgrade")
+
+	hostType := "CloudManagerHost"
+
+	baseURL := fmt.Sprintf("/occm/api/occm/config/%s", keyPath)
+	params := structs.Map(request)
+	statusCode, response, _, err := c.CallAPIMethod("PUT", baseURL, params, c.Token, hostType)
+
+	responseError := apiResponseChecker(statusCode, response, "setUpgradeCheckingBypass")
+	if responseError != nil {
+		return responseError
+	}
+
+	if err != nil {
+		log.Print("setUpgradeCheckingBypass request failed ", statusCode)
+		return err
+	}
+	return nil
+
+}
+
+// upgrade CVO ontap version
+func (c *Client) upgradeCVOOntapImage(apiRoot string, id string, ontapVersion string, isHa bool) error {
+	// set config flag to skip the upgrade check
+	var setFlag setFlagRequest
+	setFlag.Value = true
+	setFlag.ValueType = "BOOLEAN"
+
+	log.Printf("Set config flag")
+	setFlagErr := c.setConfigFlag(setFlag, "skip-eligibility-paygo-upgrade")
+	if setFlagErr != nil {
+		log.Printf("upgradeCVOOntapVersion failed on setConfigFlag call %v", setFlagErr)
+		return setFlagErr
+	}
+
+	// upgrade image
+	var request upgradeOntapVersionRequest
+	request.UpdateType = "OCCM_PROVIDED"
+	request.UpdateParameter = ontapVersion
+
+	baseURL := fmt.Sprintf("/working-environments/%s/update-image", id)
+	log.Printf("upgradeCVOOntapVersion - %s %v", baseURL, request)
+	updateErr := c.callCMUpdateAPI("POST", request, baseURL, id, "upgradeCVOOntapVersion")
+	if updateErr != nil {
+		log.Printf("upgradeCVOOntapVersion failed on API call %v", updateErr)
+		return updateErr
+	}
+
+	// check upgrade status
+	retryCount := 65
+	if isHa {
+		retryCount = retryCount * 2
+	}
+	err := c.waitOnCompletionOntapImageUpgrade(apiRoot, id, ontapVersion, retryCount, 60)
+	if err != nil {
+		return fmt.Errorf("Upgrade ontap image %s failed %v", ontapVersion, err)
+	}
+	log.Printf("Updated %s ontap_version: %v", id, request)
+	return nil
+}
+
+func (c *Client) doUpgradeCVOOntapVersion(id string, isHA bool, ontapVersion string) error {
+	// only when the upgrade_ontap_version is true, use_latest_version is false and the ontap_version is not "latest"
+	log.Print("Check CVO ontap image upgrade status ... ")
+	apiRoot, _, err := c.getAPIRoot(id)
+	if err != nil {
+		return fmt.Errorf("Cannot get root API")
+	}
+
+	upgradeVersion, err := c.upgradeOntapVersionAvailable(apiRoot, id, ontapVersion)
+	if err != nil {
+		return err
+	}
+
+	return c.upgradeCVOOntapImage(apiRoot, id, upgradeVersion, isHA)
+}
+
+func checkOntapVersionChangeWithoutUpgrade(d *schema.ResourceData) error {
+	var wrongChange = false
+	if d.HasChange("ontap_version") {
+		currentVersion, _ := d.GetChange("ontap_version")
+		d.Set("ontap_version", currentVersion)
+		wrongChange = true
+	}
+	if d.HasChange("use_latest_version") {
+		current, _ := d.GetChange("use_latest_version")
+		d.Set("use_latest_version", current)
+		wrongChange = true
+	}
+	if wrongChange {
+		return fmt.Errorf("upgrade_ontap_version is not turned on. The change will not be done")
+	}
+	log.Printf("No ontap version upgrade")
+	return nil
+}
+
+func (c *Client) checkAndDoUpgradeOntapVersion(d *schema.ResourceData) error {
+	upgradeOntapVersion := d.Get("upgrade_ontap_version").(bool)
+	if upgradeOntapVersion {
+		ontapVersion := d.Get("ontap_version").(string)
+		log.Printf("Check if need upgrade - ontapVersion %s", ontapVersion)
+
+		if ontapVersion == "latest" {
+			return fmt.Errorf("ontap_version only can be upgraded with the specific ontap_version not \"latest\"")
+		}
+		if d.Get("use_latest_version").(bool) {
+			return fmt.Errorf("ontap_version cannot be upgraded with \"use_latest_version\" true")
+		}
+		id := d.Id()
+		respErr := c.doUpgradeCVOOntapVersion(id, d.Get("is_ha").(bool), ontapVersion)
+		if respErr != nil {
+			currentVersion, _ := d.GetChange("ontap_version")
+			d.Set("ontap_version", currentVersion)
+			return respErr
+		}
+	} else {
+		respErr := checkOntapVersionChangeWithoutUpgrade(d)
+		if respErr != nil {
+			return respErr
+		}
+	}
 	return nil
 }

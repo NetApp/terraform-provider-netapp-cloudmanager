@@ -79,6 +79,7 @@ The following arguments are supported:
 * `vpc1_firewall_rule_name` - (Optional) Firewall rule name for vpc2.
 * `vpc2_firewall_rule_name` - (Optional) Firewall rule name for vpc3.
 * `vpc3_firewall_rule_name` - (Optional) Firewall rule name for vpc4.
+* `upgrade_ontap_version` - (Optional) Indicates whether to upgrade ontap image with `ontap_version`. To upgrade ontap image, `ontap_version` cannot be 'latest' and `use_latest_version` needs to be false.
 
 The `gcp_label` block supports:
 * `label_key` - (Required) The key of the tag.

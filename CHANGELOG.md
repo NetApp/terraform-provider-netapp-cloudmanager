@@ -1,5 +1,11 @@
-## 21.11.2 (Unreleased)
+## 21.12.1 (Unreleased)
+ENHANCEMENTS:
+
+* resource/cvo for AWS, AZURE and GCP: add upgrade_ontap_version for ontap_version upgrade
+
+## 21.12.0
 NEW FEATURES:
+
 * resource/aws_fsx_volume: create, update and delete FSx volume.
 * resource/cvo_onnprem: This can be used to register an onprem ONTAP system into CloudManager.
 

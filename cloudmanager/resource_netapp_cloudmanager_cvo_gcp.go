@@ -76,13 +76,11 @@ func resourceCVOGCP() *schema.Resource {
 			"ontap_version": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 				Default:  "latest",
 			},
 			"use_latest_version": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				ForceNew: true,
 				Default:  true,
 			},
 			"license_type": {
@@ -282,6 +280,11 @@ func resourceCVOGCP() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
+			},
+			"upgrade_ontap_version": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
 			},
 		},
 	}
@@ -523,6 +526,9 @@ func resourceCVOGCPDelete(d *schema.ResourceData, meta interface{}) error {
 func resourceCVOGCPUpdate(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("Updating CVO: %#v", d)
 
+	client := meta.(*Client)
+	client.ClientID = d.Get("client_id").(string)
+
 	// check if svm_password is changed
 	if d.HasChange("svm_password") {
 		respErr := updateCVOSVMPassword(d, meta)
@@ -555,6 +561,12 @@ func resourceCVOGCPUpdate(d *schema.ResourceData, meta interface{}) error {
 		}
 		return resourceCVOGCPRead(d, meta)
 	}
+	// upgrade ontap version
+	upgradeErr := client.checkAndDoUpgradeOntapVersion(d)
+	if upgradeErr != nil {
+		return upgradeErr
+	}
+
 	return nil
 }
 
