@@ -36,6 +36,7 @@ provider "netapp-cloudmanager" {
   refresh_token         = var.cloudmanager_refresh_token
   sa_secret_key         = var.cloudmanager_sa_secret_key
   sa_client_id          = var.cloudmanager_sa_client_id
+  aws_profile           = var.cloudmanager_aws_profile
 }
 ```
 
@@ -46,6 +47,10 @@ The following arguments are used to configure the netapp-cloudmanager provider:
 * `refresh_token` - (Optional) This is the refresh token for NetApp Cloud Manager API operations. Get the token from [NetApp Cloud Central](https://services.cloud.netapp.com/refresh-token). If sa_client_id and sa_secret_key are provided, the service account will be used and this will be ignored.
 * `sa_client_id` - (Optional) This is the service account client ID for NetApp Cloud Manager API operations. The service account can be created on [NetApp Cloud Central](https://services.cloud.netapp.com/). The client id and secret key will be provided on service account creation.
 * `sa_secret_key` - (Optional) This is the service account client ID for NetApp Cloud Manager API operations. The service account can be created on [NetApp Cloud Central](https://services.cloud.netapp.com/). The client id and secret key will be provided on service account creation.
+* `aws_profile` - (Optional) This is the profile name of the aws credentials file in your home directory, for example,~/.aws/credentials. If not specified, profile named default is used.
+
+
+
 
 ## Required Privileges
 

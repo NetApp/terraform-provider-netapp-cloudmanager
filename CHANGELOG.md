@@ -2,6 +2,7 @@
 ENHANCEMENTS:
 
 * resource/cvo for AWS, AZURE and GCP: add upgrade_ontap_version for ontap_version upgrade
+* add Terraform variable aws_profile to support use of profile name in aws credentials file
 
 ## 21.12.0
 NEW FEATURES:

@@ -13,6 +13,7 @@ type configStuct struct {
 	Environment  string
 	CVOHostName  string
 	Simulator    bool
+	AWSProfile   string
 }
 
 // Client is the main function to connect to the APi
@@ -64,5 +65,7 @@ func (c *configStuct) clientFun() (*Client, error) {
 	if c.Simulator {
 		client.SetSimulator(c.Simulator)
 	}
+	client.AWSProfile = c.AWSProfile
+
 	return client, nil
 }

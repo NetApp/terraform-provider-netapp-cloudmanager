@@ -41,6 +41,12 @@ func Provider() terraform.ResourceProvider {
 				Description: "The environment for OCCM operations.",
 				Default:     false,
 			},
+			"aws_profile": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("AWS_PROFILE", nil),
+				Default:     "default",
+			},
 		},
 
 		ResourcesMap: map[string]*schema.Resource{
@@ -80,6 +86,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		SaSecretKey:  d.Get("sa_secret_key").(string),
 		SaClientID:   d.Get("sa_client_id").(string),
 		Simulator:    d.Get("simulator").(bool),
+		AWSProfile:   d.Get("aws_profile").(string),
 	}
 
 	return config.clientFun()

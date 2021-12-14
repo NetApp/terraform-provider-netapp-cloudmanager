@@ -135,3 +135,8 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `id` - The unique identifier for the working environment.
 * `svm_name` - The name of the SVM.
+
+
+## Terraform Variables
+
+* `aws_profile` - (Optional) This is the profile name of the aws credentials file in your home directory, for example,~/.aws/credentials. If not specified, profile named default is used.
