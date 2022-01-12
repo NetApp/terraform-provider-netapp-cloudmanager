@@ -565,6 +565,79 @@ func (c *Client) getWorkingEnvironmentDetail(d *schema.ResourceData) (workingEnv
 	return workingEnvDetail, nil
 }
 
+func (c *Client) getFSXSVM(id string) (string, error) {
+
+	log.Print("getFSXSVM")
+
+	baseURL := fmt.Sprintf("/occm/api/fsx/working-environments/%s/svms", id)
+
+	hostType := "CloudManagerHost"
+
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+	if err != nil {
+		log.Print("getFSXSVM request failed ", statusCode)
+		return "", err
+	}
+
+	responseError := apiResponseChecker(statusCode, response, "getFSXSVM")
+	if responseError != nil {
+		return "", responseError
+	}
+
+	var result []fsxSVMResult
+	if err := json.Unmarshal(response, &result); err != nil {
+		log.Print("Failed to unmarshall response from getFSXSVM ", err)
+		return "", err
+	}
+
+	if len(result) == 0 {
+		return "", fmt.Errorf("no SVM found for %s", id)
+	}
+
+	return result[0].Name, nil
+}
+
+func (c *Client) getAWSFSXByName(name string, tenantID string) (string, error) {
+
+	log.Print("getAWSFSXByName")
+
+	accessTokenResult, err := c.getAccessToken()
+	if err != nil {
+		log.Print("in getAWSFSXByName request, failed to get AccessToken")
+		return "", err
+	}
+	c.Token = accessTokenResult.Token
+
+	baseURL := fmt.Sprintf("/fsx-ontap/working-environments/%s", tenantID)
+
+	hostType := "CloudManagerHost"
+
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+	if err != nil {
+		log.Print("getAWSFSXByName request failed ", statusCode, err)
+		return "", err
+	}
+
+	responseError := apiResponseChecker(statusCode, response, "getAWSFSXByName")
+	if responseError != nil {
+		return "", responseError
+	}
+
+	var result []fsxResult
+	if err := json.Unmarshal(response, &result); err != nil {
+		log.Print("Failed to unmarshall response from getAWSFSXByName ", err)
+		return "", err
+	}
+
+	for _, fsxID := range result {
+		if fsxID.Name == name {
+			return fsxID.ID, nil
+		}
+	}
+
+	return "", nil
+}
+
 // read working environemnt information and return the details
 func (c *Client) getWorkingEnvironmentDetailForSnapMirror(d *schema.ResourceData) (workingEnvironmentInfo, workingEnvironmentInfo, error) {
 	var sourceWorkingEnvDetail workingEnvironmentInfo
@@ -589,17 +662,53 @@ func (c *Client) getWorkingEnvironmentDetailForSnapMirror(d *schema.ResourceData
 
 	if a, ok := d.GetOk("destination_working_environment_id"); ok {
 		WorkingEnvironmentID := a.(string)
-		destWorkingEnvDetail, err = c.findWorkingEnvironmentForID(WorkingEnvironmentID)
-		if err != nil {
-			return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by destination_working_environment_id %s", WorkingEnvironmentID)
+		// fsx working environment starts with "fs-" prefix.
+		if strings.HasPrefix(WorkingEnvironmentID, "fs-") {
+			if b, ok := d.GetOk("tenant_id"); ok {
+				tenantID := b.(string)
+				_, err := c.getAWSFSX(WorkingEnvironmentID, tenantID)
+				if err != nil {
+					log.Print("Error getting AWS FSX")
+					return workingEnvironmentInfo{}, workingEnvironmentInfo{}, err
+				}
+				destWorkingEnvDetail.PublicID = WorkingEnvironmentID
+				svmName, err := c.getFSXSVM(WorkingEnvironmentID)
+				if err != nil {
+					return workingEnvironmentInfo{}, workingEnvironmentInfo{}, err
+				}
+				destWorkingEnvDetail.SvmName = svmName
+			} else {
+				return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("Cannot find FSX working environment by destination_working_environment_id %s, need tenant_id", WorkingEnvironmentID)
+			}
+		} else {
+			destWorkingEnvDetail, err = c.findWorkingEnvironmentForID(WorkingEnvironmentID)
+			if err != nil {
+				return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by destination_working_environment_id %s", WorkingEnvironmentID)
+			}
+			log.Print("findWorkingEnvironmentForID", destWorkingEnvDetail)
 		}
-		log.Print("findWorkingEnvironmentForID", destWorkingEnvDetail)
 	} else if a, ok = d.GetOk("destination_working_environment_name"); ok {
-		destWorkingEnvDetail, err = c.findWorkingEnvironmentByName(a.(string))
-		if err != nil {
-			return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by destination_working_environment_name %s", a.(string))
+		if b, ok := d.GetOk("tenant_id"); ok {
+			workingEnvironmentName := a.(string)
+			tenantID := b.(string)
+			WorkingEnvironmentID, err := c.getAWSFSXByName(workingEnvironmentName, tenantID)
+			if err != nil {
+				log.Print("Error getting AWS FSX: ", err)
+				return workingEnvironmentInfo{}, workingEnvironmentInfo{}, err
+			}
+			destWorkingEnvDetail.PublicID = WorkingEnvironmentID
+			svmName, err := c.getFSXSVM(WorkingEnvironmentID)
+			if err != nil {
+				return workingEnvironmentInfo{}, workingEnvironmentInfo{}, err
+			}
+			destWorkingEnvDetail.SvmName = svmName
+		} else {
+			destWorkingEnvDetail, err = c.findWorkingEnvironmentByName(a.(string))
+			if err != nil {
+				return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by destination_working_environment_name %s", a.(string))
+			}
+			log.Printf("Get environment id %v by %v", destWorkingEnvDetail.PublicID, a.(string))
 		}
-		log.Printf("Get environment id %v by %v", destWorkingEnvDetail.PublicID, a.(string))
 	} else {
 		return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by destination_working_environment_id or destination_working_environment_name")
 	}
@@ -624,14 +733,14 @@ func (c *Client) findWorkingEnvironmentForID(id string) (workingEnvironmentInfo,
 		return workingEnvironmentInfo{}, err
 	}
 
-	responseError := apiResponseChecker(statusCode, response, "findWorkingEnvironmentByName")
+	responseError := apiResponseChecker(statusCode, response, "findWorkingEnvironmentForId")
 	if responseError != nil {
 		return workingEnvironmentInfo{}, responseError
 	}
 
 	var workingEnvironments workingEnvironmentResult
 	if err := json.Unmarshal(response, &workingEnvironments); err != nil {
-		log.Print("Failed to unmarshall response from findWorkingEnvironmentByName")
+		log.Print("Failed to unmarshall response from findWorkingEnvironmentForId")
 		return workingEnvironmentInfo{}, err
 	}
 

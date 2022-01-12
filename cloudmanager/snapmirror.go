@@ -16,6 +16,7 @@ type snapMirrorRequest struct {
 type replicationRequest struct {
 	SourceWorkingEnvironmentID      string   `structs:"sourceWorkingEnvironmentId"`
 	DestinationWorkingEnvironmentID string   `structs:"destinationWorkingEnvironmentId"`
+	DestinationFsxID                string   `structs:"destinationFsxId"`
 	SourceInterclusterLifIps        []string `structs:"sourceInterclusterLifIps"`
 	DestinationInterclusterLifIps   []string `structs:"destinationInterclusterLifIps"`
 	PolicyName                      string   `structs:"policyName"`
@@ -55,7 +56,14 @@ type destination struct {
 }
 
 func (c *Client) getInterclusterlifs(snapMirror snapMirrorRequest) (interclusterlif, error) {
-	baseURL := fmt.Sprintf("/occm/api/replication/intercluster-lifs?peerWorkingEnvironmentId=%s&workingEnvironmentId=%s", snapMirror.ReplicationRequest.DestinationWorkingEnvironmentID, snapMirror.ReplicationRequest.SourceWorkingEnvironmentID)
+	var destinationWEID string
+	if snapMirror.ReplicationRequest.DestinationFsxID != "" {
+		destinationWEID = snapMirror.ReplicationRequest.DestinationFsxID
+	} else {
+		destinationWEID = snapMirror.ReplicationRequest.DestinationWorkingEnvironmentID
+	}
+
+	baseURL := fmt.Sprintf("/occm/api/replication/intercluster-lifs?peerWorkingEnvironmentId=%s&workingEnvironmentId=%s", destinationWEID, snapMirror.ReplicationRequest.SourceWorkingEnvironmentID)
 	hostType := "CloudManagerHost"
 	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
 	if err != nil {
@@ -133,7 +141,7 @@ func (c *Client) buildSnapMirrorCreate(snapMirror snapMirrorRequest, sourceWorki
 		return snapMirrorRequest{}, fmt.Errorf("source volume not found")
 	}
 
-	if destWorkingEnvironmentType != "ON_PREM" {
+	if destWorkingEnvironmentType != "ON_PREM" && snapMirror.ReplicationRequest.DestinationFsxID == "" {
 		quote := c.buildQuoteRequest(snapMirror, volDestQuote, snapMirror.ReplicationRequest.SourceWorkingEnvironmentID, sourceWorkingEnvironmentType, snapMirror.ReplicationVolume.DestinationVolumeName, snapMirror.ReplicationVolume.DestinationSvmName, snapMirror.ReplicationRequest.DestinationWorkingEnvironmentID)
 		quoteResponse, err := c.quoteVolume(quote)
 		if err != nil {
@@ -220,7 +228,9 @@ func (c *Client) buildQuoteRequest(snapMirror snapMirrorRequest, vol volumeRespo
 
 func (c *Client) createSnapMirror(sm snapMirrorRequest, destWorkingEnvironmentType string) error {
 	var baseURL string
-	if destWorkingEnvironmentType != "ON_PREM" {
+	if sm.ReplicationRequest.DestinationFsxID != "" {
+		baseURL = "/occm/api/replication/fsx"
+	} else if destWorkingEnvironmentType != "ON_PREM" {
 		baseURL = "/occm/api/replication/vsa"
 	} else {
 		baseURL = "/occm/api/replication/onprem"

@@ -3,13 +3,12 @@ layout: "netapp_cloudmanager"
 page_title: "NetApp_CloudManager: netapp_cloudmanager_snapmirror"
 sidebar_current: "docs-netapp-cloudmanager-resource-snapmirror"
 description: |-
-  Provides a netapp-cloudmanager_snapmirror resource. This can be used to create a new snapmirror relationship on Cloud Volumes ONTAP.
+  Provides a netapp-cloudmanager_snapmirror resource. This can be used to create a new snapmirror relationship from any CVO to any CVO, any CVO to ONPREM, ONPREM to any CVO, CVO to FSX. Requires existence of a Cloud Manager Connector and a Cloud Volumes ONTAP system.
 ---
 
 # netapp-cloudmanager_snapmirror
 
-Provides a netapp-cloudmanager_snapmirror resource. This can be used to create a new snapmirror relationship on Cloud Volumes ONTAP.
-Requires existence of a Cloud Manager Connector and a Cloud Volumes ONTAP system.
+Provides a netapp-cloudmanager_snapmirror resource. This can be used to create a new snapmirror relationship from any CVO to any CVO, any CVO to ONPREM, ONPREM to any CVO, CVO to FSX. Requires existence of a Cloud Manager Connector and a Cloud Volumes ONTAP system.
 
 ## Example Usages
 
@@ -44,6 +43,7 @@ The following arguments are supported:
 * `destination_svm_name` - (Optional) The name of the destination SVM. The default SVM name is used, if a name isn't provided.
 * `source_volume_name` - (Required) The name of the source volume.
 * `destination_volume_name` - (Required) The name of the destination volume to be created for snapmirror relationship.
+* `tenant_id` - (Required) The NetApp account ID that the Connector will be associated with. To be used only when using FSX.
 * `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
 * `policy` - (Optional) The SnapMirror policy name. The default is 'MirrorAllSnapshots'.
 * `schedule` - (Optional) Schedule name. The default is '1hour'.

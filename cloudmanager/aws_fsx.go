@@ -55,6 +55,11 @@ type fsxResult struct {
 	ProviderDetails providerDetails `json:"providerDetails"`
 }
 
+// fsxSVMResult the result for FSX SVM
+type fsxSVMResult struct {
+	Name string `json:"name"`
+}
+
 // fsxStatusResult for creating a fsx
 type fsxStatusResult struct {
 	ProviderDetails providerDetails `json:"providerDetails"`

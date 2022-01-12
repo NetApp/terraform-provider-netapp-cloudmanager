@@ -95,6 +95,11 @@ func resourceCVOSnapMirror() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"tenant_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -113,8 +118,14 @@ func resourceCVOSnapMirrorCreate(d *schema.ResourceData, meta interface{}) error
 	}
 
 	snapMirror.ReplicationRequest.SourceWorkingEnvironmentID = sourceWEInfo.PublicID
-	snapMirror.ReplicationRequest.DestinationWorkingEnvironmentID = destWEInfo.PublicID
+	if strings.HasPrefix(destWEInfo.PublicID, "fs-") {
+		snapMirror.ReplicationRequest.DestinationFsxID = destWEInfo.PublicID
+	} else {
+		snapMirror.ReplicationRequest.DestinationWorkingEnvironmentID = destWEInfo.PublicID
+	}
 
+	log.Print("PublicIDfsx ", snapMirror.ReplicationRequest.DestinationFsxID)
+	log.Print("PublicIDvsa ", snapMirror.ReplicationRequest.DestinationWorkingEnvironmentID)
 	snapMirror.ReplicationVolume.SourceVolumeName = d.Get("source_volume_name").(string)
 	snapMirror.ReplicationVolume.DestinationVolumeName = d.Get("destination_volume_name").(string)
 	snapMirror.ReplicationRequest.PolicyName = d.Get("policy").(string)

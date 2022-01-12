@@ -3,6 +3,7 @@ ENHANCEMENTS:
 
 * resource/cvo for AWS, AZURE and GCP: add upgrade_ontap_version for ontap_version upgrade
 * add Terraform variable aws_profile to support use of profile name in aws credentials file
+* resource/snapmirror: add FSX AWS to snapmirror
 * resource/volume: add snapshot_policy_name and tiering_policy modification, and check the supporting changeable parameters
 
 ## 21.12.0
