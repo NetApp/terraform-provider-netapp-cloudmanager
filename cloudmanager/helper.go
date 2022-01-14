@@ -41,7 +41,6 @@ type workingEnvironmentOntapClusterPropertiesResponse struct {
 	CbsProperties                  interface{}            `json:"cbsProperties"`
 	CloudSyncProperties            interface{}            `json:"cloudSyncProperties"` // aws
 	CloudProviderName              string                 `json:"cloudProviderName"`
-	ClusterProperties              interface{}            `json:"clusterProperties"`
 	ComplianceProperties           interface{}            `json:"complianceProperties"`
 	CreatorUserEmail               string                 `json:"creatorUserEmail"`
 	CronJobSchedules               interface{}            `json:"cronJobSchedules"` // aws
