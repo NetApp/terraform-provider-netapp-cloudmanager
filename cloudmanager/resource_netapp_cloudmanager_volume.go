@@ -440,7 +440,6 @@ func resourceCVOVolumeRead(d *schema.ResourceData, meta interface{}) error {
 						if v.(string) != "none" {
 							d.Set("tiering_policy", volume.TieringPolicy)
 						}
-
 					}
 				}
 			}
@@ -588,6 +587,12 @@ func resourceCVOVolumeUpdate(d *schema.ResourceData, meta interface{}) error {
 		}
 		volume.ShareInfoUpdate.AccessControlList[0].Users = users
 	}
+	if d.HasChange("snapshot_policy_name") {
+		volume.SnapshotPolicyName = d.Get("snapshot_policy_name").(string)
+	}
+	if d.HasChange("tiering_policy") {
+		volume.TieringPolicy = d.Get("tiering_policy").(string)
+	}
 	err = client.updateVolume(volume)
 	if err != nil {
 		log.Print("Error updating volume")
@@ -598,6 +603,27 @@ func resourceCVOVolumeUpdate(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceVolumeCustomizeDiff(diff *schema.ResourceDiff, v interface{}) error {
+	// Check supported modification: Use volume name as an indication to know if this is a creation or modification
+	if !(diff.HasChange("name")) {
+		changeableParams := []string{"volume_protocol", "export_policy_type", "export_policy_ip", "export_policy_name", "export_policy_nfs_version",
+			"share_name", "permission", "users", "tiering_policy", "snapshot_policy_name"}
+		// Get list of changed keys
+		changedKeys := diff.GetChangedKeysPrefix("")
+		log.Print("Changed keys: ", changedKeys)
+		for _, key := range changedKeys {
+			found := false
+			for _, changeable := range changeableParams {
+				if key == changeable {
+					found = true
+					break
+				}
+			}
+			if found == false {
+				return fmt.Errorf("Change %s is not allowed", key)
+			}
+		}
+	}
+
 	if diff.HasChange("volume_protocol") {
 		currentVolumeType, expectVolumeType := diff.GetChange("volume_protocol")
 		if currentVolumeType.(string) == "" {

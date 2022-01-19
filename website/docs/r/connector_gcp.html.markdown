@@ -37,22 +37,23 @@ resource "netapp-cloudmanager_connector_gcp" "cl-occm-gcp" {
 
 The following arguments are supported:
 
-* `name` - (Required) The name of the Cloud Manager Connector.
-* `project_id` - (Required) The GCP project_id where the connector will be created.
-* `zone` - (Required) The GCP zone where the Connector will be created.
-* `company` - (Required) The name of the company of the user.
-* `service_account_email` - (Required) The email of the service_account for the connector instance. This service account is used to allow the Connector to create Cloud Volume ONTAP.
-* `service_account_path` - (Required) The local path of the service_account JSON file for GCP authorization purposes. This service account is used to create the Connector in GCP.
-* `subnet_id` - (Optional) The name of the subnet for the virtual machine. The default value is "Default"
-* `network_project_id` - (Optional) The project id in GCP associated with the Subnet. If not provided, it’s assumed that the Subnet is within the previously specified project id.
-* `machine_type` - (Optional) The machine_type for the Connector VM. The default value is "n1-standard-4"
-* `firewall_tags` - (Optional) Indicates whether to add firewall_tags to the connector VM (HTTP and HTTP). The default is "true".
-* `associate_public_ip` - (Optional) Indicates whether to associate a public IP address to the virtual machine. The default is "true"
-* `proxy_url` - (Optional) The proxy URL, if using a proxy to connect to the internet.
-* `proxy_user_name` - (Optional) The proxy user name, if using a proxy to connect to the internet.
-* `proxy_password` - (Optional) The proxy password, if using a proxy to connect to the internet.
-* `proxy_certificates` - (Optional) The proxy certificates. A list of certificate file names.
-* `account_id` - (Optional) The NetApp account ID that the Connector will be associated with. If not provided, Cloud Manager uses the first account. If no account exists, Cloud Manager creates a new account. You can find the account ID in the account tab of Cloud Manager at [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
+* `name` - (Required, non-modifiable) The name of the Cloud Manager Connector.
+* `project_id` - (Required, non-modifiable) The GCP project_id where the connector will be created.
+* `zone` - (Required, non-modifiable) The GCP zone where the Connector will be created.
+* `company` - (Required, non-modifiable) The name of the company of the user.
+* `service_account_email` - (Required, non-modifiable) The email of the service_account for the connector instance. This service account is used to allow the Connector to create Cloud Volume ONTAP.
+* `service_account_path` - (Required, non-modifiable) The local path of the service_account JSON file for GCP authorization purposes. This service account is used to create the Connector in GCP.
+* `subnet_id` - (Optional, non-modifiable) The name of the subnet for the virtual machine. The default value is "Default"
+* `network_project_id` - (Optional, non-modifiable) The project id in GCP associated with the Subnet. If not provided, it’s assumed that the Subnet is within the previously specified project id.
+* `machine_type` - (Optional, non-modifiable) The machine_type for the Connector VM. The default value is "n1-standard-4"
+* `firewall_tags` - (Optional, non-modifiable) Indicates whether to add firewall_tags to the connector VM (HTTP and HTTP). The default is "true". If true, "firewall-tag-bvsu", "http-server", "https-server" are set as tags, and they can't be managed using tag options.
+* `associate_public_ip` - (Optional, non-modifiable) Indicates whether to associate a public IP address to the virtual machine. The default is "true"
+* `proxy_url` - (Optional, non-modifiable) The proxy URL, if using a proxy to connect to the internet.
+* `proxy_user_name` - (Optional, non-modifiable) The proxy user name, if using a proxy to connect to the internet.
+* `proxy_password` - (Optional, non-modifiable) The proxy password, if using a proxy to connect to the internet.
+* `proxy_certificates` - (Optional, non-modifiable) The proxy certificates. A list of certificate file names.
+* `account_id` - (Optional, non-modifiable) The NetApp account ID that the Connector will be associated with. If not provided, Cloud Manager uses the first account. If no account exists, Cloud Manager creates a new account. You can find the account ID in the account tab of Cloud Manager at [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
+* `tags` - (Optional) The list of network tags.
 
 ## Attributes Reference
 

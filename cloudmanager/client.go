@@ -16,6 +16,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/netapp/terraform-provider-netapp-cloudmanager/cloudmanager/cloudmanager/restapi"
@@ -61,12 +62,17 @@ type Client struct {
 	restapiClient *restapi.Client
 	requestSlots  chan int
 	Simulator     bool
+	AWSProfile    string
 }
 
 // CallAWSInstanceCreate can be used to make a request to create AWS Instance
 func (c *Client) CallAWSInstanceCreate(occmDetails createOCCMDetails) (string, error) {
 
-	sess := session.Must(session.NewSession(aws.NewConfig().WithRegion(occmDetails.Region)))
+	sess := session.Must(session.NewSession(
+		&aws.Config{
+			Region:      aws.String(occmDetails.Region),
+			Credentials: credentials.NewSharedCredentials("", c.AWSProfile),
+		}))
 
 	// Create EC2 service client
 	svc := ec2.New(sess)
@@ -160,7 +166,11 @@ func (c *Client) CallAWSInstanceCreate(occmDetails createOCCMDetails) (string, e
 // CallAWSInstanceTerminate can be used to make a request to terminate AWS Instance
 func (c *Client) CallAWSInstanceTerminate(occmDetails deleteOCCMDetails) error {
 
-	sess := session.Must(session.NewSession(aws.NewConfig().WithRegion(occmDetails.Region)))
+	sess := session.Must(session.NewSession(
+		&aws.Config{
+			Region:      aws.String(occmDetails.Region),
+			Credentials: credentials.NewSharedCredentials("", c.AWSProfile),
+		}))
 
 	// Create EC2 service client
 	svc := ec2.New(sess)
@@ -436,7 +446,11 @@ func (c *Client) CallDeleteAzureVM(occmDetails deleteOCCMDetails) error {
 
 // CallAMIGet can be used to make a request to get AWS AMI
 func (c *Client) CallAMIGet(occmDetails createOCCMDetails) (string, error) {
-	sess := session.Must(session.NewSession(aws.NewConfig().WithRegion(occmDetails.Region)))
+	sess := session.Must(session.NewSession(
+		&aws.Config{
+			Region:      aws.String(occmDetails.Region),
+			Credentials: credentials.NewSharedCredentials("", c.AWSProfile),
+		}))
 	svc := ec2.New(sess)
 	input := &ec2.DescribeImagesInput{
 		Owners: []*string{
@@ -475,7 +489,11 @@ func (c *Client) CallAMIGet(occmDetails createOCCMDetails) (string, error) {
 // CallVPCGet can be used to make a request to get AWS AMI
 func (c *Client) CallVPCGet(subnet string, region string) (string, error) {
 
-	sess := session.Must(session.NewSession(aws.NewConfig().WithRegion(region)))
+	sess := session.Must(session.NewSession(
+		&aws.Config{
+			Region:      aws.String(region),
+			Credentials: credentials.NewSharedCredentials("", c.AWSProfile),
+		}))
 	svc := ec2.New(sess)
 	input := &ec2.DescribeSubnetsInput{
 		SubnetIds: []*string{
@@ -562,7 +580,11 @@ func (c *Client) CallAWSInstanceGet(occmDetails createOCCMDetails) ([]ec2.Instan
 		}
 		return res, nil
 	}
-	sess := session.Must(session.NewSession(aws.NewConfig().WithRegion(occmDetails.Region)))
+	sess := session.Must(session.NewSession(
+		&aws.Config{
+			Region:      aws.String(occmDetails.Region),
+			Credentials: credentials.NewSharedCredentials("", c.AWSProfile),
+		}))
 	svc := ec2.New(sess)
 	input := &ec2.DescribeInstancesInput{
 		Filters: []*ec2.Filter{
@@ -616,7 +638,10 @@ func (c *Client) CallAWSInstanceGet(occmDetails createOCCMDetails) ([]ec2.Instan
 
 // CallAWSRegionGet describe all regions.
 func (c *Client) CallAWSRegionGet(occmDetails createOCCMDetails) ([]string, error) {
-	sess := session.Must(session.NewSession())
+	sess := session.Must(session.NewSession(
+		&aws.Config{
+			Credentials: credentials.NewSharedCredentials("", c.AWSProfile),
+		}))
 	svc := ec2.New(sess)
 
 	result, err := svc.DescribeRegions(nil)
@@ -729,7 +754,11 @@ func (c *Client) GetSimulator() bool {
 
 // CallAWSTagCreate creates tag
 func (c *Client) CallAWSTagCreate(occmDetails createOCCMDetails) error {
-	sess := session.Must(session.NewSession(aws.NewConfig().WithRegion(occmDetails.Region)))
+	sess := session.Must(session.NewSession(
+		&aws.Config{
+			Region:      aws.String(occmDetails.Region),
+			Credentials: credentials.NewSharedCredentials("", c.AWSProfile),
+		}))
 
 	svc := ec2.New(sess)
 
@@ -765,7 +794,11 @@ func (c *Client) CallAWSTagCreate(occmDetails createOCCMDetails) error {
 
 // CallAWSTagDelete deletes tag
 func (c *Client) CallAWSTagDelete(occmDetails createOCCMDetails) error {
-	sess := session.Must(session.NewSession(aws.NewConfig().WithRegion(occmDetails.Region)))
+	sess := session.Must(session.NewSession(
+		&aws.Config{
+			Region:      aws.String(occmDetails.Region),
+			Credentials: credentials.NewSharedCredentials("", c.AWSProfile),
+		}))
 
 	svc := ec2.New(sess)
 
@@ -801,7 +834,11 @@ func (c *Client) CallAWSTagDelete(occmDetails createOCCMDetails) error {
 
 // CallAWSDescribeInstanceAttribute returns disableAPITermination.
 func (c *Client) CallAWSDescribeInstanceAttribute(occmDetails createOCCMDetails) (bool, error) {
-	sess := session.Must(session.NewSession(aws.NewConfig().WithRegion(occmDetails.Region)))
+	sess := session.Must(session.NewSession(
+		&aws.Config{
+			Region:      aws.String(occmDetails.Region),
+			Credentials: credentials.NewSharedCredentials("", c.AWSProfile),
+		}))
 	svc := ec2.New(sess)
 	input := &ec2.DescribeInstanceAttributeInput{
 		Attribute:  aws.String("disableApiTermination"),
@@ -831,7 +868,11 @@ func (c *Client) CallAWSGetReservationsForRegion(region string) ([]ec2.Instance,
 
 	var res []ec2.Instance
 
-	sess := session.Must(session.NewSession(aws.NewConfig().WithRegion(region)))
+	sess := session.Must(session.NewSession(
+		&aws.Config{
+			Region:      aws.String(region),
+			Credentials: credentials.NewSharedCredentials("", c.AWSProfile),
+		}))
 	svc := ec2.New(sess)
 	input := &ec2.DescribeInstancesInput{}
 

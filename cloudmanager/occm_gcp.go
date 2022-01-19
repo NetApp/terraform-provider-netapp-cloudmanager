@@ -194,6 +194,9 @@ func (c *Client) deployGCPVM(occmDetails createOCCMDetails, proxyCertificates []
 	if occmDetails.FirewallTags == true {
 		t.Properties.Tags.Items = []string{"firewall-tag-bvsu", "http-server", "https-server"}
 	}
+	if len(occmDetails.Tags) > 0 {
+		t.Properties.Tags.Items = append(t.Properties.Tags.Items, occmDetails.Tags...)
+	}
 	deviceName := fmt.Sprintf("%s-vm-disk-boot", occmDetails.Name)
 	t.Properties.Disks = []pdisk{
 		{AutoDelete: true,
@@ -324,6 +327,54 @@ func (c *Client) getdeployGCPVM(occmDetails createOCCMDetails, id string) (strin
 	}
 
 	return "", nil
+}
+
+func (c *Client) getVMInstance(occmDetails createOCCMDetails) (map[string]interface{}, error) {
+
+	log.Print("getVMInstance")
+
+	baseURL := fmt.Sprintf("/compute/v1/projects/%s/zones/%s/instances/%s-vm", occmDetails.GCPProject, occmDetails.Region, occmDetails.Name)
+	hostType := "GCPDeploymentManager"
+
+	log.Print("GET")
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, "", hostType)
+	if err != nil {
+		log.Print("getVMInstance request failed")
+		return nil, err
+	}
+
+	responseError := apiResponseChecker(statusCode, response, "getVMInstance")
+	if responseError != nil {
+		return nil, responseError
+	}
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(response, &result); err != nil {
+		log.Print("Failed to unmarshall response from getVMInstance")
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (c *Client) setVMInstaceTags(occmDetails createOCCMDetails, fingerprint string) error {
+	log.Print("setVMInstaceTags")
+
+	baseURL := fmt.Sprintf("/compute/v1/projects/%s/zones/%s/instances/%s-vm/setTags", occmDetails.GCPProject, occmDetails.Region, occmDetails.Name)
+	hostType := "GCPDeploymentManager"
+	body := make(map[string]interface{})
+	body["items"] = occmDetails.Tags
+	body["fingerprint"] = fingerprint
+	statusCode, response, _, err := c.CallAPIMethod("POST", baseURL, body, "", hostType)
+	if err != nil {
+		log.Print("setVMInstaceTags request failed")
+		return err
+	}
+	responseError := apiResponseChecker(statusCode, response, "setVMInstaceTags")
+	if responseError != nil {
+		return responseError
+	}
+	return nil
 }
 
 func (c *Client) deleteOCCMGCP(request deleteOCCMDetails) error {

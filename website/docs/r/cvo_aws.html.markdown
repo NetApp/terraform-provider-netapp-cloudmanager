@@ -123,6 +123,7 @@ The following arguments are supported:
 * `data_floating_ip` - (Optional) For HA FloatingIP, the data floating IP address.
 * `svm_floating_ip` - (Optional) For HA FloatingIP, the SVM management floating IP address.
 * `route_table_ids` - (Optional) For HA FloatingIP, the list of route table IDs that will be updated with the floating IPs.
+* `upgrade_ontap_version` - (Optional) Indicates whether to upgrade ontap image with `ontap_version`. To upgrade ontap image, `ontap_version` cannot be 'latest' and `use_latest_version` needs to be false.
 
 The `aws_tag` block supports the following:
 * `tag_key` - (Required) The key of the tag.
@@ -134,3 +135,8 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `id` - The unique identifier for the working environment.
 * `svm_name` - The name of the SVM.
+
+
+## Terraform Variables
+
+* `aws_profile` - (Optional) This is the profile name of the aws credentials file in your home directory, for example,~/.aws/credentials. If not specified, profile named default is used.
