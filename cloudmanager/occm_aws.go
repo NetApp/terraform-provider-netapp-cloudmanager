@@ -65,6 +65,7 @@ type createOCCMDetails struct {
 	FirewallTags                 bool
 	EnableTerminationProtection  *bool
 	AwsTags                      []userTags
+	Tags                         []string
 }
 
 // deleteOCCMDetails the users input for deleting a occm
@@ -443,7 +444,6 @@ func (c *Client) checkOCCMStatus() (occmAgent, error) {
 		log.Print("checkOCCMStatus request failed ", statusCode)
 		return occmAgent{}, err
 	}
-
 	responseError := apiResponseChecker(statusCode, response, "checkOCCMStatus")
 	if responseError != nil {
 		return occmAgent{}, responseError

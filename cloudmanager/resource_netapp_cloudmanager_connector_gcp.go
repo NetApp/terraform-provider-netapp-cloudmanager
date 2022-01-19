@@ -15,6 +15,7 @@ func resourceOCCMGCP() *schema.Resource {
 		Read:   resourceOCCMGCPRead,
 		Delete: resourceOCCMGCPDelete,
 		Exists: resourceOCCMGCPExists,
+		Update: resourceOCCMGCPUpdate,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -113,6 +114,13 @@ func resourceOCCMGCP() *schema.Resource {
 				Default:  true,
 				ForceNew: true,
 			},
+			"tags": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
 		},
 	}
 }
@@ -180,6 +188,15 @@ func resourceOCCMGCPCreate(d *schema.ResourceData, meta interface{}) error {
 		client.AccountID = o.(string)
 	}
 
+	if v, ok := d.GetOk("tags"); ok {
+		o := v.(*schema.Set)
+		tags := make([]string, 0, o.Len())
+		for _, v := range o.List() {
+			tags = append(tags, v.(string))
+		}
+		occmDetails.Tags = tags
+	}
+
 	res, err := client.deployGCPVM(occmDetails, proxyCertificates)
 	if err != nil {
 		log.Print("Error creating instance")
@@ -224,6 +241,26 @@ func resourceOCCMGCPRead(d *schema.ResourceData, meta interface{}) error {
 
 	if resID != id {
 		return fmt.Errorf("Expected occm ID %v, Response could not find", id)
+	}
+
+	if _, ok := d.GetOk("tags"); ok {
+		instance, err := client.getVMInstance(occmDetails)
+		tagItems := instance["tags"].(map[string]interface{})
+		tags := tagItems["items"].([]interface{})
+		if err != nil {
+			return err
+		}
+		var current []string
+		if d.Get("firewall_tags").(bool) {
+			for _, v := range tags {
+				if v.(string) != "firewall-tag-bvsu" && v.(string) != "http-server" && v.(string) != "https-server" {
+					current = append(current, v.(string))
+				}
+			}
+			d.Set("tags", current)
+		} else {
+			d.Set("tags", tags)
+		}
 	}
 
 	return nil
@@ -282,4 +319,39 @@ func resourceOCCMGCPExists(d *schema.ResourceData, meta interface{}) (bool, erro
 	}
 
 	return true, nil
+}
+
+func resourceOCCMGCPUpdate(d *schema.ResourceData, meta interface{}) error {
+	log.Printf("Updating OCCM: %#v", d)
+	client := meta.(*Client)
+
+	occmDetails := createOCCMDetails{}
+
+	occmDetails.GCPCommonSuffixName = "-vm-boot-deployment"
+	occmDetails.Name = d.Get("name").(string)
+	occmDetails.GCPProject = d.Get("project_id").(string)
+	occmDetails.Region = d.Get("zone").(string)
+	occmDetails.SubnetID = d.Get("subnet_id").(string)
+	client.GCPServiceAccountPath = d.Get("service_account_path").(string)
+	occmDetails.Company = d.Get("company").(string)
+
+	if d.HasChange("tags") {
+		instance, err := client.getVMInstance(occmDetails)
+		tagItems := instance["tags"].(map[string]interface{})
+		fingerprint := tagItems["fingerprint"].(string)
+		o := d.Get("tags").(*schema.Set)
+		tags := make([]string, 0, o.Len())
+		for _, v := range o.List() {
+			tags = append(tags, v.(string))
+		}
+		if d.Get("firewall_tags").(bool) {
+			tags = append(tags, []string{"firewall-tag-bvsu", "http-server", "https-server"}...)
+		}
+		occmDetails.Tags = tags
+		err = client.setVMInstaceTags(occmDetails, fingerprint)
+		if err != nil {
+			return err
+		}
+	}
+	return resourceOCCMGCPRead(d, meta)
 }

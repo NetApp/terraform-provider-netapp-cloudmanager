@@ -5,6 +5,7 @@ ENHANCEMENTS:
 * add Terraform variable aws_profile to support use of profile name in aws credentials file
 * resource/snapmirror: add FSX AWS to snapmirror
 * resource/volume: add snapshot_policy_name and tiering_policy modification, and check the supporting changeable parameters
+* resource/connector_gcp: add network tags option
 
 ## 21.12.0
 NEW FEATURES:

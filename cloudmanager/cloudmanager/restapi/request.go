@@ -67,9 +67,17 @@ func (r *Request) BuildHTTPReq(host string, token string, audience string, baseU
 	// authenticating separately for GCP calls
 	if gcpType == true {
 		if r.Method == "POST" {
-			req, err = http.NewRequest(r.Method, url, bytes.NewReader([]byte(r.GCPDeploymentTemplate)))
-			if err != nil {
-				return nil, err
+			if paramsNil {
+				req, err = http.NewRequest(r.Method, url, bytes.NewReader([]byte(r.GCPDeploymentTemplate)))
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				bodyJSON, err := json.Marshal(r.Params)
+				req, err = http.NewRequest(r.Method, url, bytes.NewReader([]byte(bodyJSON)))
+				if err != nil {
+					return nil, err
+				}
 			}
 		} else {
 			var err error
