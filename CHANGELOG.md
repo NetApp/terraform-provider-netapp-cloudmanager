@@ -1,4 +1,9 @@
-## 22.1.0 (Unreleased)
+## 22.1.1 (Unreleased)
+BUG FIXES:
+
+* resource/cvo for AWS, AZURE and GCP: add status check on instance_type update
+
+## 22.1.0
 ENHANCEMENTS:
 
 * resource/cvo for AWS, AZURE and GCP: add upgrade_ontap_version for ontap_version upgrade

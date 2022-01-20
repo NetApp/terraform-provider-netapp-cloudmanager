@@ -925,6 +925,29 @@ func updateCVOSVMPassword(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
+func (c *Client) waitOnCompletionCVOUpdate(apiRoot string, id string, retryCount int, waitInterval int) error {
+	// check upgrade status
+	log.Print("Check CVO update status")
+
+	for {
+		cvoResp, err := c.getWorkingEnvironmentProperties(apiRoot, id, "status,ontapClusterProperties")
+		if err != nil {
+			return err
+		}
+		if cvoResp.Status.Status != "UPDATING" {
+			log.Print("CVO update is done")
+			return nil
+		}
+		if retryCount <= 0 {
+			log.Print("Taking too long for status to be active")
+			return fmt.Errorf("Taking too long for CVO to be active or not properly setup")
+		}
+		log.Printf("Update status %s...(%d)", cvoResp.Status.Status, retryCount)
+		time.Sleep(time.Duration(waitInterval) * time.Second)
+		retryCount--
+	}
+}
+
 // set the license_type and instance type of a specific cloud volumes ONTAP
 func updateCVOLicenseInstanceType(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Client)
@@ -943,6 +966,20 @@ func updateCVOLicenseInstanceType(d *schema.ResourceData, meta interface{}) erro
 	updateErr := client.callCMUpdateAPI("PUT", request, baseURL, id, "updateCVOLicenseInstanceType")
 	if updateErr != nil {
 		return updateErr
+	}
+	// check upgrade status
+	apiRoot, _, err := client.getAPIRoot(id)
+	if err != nil {
+		return fmt.Errorf("Cannot get root API")
+	}
+
+	retryCount := 65
+	if d.Get("is_ha").(bool) {
+		retryCount = retryCount * 2
+	}
+	err = client.waitOnCompletionCVOUpdate(apiRoot, id, retryCount, 60)
+	if err != nil {
+		return fmt.Errorf("Update CVO failed %v", err)
 	}
 	log.Printf("Updated %s license and instance type: %v", id, request)
 	return nil
