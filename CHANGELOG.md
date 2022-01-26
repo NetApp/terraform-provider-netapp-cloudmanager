@@ -2,6 +2,7 @@
 BUG FIXES:
 
 * resource/cvo for AWS, AZURE and GCP: add status check on instance_type update
+* resource/aws_fsx: validation errors detected on aws_fsx tags
 
 ## 22.1.0
 ENHANCEMENTS:
