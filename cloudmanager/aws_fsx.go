@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/fatih/structs"
+	"github.com/hashicorp/terraform/helper/schema"
 )
 
 // createAWSFSXDetails the users input for creating a FSX
@@ -25,7 +26,7 @@ type createAWSFSXDetails struct {
 	RouteTableIds          []string        `structs:"routeTableIds,omitempty"`
 	ThroughputCapacity     int             `structs:"throughputCapacity,omitempty"`
 	SecurityGroupIds       []string        `structs:"securityGroupIds,omitempty"`
-	AwsFSXTags             []userTags      `structs:"tags,omitempty"`
+	AwsFSXTags             []fsxTags       `structs:"tags,omitempty"`
 	TenantID               string
 }
 
@@ -78,13 +79,27 @@ type status struct {
 }
 
 // check if name tag exists
-func hasNameTag(tags []userTags) bool {
+func hasNameTag(tags []fsxTags) bool {
 	for _, v := range tags {
 		if v.TagKey == "name" {
 			return true
 		}
 	}
 	return false
+}
+
+// expandUserTags converts set to fsxTag struct
+func expandfsxTags(set *schema.Set) []fsxTags {
+	tags := []fsxTags{}
+
+	for _, v := range set.List() {
+		tag := v.(map[string]interface{})
+		fsxTag := fsxTags{}
+		fsxTag.TagKey = tag["tag_key"].(string)
+		fsxTag.TagValue = tag["tag_value"].(string)
+		tags = append(tags, fsxTag)
+	}
+	return tags
 }
 
 func (c *Client) getAWSCredentialsID(name string, tenantID string) (string, error) {

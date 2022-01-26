@@ -149,7 +149,7 @@ func resourceAWSFSXCreate(d *schema.ResourceData, meta interface{}) error {
 	if c, ok := d.GetOk("tags"); ok {
 		tags := c.(*schema.Set)
 		if tags.Len() > 0 {
-			fsxDetails.AwsFSXTags = expandUserTags(tags)
+			fsxDetails.AwsFSXTags = expandfsxTags(tags)
 			if hasNameTag(fsxDetails.AwsFSXTags) {
 				addNameTag = false
 			}
@@ -157,7 +157,7 @@ func resourceAWSFSXCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 	if addNameTag {
 		// add name tag
-		fsxTag := userTags{}
+		fsxTag := fsxTags{}
 		fsxTag.TagKey = "name"
 		fsxTag.TagValue = fsxDetails.Name
 		fsxDetails.AwsFSXTags = append(fsxDetails.AwsFSXTags, fsxTag)

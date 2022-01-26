@@ -1,4 +1,10 @@
-## 22.1.0 (Unreleased)
+## 22.1.1 (Unreleased)
+BUG FIXES:
+
+* resource/cvo for AWS, AZURE and GCP: add status check on instance_type update
+* resource/aws_fsx: validation errors detected on aws_fsx tags
+
+## 22.1.0
 ENHANCEMENTS:
 
 * resource/cvo for AWS, AZURE and GCP: add upgrade_ontap_version for ontap_version upgrade
