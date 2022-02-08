@@ -85,18 +85,18 @@ type serviceAccount struct {
 	Scopes []string `yaml:"scopes"`
 }
 
-func (c *Client) getCustomDataForGCP(registerAgentTOService registerAgentTOServiceRequest, proxyCertificates []string) (string, error) {
+func (c *Client) getCustomDataForGCP(registerAgentTOService registerAgentTOServiceRequest, proxyCertificates []string, clientID string) (string, string, error) {
 	accesTokenResult, err := c.getAccessToken()
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	log.Print("getAccessToken  ", accesTokenResult.Token)
 	c.Token = accesTokenResult.Token
 
 	if c.AccountID == "" {
-		accountID, err := c.getAccount()
+		accountID, err := c.getAccount(clientID)
 		if err != nil {
-			return "", err
+			return "", "", err
 		}
 		log.Print("getAccount ", accountID)
 		registerAgentTOService.AccountID = accountID
@@ -104,12 +104,12 @@ func (c *Client) getCustomDataForGCP(registerAgentTOService registerAgentTOServi
 		registerAgentTOService.AccountID = c.AccountID
 	}
 
-	userDataRespone, err := c.registerAgentTOServiceForGCP(registerAgentTOService)
+	userDataRespone, err := c.registerAgentTOServiceForGCP(registerAgentTOService, clientID)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
-	c.ClientID = userDataRespone.ClientID
+	newClientID := userDataRespone.ClientID
 	c.AccountID = userDataRespone.AccountID
 
 	userDataRespone.ProxySettings.ProxyCertificates = proxyCertificates
@@ -117,10 +117,10 @@ func (c *Client) getCustomDataForGCP(registerAgentTOService registerAgentTOServi
 	userData := string(rawUserData)
 	log.Print("userData ", userData)
 
-	return userData, nil
+	return userData, newClientID, nil
 }
 
-func (c *Client) registerAgentTOServiceForGCP(registerAgentTOServiceRequest registerAgentTOServiceRequest) (createUserData, error) {
+func (c *Client) registerAgentTOServiceForGCP(registerAgentTOServiceRequest registerAgentTOServiceRequest, clientID string) (createUserData, error) {
 
 	baseURL := "/agents-mgmt/connector-setup"
 	hostType := "CloudManagerHost"
@@ -129,7 +129,7 @@ func (c *Client) registerAgentTOServiceForGCP(registerAgentTOServiceRequest regi
 	log.Print(c.Token)
 
 	params := structs.Map(registerAgentTOServiceRequest)
-	statusCode, response, _, err := c.CallAPIMethod("POST", baseURL, params, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("POST", baseURL, params, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("registerAgentTOService request failed ", statusCode)
 		return createUserData{}, err
@@ -149,7 +149,7 @@ func (c *Client) registerAgentTOServiceForGCP(registerAgentTOServiceRequest regi
 	return result, nil
 }
 
-func (c *Client) deployGCPVM(occmDetails createOCCMDetails, proxyCertificates []string) (OCCMMResult, error) {
+func (c *Client) deployGCPVM(occmDetails createOCCMDetails, proxyCertificates []string, clientID string) (OCCMMResult, error) {
 	var registerAgentTOService registerAgentTOServiceRequest
 	registerAgentTOService.Name = occmDetails.Name
 	registerAgentTOService.Placement.Region = occmDetails.Region
@@ -168,14 +168,15 @@ func (c *Client) deployGCPVM(occmDetails createOCCMDetails, proxyCertificates []
 
 	registerAgentTOService.Placement.Subnet = occmDetails.SubnetID
 
-	userData, err := c.getCustomDataForGCP(registerAgentTOService, proxyCertificates)
+	userData, newClientID, err := c.getCustomDataForGCP(registerAgentTOService, proxyCertificates, clientID)
 	if err != nil {
 		return OCCMMResult{}, err
 	}
 
 	c.UserData = userData
 	var result OCCMMResult
-	result.ClientID = c.ClientID
+	log.Printf("Set result clientid=%s", newClientID)
+	result.ClientID = newClientID
 	result.AccountID = c.AccountID
 
 	gcpCustomData := base64.StdEncoding.EncodeToString([]byte(userData))
@@ -262,7 +263,8 @@ func (c *Client) deployGCPVM(occmDetails createOCCMDetails, proxyCertificates []
 	hostType := "GCPDeploymentManager"
 
 	log.Print("POST")
-	statusCode, response, _, err := c.CallAPIMethod("POST", baseURL, nil, "", hostType)
+	log.Printf("deployGCPVM: call depolyments api base client=%s", newClientID)
+	statusCode, response, _, err := c.CallAPIMethod("POST", baseURL, nil, "", hostType, newClientID)
 	if err != nil {
 		log.Print("deployGCPVM request failed")
 		return OCCMMResult{}, err
@@ -278,7 +280,7 @@ func (c *Client) deployGCPVM(occmDetails createOCCMDetails, proxyCertificates []
 
 	retries := 16
 	for {
-		occmResp, err := c.checkOCCMStatus()
+		occmResp, err := c.checkOCCMStatus(newClientID)
 		if err != nil {
 			return OCCMMResult{}, err
 		}
@@ -297,7 +299,7 @@ func (c *Client) deployGCPVM(occmDetails createOCCMDetails, proxyCertificates []
 	return result, nil
 }
 
-func (c *Client) getdeployGCPVM(occmDetails createOCCMDetails, id string) (string, error) {
+func (c *Client) getdeployGCPVM(occmDetails createOCCMDetails, id string, clientID string) (string, error) {
 
 	log.Print("getdeployGCPVM")
 
@@ -305,7 +307,7 @@ func (c *Client) getdeployGCPVM(occmDetails createOCCMDetails, id string) (strin
 	hostType := "GCPDeploymentManager"
 
 	log.Print("GET")
-	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, "", hostType)
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, "", hostType, clientID)
 	if err != nil {
 		log.Print("getdeployGCPVM request failed")
 		return "", err
@@ -329,7 +331,7 @@ func (c *Client) getdeployGCPVM(occmDetails createOCCMDetails, id string) (strin
 	return "", nil
 }
 
-func (c *Client) getVMInstance(occmDetails createOCCMDetails) (map[string]interface{}, error) {
+func (c *Client) getVMInstance(occmDetails createOCCMDetails, clientID string) (map[string]interface{}, error) {
 
 	log.Print("getVMInstance")
 
@@ -337,7 +339,7 @@ func (c *Client) getVMInstance(occmDetails createOCCMDetails) (map[string]interf
 	hostType := "GCPDeploymentManager"
 
 	log.Print("GET")
-	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, "", hostType)
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, "", hostType, clientID)
 	if err != nil {
 		log.Print("getVMInstance request failed")
 		return nil, err
@@ -357,7 +359,7 @@ func (c *Client) getVMInstance(occmDetails createOCCMDetails) (map[string]interf
 	return result, nil
 }
 
-func (c *Client) setVMInstaceTags(occmDetails createOCCMDetails, fingerprint string) error {
+func (c *Client) setVMInstaceTags(occmDetails createOCCMDetails, fingerprint string, clientID string) error {
 	log.Print("setVMInstaceTags")
 
 	baseURL := fmt.Sprintf("/compute/v1/projects/%s/zones/%s/instances/%s-vm/setTags", occmDetails.GCPProject, occmDetails.Region, occmDetails.Name)
@@ -365,7 +367,7 @@ func (c *Client) setVMInstaceTags(occmDetails createOCCMDetails, fingerprint str
 	body := make(map[string]interface{})
 	body["items"] = occmDetails.Tags
 	body["fingerprint"] = fingerprint
-	statusCode, response, _, err := c.CallAPIMethod("POST", baseURL, body, "", hostType)
+	statusCode, response, _, err := c.CallAPIMethod("POST", baseURL, body, "", hostType, clientID)
 	if err != nil {
 		log.Print("setVMInstaceTags request failed")
 		return err
@@ -377,15 +379,15 @@ func (c *Client) setVMInstaceTags(occmDetails createOCCMDetails, fingerprint str
 	return nil
 }
 
-func (c *Client) deleteOCCMGCP(request deleteOCCMDetails) error {
+func (c *Client) deleteOCCMGCP(request deleteOCCMDetails, clientID string) error {
 
-	log.Print("deleteOCCMGCP")
+	log.Printf("deleteOCCMGCP %s client %s", request.Name, clientID)
 
 	baseURL := fmt.Sprintf("/deploymentmanager/v2/projects/%s/global/deployments/%s%s", request.Project, request.Name, request.GCPCommonSuffixName)
 	hostType := "GCPDeploymentManager"
 
 	log.Print("DELETE")
-	statusCode, response, _, err := c.CallAPIMethod("DELETE", baseURL, nil, "", hostType)
+	statusCode, response, _, err := c.CallAPIMethod("DELETE", baseURL, nil, "", hostType, clientID)
 	if err != nil {
 		log.Print("deleteOCCMGCP request failed")
 		return err
@@ -407,7 +409,7 @@ func (c *Client) deleteOCCMGCP(request deleteOCCMDetails) error {
 
 	retries := 30
 	for {
-		occmResp, err := c.checkOCCMStatus()
+		occmResp, err := c.checkOCCMStatus(clientID)
 		if err != nil {
 			return err
 		}
@@ -423,7 +425,7 @@ func (c *Client) deleteOCCMGCP(request deleteOCCMDetails) error {
 		}
 	}
 
-	if err := c.callOCCMDelete(); err != nil {
+	if err := c.callOCCMDelete(clientID); err != nil {
 		return err
 	}
 

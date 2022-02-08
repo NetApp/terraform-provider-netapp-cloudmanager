@@ -55,7 +55,7 @@ type destination struct {
 	VolumeName string `structs:"volumeName"`
 }
 
-func (c *Client) getInterclusterlifs(snapMirror snapMirrorRequest) (interclusterlif, error) {
+func (c *Client) getInterclusterlifs(snapMirror snapMirrorRequest, clientID string) (interclusterlif, error) {
 	var destinationWEID string
 	if snapMirror.ReplicationRequest.DestinationFsxID != "" {
 		destinationWEID = snapMirror.ReplicationRequest.DestinationFsxID
@@ -65,7 +65,7 @@ func (c *Client) getInterclusterlifs(snapMirror snapMirrorRequest) (intercluster
 
 	baseURL := fmt.Sprintf("/occm/api/replication/intercluster-lifs?peerWorkingEnvironmentId=%s&workingEnvironmentId=%s", destinationWEID, snapMirror.ReplicationRequest.SourceWorkingEnvironmentID)
 	hostType := "CloudManagerHost"
-	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("intercluster-lifs reading failed ", statusCode)
 		return interclusterlif{}, err
@@ -84,7 +84,7 @@ func (c *Client) getInterclusterlifs(snapMirror snapMirrorRequest) (intercluster
 	return interclusterlifsResponse, nil
 }
 
-func (c *Client) buildSnapMirrorCreate(snapMirror snapMirrorRequest, sourceWorkingEnvironmentType string, destWorkingEnvironmentType string) (snapMirrorRequest, error) {
+func (c *Client) buildSnapMirrorCreate(snapMirror snapMirrorRequest, sourceWorkingEnvironmentType string, destWorkingEnvironmentType string, clientID string) (snapMirrorRequest, error) {
 
 	accessTokenResult, err := c.getAccessToken()
 	if err != nil {
@@ -93,7 +93,7 @@ func (c *Client) buildSnapMirrorCreate(snapMirror snapMirrorRequest, sourceWorki
 	}
 	c.Token = accessTokenResult.Token
 
-	interclusterlifsResponse, err := c.getInterclusterlifs(snapMirror)
+	interclusterlifsResponse, err := c.getInterclusterlifs(snapMirror, clientID)
 	if err != nil {
 		log.Print("intercluster-lifs reading failed")
 		return snapMirrorRequest{}, err
@@ -105,13 +105,13 @@ func (c *Client) buildSnapMirrorCreate(snapMirror snapMirrorRequest, sourceWorki
 	volumeS.Name = snapMirror.ReplicationVolume.SourceVolumeName
 
 	if sourceWorkingEnvironmentType != "ON_PREM" {
-		volumeSource, err = c.getVolume(volumeS)
+		volumeSource, err = c.getVolume(volumeS, clientID)
 		if err != nil {
 			log.Print("Error reading source volume")
 			return snapMirrorRequest{}, err
 		}
 	} else {
-		volumeSource, err = c.getVolumeForOnPrem(volumeS)
+		volumeSource, err = c.getVolumeForOnPrem(volumeS, clientID)
 		if err != nil {
 			log.Print("Error reading source volume")
 			return snapMirrorRequest{}, err
@@ -142,8 +142,8 @@ func (c *Client) buildSnapMirrorCreate(snapMirror snapMirrorRequest, sourceWorki
 	}
 
 	if destWorkingEnvironmentType != "ON_PREM" && snapMirror.ReplicationRequest.DestinationFsxID == "" {
-		quote := c.buildQuoteRequest(snapMirror, volDestQuote, snapMirror.ReplicationRequest.SourceWorkingEnvironmentID, sourceWorkingEnvironmentType, snapMirror.ReplicationVolume.DestinationVolumeName, snapMirror.ReplicationVolume.DestinationSvmName, snapMirror.ReplicationRequest.DestinationWorkingEnvironmentID)
-		quoteResponse, err := c.quoteVolume(quote)
+		quote := c.buildQuoteRequest(snapMirror, volDestQuote, snapMirror.ReplicationRequest.SourceWorkingEnvironmentID, sourceWorkingEnvironmentType, snapMirror.ReplicationVolume.DestinationVolumeName, snapMirror.ReplicationVolume.DestinationSvmName, snapMirror.ReplicationRequest.DestinationWorkingEnvironmentID, clientID)
+		quoteResponse, err := c.quoteVolume(quote, clientID)
 		if err != nil {
 			log.Printf("Error quoting destination volume")
 			return snapMirrorRequest{}, err
@@ -176,7 +176,7 @@ func (c *Client) buildSnapMirrorCreate(snapMirror snapMirrorRequest, sourceWorki
 		snapMirror.ReplicationVolume.DestinationProviderVolumeType = sourceVolume.ProviderVolumeType
 	}
 
-	err = c.createSnapMirror(snapMirror, destWorkingEnvironmentType)
+	err = c.createSnapMirror(snapMirror, destWorkingEnvironmentType, clientID)
 	if err != nil {
 		log.Printf("Error creating snapmirror")
 		return snapMirrorRequest{}, err
@@ -185,7 +185,7 @@ func (c *Client) buildSnapMirrorCreate(snapMirror snapMirrorRequest, sourceWorki
 	return snapMirror, nil
 }
 
-func (c *Client) buildQuoteRequest(snapMirror snapMirrorRequest, vol volumeResponse, sourceWorkingEnvironmentID string, sourceWorkingEnvironmentType string, name string, svm string, workingEnvironmentID string) quoteRequest {
+func (c *Client) buildQuoteRequest(snapMirror snapMirrorRequest, vol volumeResponse, sourceWorkingEnvironmentID string, sourceWorkingEnvironmentType string, name string, svm string, workingEnvironmentID string, clientID string) quoteRequest {
 	var quote quoteRequest
 
 	quote.Name = name
@@ -200,7 +200,7 @@ func (c *Client) buildQuoteRequest(snapMirror snapMirrorRequest, vol volumeRespo
 	quote.WorkingEnvironmentID = workingEnvironmentID
 	quote.SvmName = svm
 
-	aggregate, err := c.getAggregate(aggregateRequest{WorkingEnvironmentID: sourceWorkingEnvironmentID}, vol.AggregateName, sourceWorkingEnvironmentType)
+	aggregate, err := c.getAggregate(aggregateRequest{WorkingEnvironmentID: sourceWorkingEnvironmentID}, vol.AggregateName, sourceWorkingEnvironmentType, clientID)
 	if err != nil {
 		log.Printf("Error getting aggregate. aggregate name = %v", vol.AggregateName)
 	}
@@ -226,7 +226,7 @@ func (c *Client) buildQuoteRequest(snapMirror snapMirrorRequest, vol volumeRespo
 	return quote
 }
 
-func (c *Client) createSnapMirror(sm snapMirrorRequest, destWorkingEnvironmentType string) error {
+func (c *Client) createSnapMirror(sm snapMirrorRequest, destWorkingEnvironmentType string, clientID string) error {
 	var baseURL string
 	if sm.ReplicationRequest.DestinationFsxID != "" {
 		baseURL = "/occm/api/replication/fsx"
@@ -238,7 +238,7 @@ func (c *Client) createSnapMirror(sm snapMirrorRequest, destWorkingEnvironmentTy
 	hostType := "CloudManagerHost"
 
 	params := structs.Map(sm)
-	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("POST", baseURL, params, c.Token, hostType)
+	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("POST", baseURL, params, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("createSnapMirror request failed ", statusCode)
 		return err
@@ -248,7 +248,7 @@ func (c *Client) createSnapMirror(sm snapMirrorRequest, destWorkingEnvironmentTy
 		return responseError
 	}
 
-	err = c.waitOnCompletion(onCloudRequestID, "snapmirror", "create", 10, 10)
+	err = c.waitOnCompletion(onCloudRequestID, "snapmirror", "create", 10, 10, clientID)
 	if err != nil {
 		return err
 	}
@@ -256,7 +256,7 @@ func (c *Client) createSnapMirror(sm snapMirrorRequest, destWorkingEnvironmentTy
 	return nil
 }
 
-func (c *Client) deleteSnapMirror(snapMirror snapMirrorRequest) error {
+func (c *Client) deleteSnapMirror(snapMirror snapMirrorRequest, clientID string) error {
 
 	accessTokenResult, err := c.getAccessToken()
 	if err != nil {
@@ -267,7 +267,7 @@ func (c *Client) deleteSnapMirror(snapMirror snapMirrorRequest) error {
 	baseURL := fmt.Sprintf("/occm/api/replication/%s/%s/%s", snapMirror.ReplicationRequest.DestinationWorkingEnvironmentID, snapMirror.ReplicationVolume.DestinationSvmName, snapMirror.ReplicationVolume.DestinationVolumeName)
 	hostType := "CloudManagerHost"
 
-	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("DELETE", baseURL, nil, c.Token, hostType)
+	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("DELETE", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
 		log.Printf("deleteSnapMirror request failed with statusCode:%v, Error:%v", statusCode, err)
 		return err
@@ -278,7 +278,7 @@ func (c *Client) deleteSnapMirror(snapMirror snapMirrorRequest) error {
 		return responseError
 	}
 
-	err = c.waitOnCompletion(onCloudRequestID, "snapmirror", "delete", 10, 10)
+	err = c.waitOnCompletion(onCloudRequestID, "snapmirror", "delete", 10, 10, clientID)
 	if err != nil {
 		return err
 	}
@@ -286,7 +286,7 @@ func (c *Client) deleteSnapMirror(snapMirror snapMirrorRequest) error {
 	return nil
 }
 
-func (c *Client) getSnapMirror(snapMirror snapMirrorRequest, vol string) (string, error) {
+func (c *Client) getSnapMirror(snapMirror snapMirrorRequest, vol string, clientID string) (string, error) {
 
 	var result []snapMirrorStatusResponse
 
@@ -300,7 +300,7 @@ func (c *Client) getSnapMirror(snapMirror snapMirrorRequest, vol string) (string
 	hostType := "CloudManagerHost"
 	baseURL := fmt.Sprintf("/occm/api/replication/status/%s", snapMirror.ReplicationRequest.SourceWorkingEnvironmentID)
 
-	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("getSnapMirror request failed ", statusCode)
 		return "", err

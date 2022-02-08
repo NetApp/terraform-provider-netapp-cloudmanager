@@ -26,7 +26,7 @@ type cvoOnPremResult struct {
 	PublicID string `json:"publicId"`
 }
 
-func (c *Client) createCVOOnPrem(cvoDetails createCVOOnPremDetails) (cvoResult, error) {
+func (c *Client) createCVOOnPrem(cvoDetails createCVOOnPremDetails, clientID string) (cvoResult, error) {
 
 	log.Print("createCVO")
 
@@ -38,7 +38,7 @@ func (c *Client) createCVOOnPrem(cvoDetails createCVOOnPremDetails) (cvoResult, 
 	c.Token = accessTokenResult.Token
 
 	if cvoDetails.WorkspaceID == "" {
-		tenantID, err := c.getTenant()
+		tenantID, err := c.getTenant(clientID)
 		if err != nil {
 			log.Print("getTenant request failed ", err)
 			return cvoResult{}, err
@@ -53,7 +53,7 @@ func (c *Client) createCVOOnPrem(cvoDetails createCVOOnPremDetails) (cvoResult, 
 	hostType := "CloudManagerHost"
 	params := structs.Map(cvoDetails)
 
-	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("POST", baseURL, params, c.Token, hostType)
+	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("POST", baseURL, params, c.Token, hostType, clientID)
 	if err != nil {
 		log.Printf("createCVO request failed: %v, %v", statusCode, err)
 		return cvoResult{}, err
@@ -64,7 +64,7 @@ func (c *Client) createCVOOnPrem(cvoDetails createCVOOnPremDetails) (cvoResult, 
 		return cvoResult{}, responseError
 	}
 
-	err = c.waitOnCompletion(onCloudRequestID, "CVO", "create", retries, creationWaitTime)
+	err = c.waitOnCompletion(onCloudRequestID, "CVO", "create", retries, creationWaitTime, clientID)
 	if err != nil {
 		return cvoResult{}, err
 	}
@@ -78,7 +78,7 @@ func (c *Client) createCVOOnPrem(cvoDetails createCVOOnPremDetails) (cvoResult, 
 	return result, nil
 }
 
-func (c *Client) getCVOOnPremByID(id string) (map[string]interface{}, error) {
+func (c *Client) getCVOOnPremByID(id string, clientID string) (map[string]interface{}, error) {
 
 	log.Print("getCVOOnPremByID")
 
@@ -93,7 +93,7 @@ func (c *Client) getCVOOnPremByID(id string) (map[string]interface{}, error) {
 
 	hostType := "CloudManagerHost"
 
-	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
 		log.Printf("getCVOOnPremByID request failed: %v, %v", statusCode, err)
 		return nil, err
@@ -112,7 +112,7 @@ func (c *Client) getCVOOnPremByID(id string) (map[string]interface{}, error) {
 	return result, nil
 }
 
-func (c *Client) getCVOOnPrem(id string) (string, error) {
+func (c *Client) getCVOOnPrem(id string, clientID string) (string, error) {
 
 	log.Print("getCVOOnPrem")
 
@@ -127,7 +127,7 @@ func (c *Client) getCVOOnPrem(id string) (string, error) {
 
 	hostType := "CloudManagerHost"
 
-	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
 		log.Printf("getCVOOnPrem request failed: %v, %v", statusCode, err)
 		return "", err
@@ -154,7 +154,7 @@ func (c *Client) getCVOOnPrem(id string) (string, error) {
 	return "", nil
 }
 
-func (c *Client) deleteCVOOnPrem(id string) error {
+func (c *Client) deleteCVOOnPrem(id string, clientID string) error {
 
 	log.Print("deleteCVOOnPrem")
 
@@ -171,7 +171,7 @@ func (c *Client) deleteCVOOnPrem(id string) error {
 	creationWaitTime := 60
 	retries := 40
 
-	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("DELETE", baseURL, nil, c.Token, hostType)
+	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("DELETE", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
 		log.Printf("deleteCVOOnPrem request failed: %v, %v", statusCode, err)
 		return err
@@ -182,7 +182,7 @@ func (c *Client) deleteCVOOnPrem(id string) error {
 		return responseError
 	}
 
-	err = c.waitOnCompletion(onCloudRequestID, "CVO", "delete", retries, creationWaitTime)
+	err = c.waitOnCompletion(onCloudRequestID, "CVO", "delete", retries, creationWaitTime, clientID)
 	if err != nil {
 		return err
 	}

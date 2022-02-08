@@ -262,6 +262,7 @@ func resourceCVOAzureCreate(d *schema.ResourceData, meta interface{}) error {
 	cvoDetails := createCVOAzureDetails{}
 
 	cvoDetails.Name = d.Get("name").(string)
+	clientID := d.Get("client_id").(string)
 	cvoDetails.Region = d.Get("location").(string)
 	cvoDetails.SubscriptionID = d.Get("subscription_id").(string)
 	cvoDetails.DataEncryptionType = d.Get("data_encryption_type").(string)
@@ -313,10 +314,6 @@ func resourceCVOAzureCreate(d *schema.ResourceData, meta interface{}) error {
 
 	if c, ok := d.GetOk("cloud_provider_account"); ok {
 		cvoDetails.CloudProviderAccount = c.(string)
-	}
-
-	if c, ok := d.GetOk("client_id"); ok {
-		client.ClientID = c.(string)
 	}
 
 	if c, ok := d.GetOk("capacity_package_name"); ok {
@@ -376,7 +373,7 @@ func resourceCVOAzureCreate(d *schema.ResourceData, meta interface{}) error {
 	cvoDetails.VnetID = vnet
 	cvoDetails.SubnetID = fmt.Sprintf("%s/subnets/%s", vnet, d.Get("subnet_id").(string))
 
-	res, err := client.createCVOAzure(cvoDetails)
+	res, err := client.createCVOAzure(cvoDetails, clientID)
 	if err != nil {
 		log.Print("Error creating instance")
 		return err
@@ -395,11 +392,9 @@ func resourceCVOAzureRead(d *schema.ResourceData, meta interface{}) error {
 
 	id := d.Id()
 
-	if c, ok := d.GetOk("client_id"); ok {
-		client.ClientID = c.(string)
-	}
+	clientID := d.Get("client_id").(string)
 
-	_, err := client.getWorkingEnvironmentInfo(id)
+	_, err := client.getWorkingEnvironmentInfo(id, clientID)
 	if err != nil {
 		log.Print("Error getting cvo")
 		return err
@@ -412,15 +407,11 @@ func resourceCVOAzureDelete(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("Deleting CVO: %#v", d)
 
 	client := meta.(*Client)
-
+	clientID := d.Get("client_id").(string)
 	id := d.Id()
-	if c, ok := d.GetOk("client_id"); ok {
-		client.ClientID = c.(string)
-	}
-
 	isHA := d.Get("is_ha").(bool)
 
-	deleteErr := client.deleteCVOAzure(id, isHA)
+	deleteErr := client.deleteCVOAzure(id, isHA, clientID)
 	if deleteErr != nil {
 		log.Print("Error deleting cvo")
 		return deleteErr
@@ -433,11 +424,11 @@ func resourceCVOAzureUpdate(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("Updating CVO: %#v", d)
 
 	client := meta.(*Client)
-	client.ClientID = d.Get("client_id").(string)
+	clientID := d.Get("client_id").(string)
 
 	// check if svm_password is changed
 	if d.HasChange("svm_password") {
-		respErr := updateCVOSVMPassword(d, meta)
+		respErr := updateCVOSVMPassword(d, meta, clientID)
 		if respErr != nil {
 			return respErr
 		}
@@ -445,7 +436,7 @@ func resourceCVOAzureUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	// check if license_type and instance type are changed
 	if d.HasChange("instance_type") || d.HasChange("license_type") {
-		respErr := updateCVOLicenseInstanceType(d, meta)
+		respErr := updateCVOLicenseInstanceType(d, meta, clientID)
 		if respErr != nil {
 			return respErr
 		}
@@ -453,7 +444,7 @@ func resourceCVOAzureUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	// check if tier_level is changed
 	if d.HasChange("tier_level") && d.Get("capacity_tier").(string) == "Blob" {
-		respErr := updateCVOTierLevel(d, meta)
+		respErr := updateCVOTierLevel(d, meta, clientID)
 		if respErr != nil {
 			return respErr
 		}
@@ -461,7 +452,7 @@ func resourceCVOAzureUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	// check if aws_tag has changes
 	if d.HasChange("azure_tag") {
-		respErr := updateCVOUserTags(d, meta, "azure_tag")
+		respErr := updateCVOUserTags(d, meta, "azure_tag", clientID)
 		if respErr != nil {
 			return respErr
 		}
@@ -469,7 +460,7 @@ func resourceCVOAzureUpdate(d *schema.ResourceData, meta interface{}) error {
 	}
 	// upgrade ontap version
 	// only when the upgrade_ontap_version is true and the ontap_version is not "latest"
-	upgradeErr := client.checkAndDoUpgradeOntapVersion(d)
+	upgradeErr := client.checkAndDoUpgradeOntapVersion(d, clientID)
 	if upgradeErr != nil {
 		return upgradeErr
 	}
@@ -490,11 +481,9 @@ func resourceCVOAzureExists(d *schema.ResourceData, meta interface{}) (bool, err
 	client := meta.(*Client)
 
 	id := d.Id()
-	if c, ok := d.GetOk("client_id"); ok {
-		client.ClientID = c.(string)
-	}
+	clientID := d.Get("client_id").(string)
 
-	resID, err := client.getCVOAzure(id)
+	resID, err := client.getCVOAzure(id, clientID)
 	if err != nil {
 		log.Print("Error getting cvo")
 		return false, err

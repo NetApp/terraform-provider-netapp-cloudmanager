@@ -320,6 +320,7 @@ func resourceCVOAWSCreate(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("Creating CVO: %#v", d)
 
 	client := meta.(*Client)
+	clientID := d.Get("client_id").(string)
 
 	cvoDetails := createCVOAWSDetails{}
 
@@ -403,10 +404,6 @@ func resourceCVOAWSCreate(d *schema.ResourceData, meta interface{}) error {
 		cvoDetails.AwsEncryptionParameters.KmsKeyID = c.(string)
 	}
 
-	if c, ok := d.GetOk("client_id"); ok {
-		client.ClientID = c.(string)
-	}
-
 	if c, ok := d.GetOk("capacity_package_name"); ok {
 		cvoDetails.VsaMetadata.CapacityPackageName = c.(string)
 	}
@@ -456,7 +453,7 @@ func resourceCVOAWSCreate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	res, err := client.createCVOAWS(cvoDetails)
+	res, err := client.createCVOAWS(cvoDetails, clientID)
 	if err != nil {
 		log.Print("Error creating instance")
 		return err
@@ -476,11 +473,9 @@ func resourceCVOAWSRead(d *schema.ResourceData, meta interface{}) error {
 
 	id := d.Id()
 
-	if c, ok := d.GetOk("client_id"); ok {
-		client.ClientID = c.(string)
-	}
+	clientID := d.Get("client_id").(string)
 
-	response, err := client.getCVOAWSByID(id)
+	response, err := client.getCVOAWSByID(id, clientID)
 	if err != nil {
 		log.Print("Error reading cvo aws")
 		return err
@@ -502,13 +497,11 @@ func resourceCVOAWSDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Client)
 
 	id := d.Id()
-	if c, ok := d.GetOk("client_id"); ok {
-		client.ClientID = c.(string)
-	}
+	clientID := d.Get("client_id").(string)
 
 	isHA := d.Get("is_ha").(bool)
 
-	deleteErr := client.deleteCVO(id, isHA)
+	deleteErr := client.deleteCVO(id, isHA, clientID)
 	if deleteErr != nil {
 		log.Print("Error deleting cvo")
 		return deleteErr
@@ -521,12 +514,12 @@ func resourceCVOAWSUpdate(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("Updating CVO: %#v", d)
 
 	client := meta.(*Client)
-	client.ClientID = d.Get("client_id").(string)
+	clientID := d.Get("client_id").(string)
 	// id := d.Id()
 
 	// check if svm_password is changed
 	if d.HasChange("svm_password") {
-		respErr := updateCVOSVMPassword(d, meta)
+		respErr := updateCVOSVMPassword(d, meta, clientID)
 		if respErr != nil {
 			return respErr
 		}
@@ -534,7 +527,7 @@ func resourceCVOAWSUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	// check if license_type and instance type are changed
 	if d.HasChange("instance_type") || d.HasChange("license_type") {
-		respErr := updateCVOLicenseInstanceType(d, meta)
+		respErr := updateCVOLicenseInstanceType(d, meta, clientID)
 		if respErr != nil {
 			return respErr
 		}
@@ -542,7 +535,7 @@ func resourceCVOAWSUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	// check if tier_level is changed
 	if d.HasChange("tier_level") && d.Get("capacity_tier").(string) == "S3" {
-		respErr := updateCVOTierLevel(d, meta)
+		respErr := updateCVOTierLevel(d, meta, clientID)
 		if respErr != nil {
 			return respErr
 		}
@@ -550,7 +543,7 @@ func resourceCVOAWSUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	// check if aws_tag has changes
 	if d.HasChange("aws_tag") {
-		respErr := updateCVOUserTags(d, meta, "aws_tag")
+		respErr := updateCVOUserTags(d, meta, "aws_tag", clientID)
 		if respErr != nil {
 			return respErr
 		}
@@ -559,7 +552,7 @@ func resourceCVOAWSUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	// upgrade ontap version
 	// only when the upgrade_ontap_version is true and the ontap_version is not "latest"
-	upgradeErr := client.checkAndDoUpgradeOntapVersion(d)
+	upgradeErr := client.checkAndDoUpgradeOntapVersion(d, clientID)
 	if upgradeErr != nil {
 		return upgradeErr
 	}
@@ -580,11 +573,9 @@ func resourceCVOAWSExists(d *schema.ResourceData, meta interface{}) (bool, error
 	client := meta.(*Client)
 
 	id := d.Id()
-	if c, ok := d.GetOk("client_id"); ok {
-		client.ClientID = c.(string)
-	}
+	clientID := d.Get("client_id").(string)
 
-	resID, err := client.getCVOAWS(id)
+	resID, err := client.getCVOAWS(id, clientID)
 	if err != nil {
 		log.Print("Error getting cvo")
 		return false, err

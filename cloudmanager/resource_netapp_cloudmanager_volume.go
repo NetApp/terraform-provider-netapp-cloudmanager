@@ -172,10 +172,10 @@ func resourceCVOVolume() *schema.Resource {
 }
 
 func resourceCVOVolumeCreate(d *schema.ResourceData, meta interface{}) error {
-	log.Printf("Creating volume: %#v", d)
+	log.Printf("Creating volume: %s", d.Get("name").(string))
 
 	client := meta.(*Client)
-	client.ClientID = d.Get("client_id").(string)
+	clientID := d.Get("client_id").(string)
 	var svm string
 	var workingEnvironmentType string
 	var cloudProvider string
@@ -208,7 +208,7 @@ func resourceCVOVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 		svm = v.(string)
 	}
 
-	weInfo, err := client.getWorkingEnvironmentDetail(d)
+	weInfo, err := client.getWorkingEnvironmentDetail(d, clientID)
 	if err != nil {
 		return fmt.Errorf("Cannot find working environment")
 	}
@@ -242,7 +242,7 @@ func resourceCVOVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 			quote.CapacityTier = "cloudStorage"
 		}
 	}
-	response, err := client.quoteVolume(quote)
+	response, err := client.quoteVolume(quote, clientID)
 	if err != nil {
 		log.Printf("Error quoting volume")
 		return err
@@ -299,7 +299,7 @@ func resourceCVOVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 		volume.Throughput = v.(int)
 	}
 	if volumeProtocol == "cifs" {
-		exist, err := client.checkCifsExists(volume.WorkingEnvironmentID, volume.SvmName)
+		exist, err := client.checkCifsExists(volume.WorkingEnvironmentID, volume.SvmName, clientID)
 		if err != nil {
 			return err
 		}
@@ -357,12 +357,12 @@ func resourceCVOVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 		}
 	}
 	volume.WorkingEnvironmentType = workingEnvironmentType
-	err = client.createVolume(volume, createAggregateifNotExists)
+	err = client.createVolume(volume, createAggregateifNotExists, clientID)
 	if err != nil {
 		log.Print("Error creating volume")
 		return err
 	}
-	res, err := client.getVolume(volume)
+	res, err := client.getVolume(volume, clientID)
 	if err != nil {
 		log.Print("Error reading volume after creation")
 		return err
@@ -378,17 +378,17 @@ func resourceCVOVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceCVOVolumeRead(d *schema.ResourceData, meta interface{}) error {
-	log.Printf("Fetching volume: %#v", d)
+	log.Printf("Fetching volume: %s", d.Get("name").(string))
 
 	client := meta.(*Client)
-	client.ClientID = d.Get("client_id").(string)
+	clientID := d.Get("client_id").(string)
 	volume := volumeRequest{}
 	var svm string
 	if v, ok := d.GetOk("svm_name"); ok {
 		svm = v.(string)
 	}
 
-	weInfo, err := client.getWorkingEnvironmentDetail(d)
+	weInfo, err := client.getWorkingEnvironmentDetail(d, clientID)
 	if err != nil {
 		return fmt.Errorf("Cannot find working environment")
 	}
@@ -399,7 +399,7 @@ func resourceCVOVolumeRead(d *schema.ResourceData, meta interface{}) error {
 	}
 	volume.SvmName = svm
 
-	res, err := client.getVolume(volume)
+	res, err := client.getVolume(volume, clientID)
 	if err != nil {
 		log.Print("Error reading volume")
 		return err
@@ -482,16 +482,16 @@ func resourceCVOVolumeRead(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceCVOVolumeDelete(d *schema.ResourceData, meta interface{}) error {
-	log.Printf("Deleting volume: %#v", d)
+	log.Printf("Deleting volume: %s", d.Get("name").(string))
 	client := meta.(*Client)
-	client.ClientID = d.Get("client_id").(string)
+	clientID := d.Get("client_id").(string)
 	volume := volumeRequest{}
 	var svm string
 	if v, ok := d.GetOk("svm_name"); ok {
 		svm = v.(string)
 	}
 
-	weInfo, err := client.getWorkingEnvironmentDetail(d)
+	weInfo, err := client.getWorkingEnvironmentDetail(d, clientID)
 	if err != nil {
 		return fmt.Errorf("Cannot find working environment")
 	}
@@ -504,7 +504,7 @@ func resourceCVOVolumeDelete(d *schema.ResourceData, meta interface{}) error {
 
 	volume.Name = d.Get("name").(string)
 
-	err = client.deleteVolume(volume)
+	err = client.deleteVolume(volume, clientID)
 	if err != nil {
 		log.Print("Error deleting volume")
 		return err
@@ -513,21 +513,21 @@ func resourceCVOVolumeDelete(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceCVOVolumeExists(d *schema.ResourceData, meta interface{}) (bool, error) {
-	log.Printf("Checking existence of volume: %#v", d)
+	log.Printf("Checking existence of volume: %s", d.Get("name").(string))
 	client := meta.(*Client)
-	client.ClientID = d.Get("client_id").(string)
+	clientID := d.Get("client_id").(string)
 	volume := volumeRequest{}
 	volume.Name = d.Get("name").(string)
 	volume.ID = d.Id()
 
-	weInfo, err := client.getWorkingEnvironmentDetail(d)
+	weInfo, err := client.getWorkingEnvironmentDetail(d, clientID)
 	if err != nil {
 		return false, fmt.Errorf("Cannot find working environment")
 	}
 	volume.WorkingEnvironmentID = weInfo.PublicID
 	volume.WorkingEnvironmentType = weInfo.WorkingEnvironmentType
 
-	res, err := client.getVolumeByID(volume)
+	res, err := client.getVolumeByID(volume, clientID)
 	if err != nil {
 		log.Print("Error reading volume")
 		return false, err
@@ -541,9 +541,9 @@ func resourceCVOVolumeExists(d *schema.ResourceData, meta interface{}) (bool, er
 }
 
 func resourceCVOVolumeUpdate(d *schema.ResourceData, meta interface{}) error {
-	log.Printf("Updating volume: %#v", d)
+	log.Printf("Updating volume: %s", d.Get("name").(string))
 	client := meta.(*Client)
-	client.ClientID = d.Get("client_id").(string)
+	clientID := d.Get("client_id").(string)
 	volume := volumeRequest{}
 	var svm string
 	volume.Name = d.Get("name").(string)
@@ -556,7 +556,7 @@ func resourceCVOVolumeUpdate(d *schema.ResourceData, meta interface{}) error {
 		volume.ExportPolicyInfo.Ips = ips
 	}
 
-	weInfo, err := client.getWorkingEnvironmentDetail(d)
+	weInfo, err := client.getWorkingEnvironmentDetail(d, clientID)
 	if err != nil {
 		return fmt.Errorf("Cannot find working environment")
 	}
@@ -593,7 +593,7 @@ func resourceCVOVolumeUpdate(d *schema.ResourceData, meta interface{}) error {
 	if d.HasChange("tiering_policy") {
 		volume.TieringPolicy = d.Get("tiering_policy").(string)
 	}
-	err = client.updateVolume(volume)
+	err = client.updateVolume(volume, clientID)
 	if err != nil {
 		log.Print("Error updating volume")
 		return err
@@ -675,7 +675,7 @@ func resourceVolumeCustomizeDiff(diff *schema.ResourceDiff, v interface{}) error
 
 func createIscsiVolumeHelper(d *schema.ResourceData, meta interface{}) (bool, bool, error) {
 	client := meta.(*Client)
-	client.ClientID = d.Get("client_id").(string)
+	clientID := d.Get("client_id").(string)
 	igroup := igroup{}
 
 	var workingEnvironmentType string
@@ -687,7 +687,7 @@ func createIscsiVolumeHelper(d *schema.ResourceData, meta interface{}) (bool, bo
 		igroup.IgroupName = v.(string)
 	}
 
-	workingEnvDetail, err := client.getWorkingEnvironmentDetail(d)
+	workingEnvDetail, err := client.getWorkingEnvironmentDetail(d, clientID)
 	if err != nil {
 		return false, false, fmt.Errorf("Cannot find working environment")
 	}
@@ -700,7 +700,7 @@ func createIscsiVolumeHelper(d *schema.ResourceData, meta interface{}) (bool, bo
 	igroup.SvmName = svm
 
 	igroup.WorkingEnvironmentType = workingEnvironmentType
-	res, err := client.getIgroups(igroup)
+	res, err := client.getIgroups(igroup, clientID)
 	if err != nil {
 		log.Print("Error reading igroups")
 		return false, false, err
@@ -728,7 +728,7 @@ func createIscsiVolumeHelper(d *schema.ResourceData, meta interface{}) (bool, bo
 		getAll := initiator{}
 		getAll.WorkingEnvironmentID = workingEnvironmentID
 		getAll.WorkingEnvironmentType = workingEnvironmentType
-		res, err := client.getInitiator(getAll)
+		res, err := client.getInitiator(getAll, clientID)
 		if err != nil {
 			return false, false, err
 		}
@@ -750,7 +750,7 @@ func createIscsiVolumeHelper(d *schema.ResourceData, meta interface{}) (bool, bo
 		}
 		if isNewInitiator {
 			for _, expectIni := range initiators {
-				client.createInitiator(expectIni)
+				client.createInitiator(expectIni, clientID)
 			}
 		}
 	}

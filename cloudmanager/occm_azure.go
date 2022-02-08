@@ -9,18 +9,18 @@ import (
 	"github.com/fatih/structs"
 )
 
-func (c *Client) getCustomData(registerAgentTOService registerAgentTOServiceRequest, proxyCertificates []string) (string, error) {
+func (c *Client) getCustomData(registerAgentTOService registerAgentTOServiceRequest, proxyCertificates []string, clientID string) (string, string, error) {
 	accesTokenResult, err := c.getAccessToken()
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	log.Print("getAccessToken  ", accesTokenResult.Token)
 	c.Token = accesTokenResult.Token
 
 	if c.AccountID == "" {
-		accountID, err := c.getAccount()
+		accountID, err := c.getAccount(clientID)
 		if err != nil {
-			return "", err
+			return "", "", err
 		}
 		log.Print("getAccount ", accountID)
 		registerAgentTOService.AccountID = accountID
@@ -28,23 +28,23 @@ func (c *Client) getCustomData(registerAgentTOService registerAgentTOServiceRequ
 		registerAgentTOService.AccountID = c.AccountID
 	}
 
-	userDataRespone, err := c.registerAgentTOServiceForAzure(registerAgentTOService)
+	userDataRespone, err := c.registerAgentTOServiceForAzure(registerAgentTOService, clientID)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
-	c.ClientID = userDataRespone.ClientID
+	newClientID := userDataRespone.ClientID
 	c.AccountID = userDataRespone.AccountID
 
 	userDataRespone.ProxySettings.ProxyCertificates = proxyCertificates
 	rawUserData, _ := json.MarshalIndent(userDataRespone, "", "\t")
 	userData := string(rawUserData)
-	log.Print("userData ", userData)
+	log.Printf("getCustomData: userData %#v %s", userData, newClientID)
 
-	return userData, nil
+	return userData, newClientID, nil
 }
 
-func (c *Client) registerAgentTOServiceForAzure(registerAgentTOServiceRequest registerAgentTOServiceRequest) (createUserData, error) {
+func (c *Client) registerAgentTOServiceForAzure(registerAgentTOServiceRequest registerAgentTOServiceRequest, clientID string) (createUserData, error) {
 
 	baseURL := "/agents-mgmt/connector-setup"
 	hostType := "CloudManagerHost"
@@ -52,7 +52,7 @@ func (c *Client) registerAgentTOServiceForAzure(registerAgentTOServiceRequest re
 	registerAgentTOServiceRequest.Placement.Provider = "AZURE"
 
 	params := structs.Map(registerAgentTOServiceRequest)
-	statusCode, response, _, err := c.CallAPIMethod("POST", baseURL, params, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("POST", baseURL, params, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("registerAgentTOService request failed ", statusCode)
 		return createUserData{}, err
@@ -72,8 +72,8 @@ func (c *Client) registerAgentTOServiceForAzure(registerAgentTOServiceRequest re
 	return result, nil
 }
 
-func (c *Client) deployAzureVM(occmDetails createOCCMDetails, proxyCertificates []string) (string, error) {
-
+func (c *Client) createOCCMAzure(occmDetails createOCCMDetails, proxyCertificates []string, clientID string) (OCCMMResult, error) {
+	log.Print("createOCCMAzure")
 	var registerAgentTOService registerAgentTOServiceRequest
 	registerAgentTOService.Name = occmDetails.Name
 	registerAgentTOService.Placement.Region = occmDetails.Location
@@ -98,42 +98,45 @@ func (c *Client) deployAzureVM(occmDetails createOCCMDetails, proxyCertificates 
 
 	registerAgentTOService.Placement.Subnet = fmt.Sprintf("%s/subnets/%s", registerAgentTOService.Placement.Network, occmDetails.SubnetID)
 
-	userData, err := c.getCustomData(registerAgentTOService, proxyCertificates)
+	userData, newClientID, err := c.getCustomData(registerAgentTOService, proxyCertificates, clientID)
 	if err != nil {
-		return "", err
+		return OCCMMResult{}, err
 	}
 
 	log.Print(userData)
+	log.Printf("deployAzureVM %s client_id %s", occmDetails.Name, newClientID)
 
 	c.UserData = userData
+	var result OCCMMResult
+	result.ClientID = newClientID
+	result.AccountID = c.AccountID
 
 	instanceID, err := c.CallDeployAzureVM(occmDetails)
 	if err != nil {
-		return "", err
+		return OCCMMResult{}, err
 	}
-
+	result.InstanceID = instanceID
 	log.Print("Sleep for 2 minutes")
 	time.Sleep(time.Duration(120) * time.Second)
 
 	retries := 16
 	for {
-		occmResp, err := c.checkOCCMStatus()
+		occmResp, err := c.checkOCCMStatus(newClientID)
 		if err != nil {
-			return "", err
+			return OCCMMResult{}, err
 		}
 		if occmResp.Status == "active" {
 			break
 		} else {
 			if retries == 0 {
 				log.Print("Taking too long for status to be active")
-				return "", fmt.Errorf("Taking too long for OCCM agent to be active or not properly setup")
+				return OCCMMResult{}, fmt.Errorf("Taking too long for OCCM agent to be active or not properly setup")
 			}
 			time.Sleep(time.Duration(30) * time.Second)
 			retries--
 		}
 	}
-
-	return instanceID, nil
+	return result, nil
 }
 
 func (c *Client) getdeployAzureVM(occmDetails createOCCMDetails, id string) (string, error) {
@@ -152,22 +155,7 @@ func (c *Client) getdeployAzureVM(occmDetails createOCCMDetails, id string) (str
 	return "", nil
 }
 
-func (c *Client) createOCCMAzure(occmDetails createOCCMDetails, ProxyCertificates []string) (OCCMMResult, error) {
-
-	log.Print("createOCCMAzure")
-	_, err := c.deployAzureVM(occmDetails, ProxyCertificates)
-	if err != nil {
-		return OCCMMResult{}, err
-	}
-
-	var result OCCMMResult
-	result.ClientID = c.ClientID
-	result.AccountID = c.AccountID
-
-	return result, nil
-}
-
-func (c *Client) deleteOCCMAzure(request deleteOCCMDetails) error {
+func (c *Client) deleteOCCMAzure(request deleteOCCMDetails, clientID string) error {
 
 	err := c.CallDeleteAzureVM(request)
 	if err != nil {
@@ -185,7 +173,7 @@ func (c *Client) deleteOCCMAzure(request deleteOCCMDetails) error {
 
 	retries := 30
 	for {
-		occmResp, err := c.checkOCCMStatus()
+		occmResp, err := c.checkOCCMStatus(clientID)
 		if err != nil {
 			return err
 		}
@@ -201,7 +189,7 @@ func (c *Client) deleteOCCMAzure(request deleteOCCMDetails) error {
 		}
 	}
 
-	if err := c.callOCCMDelete(); err != nil {
+	if err := c.callOCCMDelete(clientID); err != nil {
 		return err
 	}
 

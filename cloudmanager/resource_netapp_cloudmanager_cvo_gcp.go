@@ -294,10 +294,12 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("Creating CVO GCP: %#v", d)
 
 	client := meta.(*Client)
+	clientID := d.Get("client_id").(string)
 
 	cvoDetails := createCVOGCPDetails{}
 
 	cvoDetails.Name = d.Get("name").(string)
+	log.Print("Creat cvo name ", cvoDetails.Name)
 	cvoDetails.Region = d.Get("zone").(string)
 	cvoDetails.GCPServiceAccount = d.Get("gcp_service_account").(string)
 	cvoDetails.DataEncryptionType = d.Get("data_encryption_type").(string)
@@ -350,10 +352,6 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 
 	if c, ok := d.GetOk("nss_account"); ok {
 		cvoDetails.NssAccount = c.(string)
-	}
-
-	if c, ok := d.GetOk("client_id"); ok {
-		client.ClientID = c.(string)
 	}
 
 	if c, ok := d.GetOk("capacity_package_name"); ok {
@@ -469,12 +467,12 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	res, err := client.createCVOGCP(cvoDetails)
+	res, err := client.createCVOGCP(cvoDetails, clientID)
 	if err != nil {
 		log.Print("Error creating instance")
 		return err
 	}
-
+	log.Printf("createCVOGCP %s result %#v  client_id %s", cvoDetails.Name, res, clientID)
 	d.SetId(res.PublicID)
 	d.Set("svm_name", res.SvmName)
 
@@ -489,11 +487,9 @@ func resourceCVOGCPRead(d *schema.ResourceData, meta interface{}) error {
 
 	id := d.Id()
 
-	if c, ok := d.GetOk("client_id"); ok {
-		client.ClientID = c.(string)
-	}
+	clientID := d.Get("client_id").(string)
 
-	_, err := client.getWorkingEnvironmentInfo(id)
+	_, err := client.getWorkingEnvironmentInfo(id, clientID)
 	if err != nil {
 		log.Print("Error getting cvo")
 		return err
@@ -508,13 +504,10 @@ func resourceCVOGCPDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Client)
 
 	id := d.Id()
-	if c, ok := d.GetOk("client_id"); ok {
-		client.ClientID = c.(string)
-	}
-
+	clientID := d.Get("client_id").(string)
 	isHA := d.Get("is_ha").(bool)
 
-	deleteErr := client.deleteCVOGCP(id, isHA)
+	deleteErr := client.deleteCVOGCP(id, isHA, clientID)
 	if deleteErr != nil {
 		log.Print("Error deleting cvo")
 		return deleteErr
@@ -527,11 +520,11 @@ func resourceCVOGCPUpdate(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("Updating CVO: %#v", d)
 
 	client := meta.(*Client)
-	client.ClientID = d.Get("client_id").(string)
+	clientID := d.Get("client_id").(string)
 
 	// check if svm_password is changed
 	if d.HasChange("svm_password") {
-		respErr := updateCVOSVMPassword(d, meta)
+		respErr := updateCVOSVMPassword(d, meta, clientID)
 		if respErr != nil {
 			return respErr
 		}
@@ -539,7 +532,7 @@ func resourceCVOGCPUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	// check if license_type and instance type are changed
 	if d.HasChange("instance_type") || d.HasChange("license_type") {
-		respErr := updateCVOLicenseInstanceType(d, meta)
+		respErr := updateCVOLicenseInstanceType(d, meta, clientID)
 		if respErr != nil {
 			return respErr
 		}
@@ -547,7 +540,7 @@ func resourceCVOGCPUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	// check if tier_level is changed
 	if d.HasChange("tier_level") && d.Get("capacity_tier").(string) == "cloudStorage" {
-		respErr := updateCVOTierLevel(d, meta)
+		respErr := updateCVOTierLevel(d, meta, clientID)
 		if respErr != nil {
 			return respErr
 		}
@@ -555,14 +548,14 @@ func resourceCVOGCPUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	// check if gcp_label has changes
 	if d.HasChange("gcp_label") {
-		respErr := updateCVOUserTags(d, meta, "gcp_label")
+		respErr := updateCVOUserTags(d, meta, "gcp_label", clientID)
 		if respErr != nil {
 			return respErr
 		}
 		return resourceCVOGCPRead(d, meta)
 	}
 	// upgrade ontap version
-	upgradeErr := client.checkAndDoUpgradeOntapVersion(d)
+	upgradeErr := client.checkAndDoUpgradeOntapVersion(d, clientID)
 	if upgradeErr != nil {
 		return upgradeErr
 	}
@@ -629,10 +622,10 @@ func resourceCVOGCPExists(d *schema.ResourceData, meta interface{}) (bool, error
 	client := meta.(*Client)
 
 	id := d.Id()
-	client.ClientID = d.Get("client_id").(string)
+	clientID := d.Get("client_id").(string)
 	name := d.Get("name").(string)
 
-	resID, err := client.findWorkingEnvironmentByName(name)
+	resID, err := client.findWorkingEnvironmentByName(name, clientID)
 	if err != nil {
 		log.Print("Error getting cvo")
 		return false, err

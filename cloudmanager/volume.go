@@ -141,14 +141,14 @@ type initiator struct {
 	WorkingEnvironmentType string `structs:"workingEnvironmentType,omitempty"`
 }
 
-func (c *Client) createVolume(vol volumeRequest, createAggregateIfNotFound bool) error {
+func (c *Client) createVolume(vol volumeRequest, createAggregateIfNotFound bool, clientID string) error {
 	var id string
 	if vol.FileSystemID != "" {
 		id = vol.FileSystemID
 	} else {
 		id = vol.WorkingEnvironmentID
 	}
-	baseURL, _, err := c.getAPIRoot(id)
+	baseURL, _, err := c.getAPIRoot(id, clientID)
 	if err != nil {
 		return err
 	}
@@ -159,7 +159,7 @@ func (c *Client) createVolume(vol volumeRequest, createAggregateIfNotFound bool)
 	}
 	hostType := "CloudManagerHost"
 	param := structs.Map(vol)
-	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("POST", baseURL, param, c.Token, hostType)
+	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("POST", baseURL, param, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("createVolume request failed ", statusCode)
 		return err
@@ -168,7 +168,7 @@ func (c *Client) createVolume(vol volumeRequest, createAggregateIfNotFound bool)
 	if responseError != nil {
 		return responseError
 	}
-	err = c.waitOnCompletion(onCloudRequestID, "volume", "create", 40, 10)
+	err = c.waitOnCompletion(onCloudRequestID, "volume", "create", 40, 10, clientID)
 	if err != nil {
 		return err
 	}
@@ -176,28 +176,28 @@ func (c *Client) createVolume(vol volumeRequest, createAggregateIfNotFound bool)
 	return nil
 }
 
-func (c *Client) deleteVolume(vol volumeRequest) error {
+func (c *Client) deleteVolume(vol volumeRequest, clientID string) error {
 	var id string
 	if vol.FileSystemID != "" {
 		id = vol.FileSystemID
 	} else {
 		id = vol.WorkingEnvironmentID
 	}
-	baseURL, _, err := c.getAPIRoot(id)
+	baseURL, _, err := c.getAPIRoot(id, clientID)
 	if err != nil {
 		return err
 	}
 	baseURL = fmt.Sprintf("%s/volumes/%s/%s/%s", baseURL, id, vol.SvmName, vol.Name)
 	hostType := "CloudManagerHost"
 
-	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("DELETE", baseURL, nil, c.Token, hostType)
+	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("DELETE", baseURL, nil, c.Token, hostType, clientID)
 	responseError := apiResponseChecker(statusCode, response, "deleteVolume")
 	if responseError != nil {
 		return responseError
 	}
 
 	log.Print("Wait for volume deletion.")
-	err = c.waitOnCompletion(onCloudRequestID, "volume", "delete", 10, 60)
+	err = c.waitOnCompletion(onCloudRequestID, "volume", "delete", 10, 60, clientID)
 	if err != nil {
 		log.Print("deleteVolume request failed ", statusCode)
 		return err
@@ -205,7 +205,7 @@ func (c *Client) deleteVolume(vol volumeRequest) error {
 	return nil
 }
 
-func (c *Client) getVolume(vol volumeRequest) ([]volumeResponse, error) {
+func (c *Client) getVolume(vol volumeRequest, clientID string) ([]volumeResponse, error) {
 	var result []volumeResponse
 	hostType := "CloudManagerHost"
 	var id string
@@ -214,7 +214,7 @@ func (c *Client) getVolume(vol volumeRequest) ([]volumeResponse, error) {
 	} else {
 		id = vol.WorkingEnvironmentID
 	}
-	baseURL, _, err := c.getAPIRoot(id)
+	baseURL, _, err := c.getAPIRoot(id, clientID)
 	if err != nil {
 		return result, err
 	}
@@ -224,7 +224,7 @@ func (c *Client) getVolume(vol volumeRequest) ([]volumeResponse, error) {
 		baseURL = fmt.Sprintf("%s/volumes?workingEnvironmentId=%s", baseURL, id)
 	}
 
-	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("getVolume request failed ", statusCode)
 		return result, err
@@ -241,12 +241,12 @@ func (c *Client) getVolume(vol volumeRequest) ([]volumeResponse, error) {
 	return result, nil
 }
 
-func (c *Client) getVolumeForOnPrem(vol volumeRequest) ([]volumeResponse, error) {
+func (c *Client) getVolumeForOnPrem(vol volumeRequest, clientID string) ([]volumeResponse, error) {
 	var result []volumeResponse
 	hostType := "CloudManagerHost"
 	baseURL := fmt.Sprintf("/occm/api/onprem/volumes?workingEnvironmentId=%s", vol.WorkingEnvironmentID)
 
-	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("getVolumeForOnPrem request failed ", statusCode)
 		return result, err
@@ -263,8 +263,8 @@ func (c *Client) getVolumeForOnPrem(vol volumeRequest) ([]volumeResponse, error)
 	return result, nil
 }
 
-func (c *Client) getVolumeByID(request volumeRequest) (volumeResponse, error) {
-	res, err := c.getVolume(request)
+func (c *Client) getVolumeByID(request volumeRequest, clientID string) (volumeResponse, error) {
+	res, err := c.getVolume(request, clientID)
 	if err != nil {
 		return volumeResponse{}, err
 	}
@@ -276,7 +276,7 @@ func (c *Client) getVolumeByID(request volumeRequest) (volumeResponse, error) {
 	return volumeResponse{}, fmt.Errorf("Error fetching volume: volume doesn't exist")
 }
 
-func (c *Client) updateVolume(request volumeRequest) error {
+func (c *Client) updateVolume(request volumeRequest, clientID string) error {
 	hostType := "CloudManagerHost"
 	var id string
 	if request.FileSystemID != "" {
@@ -284,13 +284,13 @@ func (c *Client) updateVolume(request volumeRequest) error {
 	} else {
 		id = request.WorkingEnvironmentID
 	}
-	baseURL, _, err := c.getAPIRoot(id)
+	baseURL, _, err := c.getAPIRoot(id, clientID)
 	if err != nil {
 		return err
 	}
 	baseURL = fmt.Sprintf("%s/volumes/%s/%s/%s", baseURL, id, request.SvmName, request.Name)
 	params := structs.Map(request)
-	statusCode, response, _, err := c.CallAPIMethod("PUT", baseURL, params, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("PUT", baseURL, params, c.Token, hostType, clientID)
 
 	responseError := apiResponseChecker(statusCode, response, "updateVolume")
 	if responseError != nil {
@@ -304,16 +304,16 @@ func (c *Client) updateVolume(request volumeRequest) error {
 	return nil
 }
 
-func (c *Client) quoteVolume(request quoteRequest) (map[string]interface{}, error) {
+func (c *Client) quoteVolume(request quoteRequest, clientID string) (map[string]interface{}, error) {
 	hostType := "CloudManagerHost"
-	baseURL, _, err := c.getAPIRoot(request.WorkingEnvironmentID)
+	baseURL, _, err := c.getAPIRoot(request.WorkingEnvironmentID, clientID)
 	if err != nil {
 		return nil, err
 	}
 	baseURL = fmt.Sprintf("%s/volumes/quote", baseURL)
 	params := structs.Map(request)
 
-	statusCode, response, _, err := c.CallAPIMethod("POST", baseURL, params, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("POST", baseURL, params, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("quoteVolume request failed ", statusCode)
 		return nil, err
@@ -328,15 +328,15 @@ func (c *Client) quoteVolume(request quoteRequest) (map[string]interface{}, erro
 
 }
 
-func (c *Client) createInitiator(request initiator) error {
+func (c *Client) createInitiator(request initiator, clientID string) error {
 	hostType := "CloudManagerHost"
-	baseURL, _, err := c.getAPIRoot(request.WorkingEnvironmentID)
+	baseURL, _, err := c.getAPIRoot(request.WorkingEnvironmentID, clientID)
 	if err != nil {
 		return err
 	}
 	baseURL = fmt.Sprintf("%s/volumes/initiator", baseURL)
 	params := structs.Map(request)
-	statusCode, response, _, err := c.CallAPIMethod("POST", baseURL, params, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("POST", baseURL, params, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("createInitiator request failed ", statusCode)
 		return err
@@ -348,15 +348,15 @@ func (c *Client) createInitiator(request initiator) error {
 	return nil
 }
 
-func (c *Client) getInitiator(request initiator) ([]initiator, error) {
+func (c *Client) getInitiator(request initiator, clientID string) ([]initiator, error) {
 	hostType := "CloudManagerHost"
-	baseURL, _, err := c.getAPIRoot(request.WorkingEnvironmentID)
+	baseURL, _, err := c.getAPIRoot(request.WorkingEnvironmentID, clientID)
 	var result []initiator
 	if err != nil {
 		return result, err
 	}
 	baseURL = fmt.Sprintf("%s/volumes/initiator", baseURL)
-	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("createInitiator request failed ", statusCode)
 		return result, err
@@ -383,15 +383,15 @@ type igroup struct {
 	WorkingEnvironmentType string   `structs:"workingEnvironmentType,omitempty"`
 }
 
-func (c *Client) getIgroups(request igroup) ([]igroup, error) {
+func (c *Client) getIgroups(request igroup, clientID string) ([]igroup, error) {
 	hostType := "CloudManagerHost"
-	baseURL, _, err := c.getAPIRoot(request.WorkingEnvironmentID)
+	baseURL, _, err := c.getAPIRoot(request.WorkingEnvironmentID, clientID)
 	var result []igroup
 	if err != nil {
 		return result, err
 	}
 	baseURL = fmt.Sprintf("%s/volumes/igroups/%s/%s", baseURL, request.WorkingEnvironmentID, request.SvmName)
-	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("getIgroups request failed ", statusCode)
 		return result, err
@@ -407,15 +407,15 @@ func (c *Client) getIgroups(request igroup) ([]igroup, error) {
 	return result, nil
 }
 
-func (c *Client) checkCifsExists(id string, svm string) (bool, error) {
+func (c *Client) checkCifsExists(id string, svm string, clientID string) (bool, error) {
 	hostType := "CloudManagerHost"
-	baseURL, _, err := c.getAPIRoot(id)
+	baseURL, _, err := c.getAPIRoot(id, clientID)
 	var result []map[string]interface{}
 	if err != nil {
 		return false, err
 	}
 	baseURL = fmt.Sprintf("%s/working-environments/%s/cifs?svm=%s", baseURL, id, svm)
-	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("chkeckCifsExists request failed ", statusCode)
 		return false, err
@@ -450,7 +450,7 @@ func convertSizeUnit(size float64, from string, to string) float64 {
 	return size
 }
 
-func (c *Client) setCommonAttributes(d *schema.ResourceData, volume *volumeRequest) error {
+func (c *Client) setCommonAttributes(d *schema.ResourceData, volume *volumeRequest, clientID string) error {
 	volume.Name = d.Get("name").(string)
 	volume.Size.Size = d.Get("size").(float64)
 	volume.Size.Unit = d.Get("unit").(string)
@@ -483,7 +483,7 @@ func (c *Client) setCommonAttributes(d *schema.ResourceData, volume *volumeReque
 	volumeProtocol := d.Get("volume_protocol").(string)
 	if volumeProtocol == "cifs" {
 
-		exist, err := c.checkCifsExists(weid, volume.SvmName)
+		exist, err := c.checkCifsExists(weid, volume.SvmName, clientID)
 		if err != nil {
 			return err
 		}

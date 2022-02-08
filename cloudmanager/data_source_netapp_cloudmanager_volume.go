@@ -169,9 +169,9 @@ func dataSourceCVOVolumeRead(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("Fetching volume: %#v", d)
 
 	client := meta.(*Client)
-	client.ClientID = d.Get("client_id").(string)
+	clientID := d.Get("client_id").(string)
 	volume := volumeRequest{}
-	weInfo, err := client.getWorkingEnvironmentDetail(d)
+	weInfo, err := client.getWorkingEnvironmentDetail(d, clientID)
 	if err != nil {
 		return fmt.Errorf("Cannot find working environment")
 	}
@@ -180,7 +180,7 @@ func dataSourceCVOVolumeRead(d *schema.ResourceData, meta interface{}) error {
 	volume.SvmName = weInfo.SvmName
 	d.Set("working_environment_id", volume.WorkingEnvironmentID)
 	d.Set("svm_name", volume.SvmName)
-	res, err := client.getVolume(volume)
+	res, err := client.getVolume(volume, clientID)
 	if err != nil {
 		log.Print("Error reading volume")
 		return err

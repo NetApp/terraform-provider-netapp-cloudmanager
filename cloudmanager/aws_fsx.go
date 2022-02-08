@@ -110,7 +110,7 @@ func (c *Client) getAWSCredentialsID(name string, tenantID string) (string, erro
 
 	hostType := "CloudManagerHost"
 
-	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, "")
 	if err != nil {
 		log.Print("getAWSCredentialsID request failed ", statusCode)
 		return "", err
@@ -151,7 +151,7 @@ func (c *Client) getAWSFSX(id string, tenantID string) (string, error) {
 
 	hostType := "CloudManagerHost"
 
-	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, "")
 	if err != nil {
 		log.Print("getAWSFSX request failed ", statusCode, err)
 		return "", err
@@ -192,7 +192,7 @@ func (c *Client) getAWSFSXByID(id string, tenantID string) (fsxResult, error) {
 
 	hostType := "CloudManagerHost"
 
-	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, "")
 	if err != nil {
 		log.Print("getAWSFSXByID request failed ", statusCode, err)
 		return fsxResult{}, err
@@ -236,7 +236,7 @@ func (c *Client) createAWSFSX(fsxDetails createAWSFSXDetails) (fsxResult, error)
 	hostType := "CloudManagerHost"
 	params := structs.Map(fsxDetails)
 
-	statusCode, response, _, err := c.CallAPIMethod("POST", baseURL, params, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("POST", baseURL, params, c.Token, hostType, "")
 	if err != nil {
 		log.Print("createFSX request failed ", statusCode)
 		return fsxResult{}, err
@@ -273,7 +273,7 @@ func (c *Client) checkTaskStatusFSX(id string, tenantID string) (providerDetails
 	var response []byte
 	networkRetries := 3
 	for {
-		code, result, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+		code, result, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, "")
 		if err != nil {
 			if networkRetries > 0 {
 				time.Sleep(1 * time.Second)
@@ -338,7 +338,7 @@ func (c *Client) deleteAWSFSX(id string, tenantID string) error {
 
 	hostType := "CloudManagerHost"
 
-	statusCode, response, _, err := c.CallAPIMethod("DELETE", baseURL, nil, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("DELETE", baseURL, nil, c.Token, hostType, "")
 	if err != nil {
 		log.Print("deleteAWSFSX request failed ", statusCode)
 		return err

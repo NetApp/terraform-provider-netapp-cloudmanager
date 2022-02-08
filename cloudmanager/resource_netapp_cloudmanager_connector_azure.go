@@ -204,13 +204,14 @@ func resourceOCCMAzureCreate(d *schema.ResourceData, meta interface{}) error {
 		occmDetails.AssociatePublicIPAddress = &associatePublicIPAddress
 	}
 
-	res, err := client.createOCCMAzure(occmDetails, proxyCertificates)
+	res, err := client.createOCCMAzure(occmDetails, proxyCertificates, "")
 	if err != nil {
 		log.Print("Error creating instance")
 		return err
 	}
 
 	d.SetId(occmDetails.Name)
+	log.Print("Set ID: ", occmDetails.Name)
 	if err := d.Set("client_id", res.ClientID); err != nil {
 		return fmt.Errorf("Error reading occm client_id: %s", err)
 	}
@@ -227,7 +228,6 @@ func resourceOCCMAzureCreate(d *schema.ResourceData, meta interface{}) error {
 func resourceOCCMAzureRead(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("Reading OCCM: %#v", d)
 	client := meta.(*Client)
-
 	occmDetails := createOCCMDetails{}
 
 	occmDetails.Name = d.Get("name").(string)
@@ -275,10 +275,10 @@ func resourceOCCMAzureDelete(d *schema.ResourceData, meta interface{}) error {
 	if o, ok := d.GetOk("resource_group"); ok {
 		occmDetails.ResourceGroup = o.(string)
 	}
-	client.ClientID = d.Get("client_id").(string)
+	clientID := d.Get("client_id").(string)
 	client.AccountID = d.Get("account_id").(string)
 
-	deleteErr := client.deleteOCCMAzure(occmDetails)
+	deleteErr := client.deleteOCCMAzure(occmDetails, clientID)
 	if deleteErr != nil {
 		return deleteErr
 	}

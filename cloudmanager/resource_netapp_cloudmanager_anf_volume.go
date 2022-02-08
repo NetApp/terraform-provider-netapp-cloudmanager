@@ -162,7 +162,7 @@ func resourceCVSAzureVolumeCreate(d *schema.ResourceData, meta interface{}) erro
 	log.Printf("Creating volume: %#v", d)
 
 	client := meta.(*Client)
-	client.ClientID = d.Get("client_id").(string)
+	clientID := d.Get("client_id").(string)
 	volume := anfVolumeRequest{}
 	volume.Name = d.Get("name").(string)
 	volume.Location = d.Get("location").(string)
@@ -205,7 +205,7 @@ func resourceCVSAzureVolumeCreate(d *schema.ResourceData, meta interface{}) erro
 	info.ResourceGroupsName = d.Get("resource_groups").(string)
 	info.NetAppAccountName = d.Get("netapp_account").(string)
 	info.CapacityPools = d.Get("capacity_pool").(string)
-	err := client.createANFVolume(volume, info)
+	err := client.createANFVolume(volume, info, clientID)
 	if err != nil {
 		return err
 	}
@@ -217,7 +217,7 @@ func resourceCVSAzureVolumeCreate(d *schema.ResourceData, meta interface{}) erro
 
 func resourceCVSAzureVolumeRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Client)
-	client.ClientID = d.Get("client_id").(string)
+	clientID := d.Get("client_id").(string)
 	volume := anfVolumeRequest{}
 	info := cvsInfo{}
 	volume.Name = d.Get("name").(string)
@@ -230,7 +230,7 @@ func resourceCVSAzureVolumeRead(d *schema.ResourceData, meta interface{}) error 
 	info.ResourceGroupsName = d.Get("resource_groups").(string)
 	info.NetAppAccountName = d.Get("netapp_account").(string)
 	info.CapacityPools = d.Get("capacity_pool").(string)
-	result, err := client.getANFVolume(volume, info)
+	result, err := client.getANFVolume(volume, info, clientID)
 	if err != nil {
 		log.Print("Error reading volume")
 		return err
@@ -266,7 +266,7 @@ func resourceCVSAzureVolumeRead(d *schema.ResourceData, meta interface{}) error 
 
 func resourceCVSAzureVolumeDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Client)
-	client.ClientID = d.Get("client_id").(string)
+	clientID := d.Get("client_id").(string)
 	info := cvsInfo{}
 	volume := anfVolumeRequest{}
 	volume.Name = d.Get("name").(string)
@@ -278,7 +278,7 @@ func resourceCVSAzureVolumeDelete(d *schema.ResourceData, meta interface{}) erro
 	info.ResourceGroupsName = d.Get("resource_groups").(string)
 	info.NetAppAccountName = d.Get("netapp_account").(string)
 	info.CapacityPools = d.Get("capacity_pool").(string)
-	err := client.deleteANFVolume(volume, info)
+	err := client.deleteANFVolume(volume, info, clientID)
 	if err != nil {
 		return err
 	}

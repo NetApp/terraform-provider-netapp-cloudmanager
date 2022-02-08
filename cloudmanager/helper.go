@@ -207,7 +207,7 @@ func apiResponseChecker(statusCode int, response []byte, funcName string) error 
 
 }
 
-func (c *Client) checkTaskStatus(id string) (int, string, error) {
+func (c *Client) checkTaskStatus(id string, clientID string) (int, string, error) {
 
 	log.Printf("checkTaskStatus: %s", id)
 
@@ -219,16 +219,18 @@ func (c *Client) checkTaskStatus(id string) (int, string, error) {
 	var response []byte
 	networkRetries := 3
 	for {
-		code, result, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+		code, result, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
 		if err != nil {
 			if networkRetries > 0 {
 				time.Sleep(1 * time.Second)
 				networkRetries--
+				log.Printf("checkTaskStatus id=%s code=%v error=%v Retries %v client=%s", id, code, err, networkRetries, clientID)
 			} else {
-				log.Printf("checkTaskStatus request failed: %v, %v", code, err)
+				log.Printf("checkTaskStatus request failed after 3 retries: %v, %v", code, err)
 				return 0, "", err
 			}
 		} else {
+			log.Printf("checkTaskStatus get request %s response code %v clientID %s", id, code, clientID)
 			statusCode = code
 			response = result
 			break
@@ -249,9 +251,9 @@ func (c *Client) checkTaskStatus(id string) (int, string, error) {
 	return result.Status, result.Error, nil
 }
 
-func (c *Client) waitOnCompletion(id string, actionName string, task string, retries int, waitInterval int) error {
+func (c *Client) waitOnCompletion(id string, actionName string, task string, retries int, waitInterval int, clientID string) error {
 	for {
-		cvoStatus, failureErrorMessage, err := c.checkTaskStatus(id)
+		cvoStatus, failureErrorMessage, err := c.checkTaskStatus(id, clientID)
 		if err != nil {
 			return err
 		}
@@ -274,7 +276,7 @@ func (c *Client) waitOnCompletion(id string, actionName string, task string, ret
 
 // get working environment information by working environment id
 // response: publicId, name, isHA, cloudProvider, workingEnvironmentType
-func (c *Client) getWorkingEnvironmentInfo(id string) (workingEnvironmentInfo, error) {
+func (c *Client) getWorkingEnvironmentInfo(id string, clientID string) (workingEnvironmentInfo, error) {
 	baseURL := fmt.Sprintf("/occm/api/working-environments/%s", id)
 	hostType := "CloudManagerHost"
 
@@ -289,7 +291,7 @@ func (c *Client) getWorkingEnvironmentInfo(id string) (workingEnvironmentInfo, e
 	var response []byte
 	networkRetries := 3
 	for {
-		code, result, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+		code, result, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
 		if err != nil {
 			if networkRetries > 0 {
 				time.Sleep(1 * time.Second)
@@ -341,7 +343,7 @@ func findWEForID(id string, weList []workingEnvironmentInfo) (workingEnvironment
 	return workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment %s in the list", id)
 }
 
-func (c *Client) findWorkingEnvironmentByName(name string) (workingEnvironmentInfo, error) {
+func (c *Client) findWorkingEnvironmentByName(name string, clientID string) (workingEnvironmentInfo, error) {
 	// check working environment exists or not
 	baseURL := fmt.Sprintf("/occm/api/working-environments/exists/%s", name)
 	hostType := "CloudManagerHost"
@@ -353,7 +355,7 @@ func (c *Client) findWorkingEnvironmentByName(name string) (workingEnvironmentIn
 		}
 		c.Token = accesTokenResult.Token
 	}
-	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("findWorkingEnvironmentByName request failed. (check exists) ", statusCode)
 		return workingEnvironmentInfo{}, err
@@ -366,7 +368,7 @@ func (c *Client) findWorkingEnvironmentByName(name string) (workingEnvironmentIn
 
 	// get working environment information
 	baseURL = "/occm/api/working-environments"
-	statusCode, response, _, err = c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+	statusCode, response, _, err = c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
 		log.Printf("findWorkingEnvironmentByName %s request failed (%d)", name, statusCode)
 		return workingEnvironmentInfo{}, err
@@ -407,20 +409,20 @@ func (c *Client) findWorkingEnvironmentByName(name string) (workingEnvironmentIn
 }
 
 // get WE directly from REST API using a given ID
-func (c *Client) findWorkingEnvironmentByID(id string) (workingEnvironmentInfo, error) {
+func (c *Client) findWorkingEnvironmentByID(id string, clientID string) (workingEnvironmentInfo, error) {
 
-	workingEnvInfo, err := c.getWorkingEnvironmentInfo(id)
+	workingEnvInfo, err := c.getWorkingEnvironmentInfo(id, clientID)
 	if err != nil {
 		return workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by working_environment_id %s", id)
 	}
-	workingEnvDetail, err := c.findWorkingEnvironmentByName(workingEnvInfo.Name)
+	workingEnvDetail, err := c.findWorkingEnvironmentByName(workingEnvInfo.Name, clientID)
 	if err != nil {
 		return workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by working_environment_name %s", workingEnvInfo.Name)
 	}
 	return workingEnvDetail, nil
 }
 
-func (c *Client) getFSXWorkingEnvironmentInfo(tenantID string, id string) (workingEnvironmentInfo, error) {
+func (c *Client) getFSXWorkingEnvironmentInfo(tenantID string, id string, clientID string) (workingEnvironmentInfo, error) {
 	baseURL := fmt.Sprintf("/fsx-ontap/working-environments/%s/%s", tenantID, id)
 	hostType := "CloudManagerHost"
 	var result workingEnvironmentInfo
@@ -432,7 +434,7 @@ func (c *Client) getFSXWorkingEnvironmentInfo(tenantID string, id string) (worki
 		}
 		c.Token = accesTokenResult.Token
 	}
-	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
 		log.Printf("getFSXWorkingEnvironmentInfo %s request failed (%d)", id, statusCode)
 		log.Printf("error: %#v", err)
@@ -451,7 +453,7 @@ func (c *Client) getFSXWorkingEnvironmentInfo(tenantID string, id string) (worki
 	result.Name = system["name"].(string)
 
 	baseURL = fmt.Sprintf("/occm/api/fsx/working-environments/%s/svms", id)
-	statusCode, response, _, err = c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+	statusCode, response, _, err = c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
 		log.Printf("getFSXWorkingEnvironmentInfo %s request failed (%d)", id, statusCode)
 		return workingEnvironmentInfo{}, err
@@ -471,7 +473,7 @@ func (c *Client) getFSXWorkingEnvironmentInfo(tenantID string, id string) (worki
 	return result, nil
 }
 
-func (c *Client) getAPIRoot(workingEnvironmentID string) (string, string, error) {
+func (c *Client) getAPIRoot(workingEnvironmentID string, clientID string) (string, string, error) {
 
 	if c.Token == "" {
 		accesTokenResult, err := c.getAccessToken()
@@ -486,7 +488,7 @@ func (c *Client) getAPIRoot(workingEnvironmentID string) (string, string, error)
 	if strings.HasPrefix(workingEnvironmentID, "fs-") {
 		return "/occm/api/fsx", "", nil
 	}
-	workingEnvDetail, err := c.getWorkingEnvironmentInfo(workingEnvironmentID)
+	workingEnvDetail, err := c.getWorkingEnvironmentInfo(workingEnvironmentID, clientID)
 	if err != nil {
 		log.Print("Cannot get working environment information.")
 		return "", "", err
@@ -511,7 +513,7 @@ func (c *Client) getAPIRoot(workingEnvironmentID string) (string, string, error)
 	return baseURL, workingEnvDetail.CloudProviderName, nil
 }
 
-func (c *Client) getAPIRootForWorkingEnvironment(isHA bool, workingEnvironmentID string) string {
+func getAPIRootForWorkingEnvironment(isHA bool, workingEnvironmentID string) string {
 
 	var baseURL string
 
@@ -534,12 +536,12 @@ func (c *Client) getAPIRootForWorkingEnvironment(isHA bool, workingEnvironmentID
 }
 
 // read working environemnt information and return the details
-func (c *Client) getWorkingEnvironmentDetail(d *schema.ResourceData) (workingEnvironmentInfo, error) {
+func (c *Client) getWorkingEnvironmentDetail(d *schema.ResourceData, clientID string) (workingEnvironmentInfo, error) {
 	var workingEnvDetail workingEnvironmentInfo
 	var err error
 
 	if a, ok := d.GetOk("file_system_id"); ok {
-		workingEnvDetail, err = c.getFSXWorkingEnvironmentInfo(d.Get("tenant_id").(string), a.(string))
+		workingEnvDetail, err = c.getFSXWorkingEnvironmentInfo(d.Get("tenant_id").(string), a.(string), clientID)
 		if err != nil {
 			return workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by working_environment_id %s", a.(string))
 		}
@@ -548,12 +550,12 @@ func (c *Client) getWorkingEnvironmentDetail(d *schema.ResourceData) (workingEnv
 
 	if a, ok := d.GetOk("working_environment_id"); ok {
 		WorkingEnvironmentID := a.(string)
-		workingEnvDetail, err = c.findWorkingEnvironmentByID(WorkingEnvironmentID)
+		workingEnvDetail, err = c.findWorkingEnvironmentByID(WorkingEnvironmentID, clientID)
 		if err != nil {
 			return workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by working_environment_id %s", WorkingEnvironmentID)
 		}
 	} else if a, ok = d.GetOk("working_environment_name"); ok {
-		workingEnvDetail, err = c.findWorkingEnvironmentByName(a.(string))
+		workingEnvDetail, err = c.findWorkingEnvironmentByName(a.(string), clientID)
 		if err != nil {
 			return workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by working_environment_name %s", a.(string))
 		}
@@ -564,7 +566,7 @@ func (c *Client) getWorkingEnvironmentDetail(d *schema.ResourceData) (workingEnv
 	return workingEnvDetail, nil
 }
 
-func (c *Client) getFSXSVM(id string) (string, error) {
+func (c *Client) getFSXSVM(id string, clientID string) (string, error) {
 
 	log.Print("getFSXSVM")
 
@@ -572,7 +574,7 @@ func (c *Client) getFSXSVM(id string) (string, error) {
 
 	hostType := "CloudManagerHost"
 
-	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("getFSXSVM request failed ", statusCode)
 		return "", err
@@ -596,7 +598,7 @@ func (c *Client) getFSXSVM(id string) (string, error) {
 	return result[0].Name, nil
 }
 
-func (c *Client) getAWSFSXByName(name string, tenantID string) (string, error) {
+func (c *Client) getAWSFSXByName(name string, tenantID string, clientID string) (string, error) {
 
 	log.Print("getAWSFSXByName")
 
@@ -611,7 +613,7 @@ func (c *Client) getAWSFSXByName(name string, tenantID string) (string, error) {
 
 	hostType := "CloudManagerHost"
 
-	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("getAWSFSXByName request failed ", statusCode, err)
 		return "", err
@@ -638,19 +640,19 @@ func (c *Client) getAWSFSXByName(name string, tenantID string) (string, error) {
 }
 
 // read working environemnt information and return the details
-func (c *Client) getWorkingEnvironmentDetailForSnapMirror(d *schema.ResourceData) (workingEnvironmentInfo, workingEnvironmentInfo, error) {
+func (c *Client) getWorkingEnvironmentDetailForSnapMirror(d *schema.ResourceData, clientID string) (workingEnvironmentInfo, workingEnvironmentInfo, error) {
 	var sourceWorkingEnvDetail workingEnvironmentInfo
 	var destWorkingEnvDetail workingEnvironmentInfo
 	var err error
 
 	if a, ok := d.GetOk("source_working_environment_id"); ok {
 		WorkingEnvironmentID := a.(string)
-		sourceWorkingEnvDetail, err = c.findWorkingEnvironmentForID(WorkingEnvironmentID)
+		sourceWorkingEnvDetail, err = c.findWorkingEnvironmentForID(WorkingEnvironmentID, clientID)
 		if err != nil {
 			return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by source_working_environment_id %s", WorkingEnvironmentID)
 		}
 	} else if a, ok = d.GetOk("source_working_environment_name"); ok {
-		sourceWorkingEnvDetail, err = c.findWorkingEnvironmentByName(a.(string))
+		sourceWorkingEnvDetail, err = c.findWorkingEnvironmentByName(a.(string), clientID)
 		if err != nil {
 			return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by source_working_environment_name %s", a.(string))
 		}
@@ -671,7 +673,7 @@ func (c *Client) getWorkingEnvironmentDetailForSnapMirror(d *schema.ResourceData
 					return workingEnvironmentInfo{}, workingEnvironmentInfo{}, err
 				}
 				destWorkingEnvDetail.PublicID = WorkingEnvironmentID
-				svmName, err := c.getFSXSVM(WorkingEnvironmentID)
+				svmName, err := c.getFSXSVM(WorkingEnvironmentID, clientID)
 				if err != nil {
 					return workingEnvironmentInfo{}, workingEnvironmentInfo{}, err
 				}
@@ -680,7 +682,7 @@ func (c *Client) getWorkingEnvironmentDetailForSnapMirror(d *schema.ResourceData
 				return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("Cannot find FSX working environment by destination_working_environment_id %s, need tenant_id", WorkingEnvironmentID)
 			}
 		} else {
-			destWorkingEnvDetail, err = c.findWorkingEnvironmentForID(WorkingEnvironmentID)
+			destWorkingEnvDetail, err = c.findWorkingEnvironmentForID(WorkingEnvironmentID, clientID)
 			if err != nil {
 				return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by destination_working_environment_id %s", WorkingEnvironmentID)
 			}
@@ -690,19 +692,19 @@ func (c *Client) getWorkingEnvironmentDetailForSnapMirror(d *schema.ResourceData
 		if b, ok := d.GetOk("tenant_id"); ok {
 			workingEnvironmentName := a.(string)
 			tenantID := b.(string)
-			WorkingEnvironmentID, err := c.getAWSFSXByName(workingEnvironmentName, tenantID)
+			WorkingEnvironmentID, err := c.getAWSFSXByName(workingEnvironmentName, tenantID, clientID)
 			if err != nil {
 				log.Print("Error getting AWS FSX: ", err)
 				return workingEnvironmentInfo{}, workingEnvironmentInfo{}, err
 			}
 			destWorkingEnvDetail.PublicID = WorkingEnvironmentID
-			svmName, err := c.getFSXSVM(WorkingEnvironmentID)
+			svmName, err := c.getFSXSVM(WorkingEnvironmentID, clientID)
 			if err != nil {
 				return workingEnvironmentInfo{}, workingEnvironmentInfo{}, err
 			}
 			destWorkingEnvDetail.SvmName = svmName
 		} else {
-			destWorkingEnvDetail, err = c.findWorkingEnvironmentByName(a.(string))
+			destWorkingEnvDetail, err = c.findWorkingEnvironmentByName(a.(string), clientID)
 			if err != nil {
 				return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by destination_working_environment_name %s", a.(string))
 			}
@@ -715,7 +717,7 @@ func (c *Client) getWorkingEnvironmentDetailForSnapMirror(d *schema.ResourceData
 }
 
 // get all WE from REST API and then using a given ID get the WE
-func (c *Client) findWorkingEnvironmentForID(id string) (workingEnvironmentInfo, error) {
+func (c *Client) findWorkingEnvironmentForID(id string, clientID string) (workingEnvironmentInfo, error) {
 	hostType := "CloudManagerHost"
 
 	if c.Token == "" {
@@ -726,7 +728,7 @@ func (c *Client) findWorkingEnvironmentForID(id string) (workingEnvironmentInfo,
 		c.Token = accesTokenResult.Token
 	}
 	baseURL := "/occm/api/working-environments"
-	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
 		log.Printf("findWorkingEnvironmentForId %s request failed (%d)", id, statusCode)
 		return workingEnvironmentInfo{}, err
@@ -767,7 +769,7 @@ func (c *Client) findWorkingEnvironmentForID(id string) (workingEnvironmentInfo,
 }
 
 // get working environment properties
-func (c *Client) getWorkingEnvironmentProperties(apiRoot string, id string, field string) (workingEnvironmentOntapClusterPropertiesResponse, error) {
+func (c *Client) getWorkingEnvironmentProperties(apiRoot string, id string, field string, clientID string) (workingEnvironmentOntapClusterPropertiesResponse, error) {
 	hostType := "CloudManagerHost"
 	baseURL := fmt.Sprintf("%s/working-environments/%s?fields=%s", apiRoot, id, field)
 	log.Printf("Call %s", baseURL)
@@ -776,7 +778,7 @@ func (c *Client) getWorkingEnvironmentProperties(apiRoot string, id string, fiel
 	var response []byte
 	networkRetries := 3
 	for {
-		code, result, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+		code, result, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
 		if err != nil {
 			if networkRetries > 0 {
 				time.Sleep(1 * time.Second)
@@ -851,8 +853,8 @@ func expandUserTags(set *schema.Set) []userTags {
 	return tags
 }
 
-func (c *Client) callCMUpdateAPI(method string, request interface{}, baseURL string, id string, functionName string) error {
-	apiRoot, _, err := c.getAPIRoot(id)
+func (c *Client) callCMUpdateAPI(method string, request interface{}, baseURL string, id string, functionName string, clientID string) error {
+	apiRoot, _, err := c.getAPIRoot(id, clientID)
 	baseURL = apiRoot + baseURL
 
 	hostType := "CloudManagerHost"
@@ -867,7 +869,7 @@ func (c *Client) callCMUpdateAPI(method string, request interface{}, baseURL str
 		c.Token = accessTokenResult.Token
 	}
 
-	statusCode, response, _, err := c.CallAPIMethod(method, baseURL, params, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod(method, baseURL, params, c.Token, hostType, clientID)
 	if err != nil {
 		log.Printf("%s request failed: %d", functionName, statusCode)
 		log.Print("call api response: ", response)
@@ -882,9 +884,8 @@ func (c *Client) callCMUpdateAPI(method string, request interface{}, baseURL str
 }
 
 // update CVO user-tags
-func updateCVOUserTags(d *schema.ResourceData, meta interface{}, tagName string) error {
+func updateCVOUserTags(d *schema.ResourceData, meta interface{}, tagName string, clientID string) error {
 	client := meta.(*Client)
-	client.ClientID = d.Get("client_id").(string)
 	var request modifyUserTagsRequest
 	if c, ok := d.GetOk(tagName); ok {
 		tags := c.(*schema.Set)
@@ -900,7 +901,7 @@ func updateCVOUserTags(d *schema.ResourceData, meta interface{}, tagName string)
 	// Update tags
 	id := d.Id()
 	baseURL := fmt.Sprintf("/working-environments/%s/user-tags", id)
-	updateErr := client.callCMUpdateAPI("PUT", request, baseURL, id, "updateCVOUserTags")
+	updateErr := client.callCMUpdateAPI("PUT", request, baseURL, id, "updateCVOUserTags", clientID)
 	if updateErr != nil {
 		return updateErr
 	}
@@ -909,15 +910,14 @@ func updateCVOUserTags(d *schema.ResourceData, meta interface{}, tagName string)
 }
 
 // set the cluster password of a specific cloud volumes ONTAP
-func updateCVOSVMPassword(d *schema.ResourceData, meta interface{}) error {
+func updateCVOSVMPassword(d *schema.ResourceData, meta interface{}, clientID string) error {
 	client := meta.(*Client)
-	client.ClientID = d.Get("client_id").(string)
 	var request setPasswordRequest
 	request.Password = d.Get("svm_password").(string)
 	// Update password
 	id := d.Id()
 	baseURL := fmt.Sprintf("/working-environments/%s/set-password", id)
-	updateErr := client.callCMUpdateAPI("PUT", request, baseURL, id, "updateCVOSVMPassword")
+	updateErr := client.callCMUpdateAPI("PUT", request, baseURL, id, "updateCVOSVMPassword", clientID)
 	if updateErr != nil {
 		return updateErr
 	}
@@ -925,12 +925,12 @@ func updateCVOSVMPassword(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
-func (c *Client) waitOnCompletionCVOUpdate(apiRoot string, id string, retryCount int, waitInterval int) error {
+func (c *Client) waitOnCompletionCVOUpdate(apiRoot string, id string, retryCount int, waitInterval int, clientID string) error {
 	// check upgrade status
 	log.Print("Check CVO update status")
 
 	for {
-		cvoResp, err := c.getWorkingEnvironmentProperties(apiRoot, id, "status,ontapClusterProperties")
+		cvoResp, err := c.getWorkingEnvironmentProperties(apiRoot, id, "status,ontapClusterProperties", clientID)
 		if err != nil {
 			return err
 		}
@@ -949,9 +949,8 @@ func (c *Client) waitOnCompletionCVOUpdate(apiRoot string, id string, retryCount
 }
 
 // set the license_type and instance type of a specific cloud volumes ONTAP
-func updateCVOLicenseInstanceType(d *schema.ResourceData, meta interface{}) error {
+func updateCVOLicenseInstanceType(d *schema.ResourceData, meta interface{}, clientID string) error {
 	client := meta.(*Client)
-	client.ClientID = d.Get("client_id").(string)
 	var request licenseAndInstanceTypeModificationRequest
 	if c, ok := d.GetOk("instance_type"); ok {
 		request.InstanceType = c.(string)
@@ -963,12 +962,12 @@ func updateCVOLicenseInstanceType(d *schema.ResourceData, meta interface{}) erro
 	// Update license type and instance type
 	id := d.Id()
 	baseURL := fmt.Sprintf("/working-environments/%s/license-instance-type", id)
-	updateErr := client.callCMUpdateAPI("PUT", request, baseURL, id, "updateCVOLicenseInstanceType")
+	updateErr := client.callCMUpdateAPI("PUT", request, baseURL, id, "updateCVOLicenseInstanceType", clientID)
 	if updateErr != nil {
 		return updateErr
 	}
 	// check upgrade status
-	apiRoot, _, err := client.getAPIRoot(id)
+	apiRoot, _, err := client.getAPIRoot(id, clientID)
 	if err != nil {
 		return fmt.Errorf("Cannot get root API")
 	}
@@ -977,7 +976,7 @@ func updateCVOLicenseInstanceType(d *schema.ResourceData, meta interface{}) erro
 	if d.Get("is_ha").(bool) {
 		retryCount = retryCount * 2
 	}
-	err = client.waitOnCompletionCVOUpdate(apiRoot, id, retryCount, 60)
+	err = client.waitOnCompletionCVOUpdate(apiRoot, id, retryCount, 60, clientID)
 	if err != nil {
 		return fmt.Errorf("Update CVO failed %v", err)
 	}
@@ -986,16 +985,15 @@ func updateCVOLicenseInstanceType(d *schema.ResourceData, meta interface{}) erro
 }
 
 // update tier_level of a specific cloud volumes ONTAP
-func updateCVOTierLevel(d *schema.ResourceData, meta interface{}) error {
+func updateCVOTierLevel(d *schema.ResourceData, meta interface{}, clientID string) error {
 	client := meta.(*Client)
-	client.ClientID = d.Get("client_id").(string)
 	var request changeTierLevelRequest
 	if c, ok := d.GetOk("tier_level"); ok {
 		request.Level = c.(string)
 	}
 	id := d.Id()
 	baseURL := fmt.Sprintf("/working-environments/%s/change-tier-level", id)
-	updateErr := client.callCMUpdateAPI("POST", request, baseURL, id, "updateCVOTierLevel")
+	updateErr := client.callCMUpdateAPI("POST", request, baseURL, id, "updateCVOTierLevel", clientID)
 	if updateErr != nil {
 		return updateErr
 	}
@@ -1003,12 +1001,12 @@ func updateCVOTierLevel(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
-func (c *Client) waitOnCompletionOntapImageUpgrade(apiRoot string, id string, targetVersion string, retryCount int, waitInterval int) error {
+func (c *Client) waitOnCompletionOntapImageUpgrade(apiRoot string, id string, targetVersion string, retryCount int, waitInterval int, clientID string) error {
 	// check upgrade status
 	log.Print("Check CVO ontap image upgrade status")
 
 	for {
-		cvoResp, err := c.getWorkingEnvironmentProperties(apiRoot, id, "status,ontapClusterProperties")
+		cvoResp, err := c.getWorkingEnvironmentProperties(apiRoot, id, "status,ontapClusterProperties", clientID)
 		if err != nil {
 			return err
 		}
@@ -1031,12 +1029,12 @@ func (c *Client) waitOnCompletionOntapImageUpgrade(apiRoot string, id string, ta
 }
 
 // check if ontap_version is the list of upgrade available versions
-func (c *Client) upgradeOntapVersionAvailable(apiRoot string, id string, ontapVersion string) (string, error) {
+func (c *Client) upgradeOntapVersionAvailable(apiRoot string, id string, ontapVersion string, clientID string) (string, error) {
 	log.Print("upgradeOntapVersionAvailable: Check if target version is in the upgrade version list")
 
 	var upgradeOntapVersions []upgradeVersion
 
-	WEProperties, err := c.getWorkingEnvironmentProperties(apiRoot, id, "ontapClusterProperties.fields(upgradeVersions)")
+	WEProperties, err := c.getWorkingEnvironmentProperties(apiRoot, id, "ontapClusterProperties.fields(upgradeVersions)", clientID)
 	if err != nil {
 		return "", fmt.Errorf("upgradeOntapVersionAvailable %s not able to get the properties %v", id, err)
 	}
@@ -1056,14 +1054,14 @@ func (c *Client) upgradeOntapVersionAvailable(apiRoot string, id string, ontapVe
 	return "", fmt.Errorf("Working environment %s: no upgrade version availble", id)
 }
 
-func (c *Client) setConfigFlag(request setFlagRequest, keyPath string) error {
+func (c *Client) setConfigFlag(request setFlagRequest, keyPath string, clientID string) error {
 	log.Print("setConfigFlag: set flag to allow ONTAP image upgrade")
 
 	hostType := "CloudManagerHost"
 
 	baseURL := fmt.Sprintf("/occm/api/occm/config/%s", keyPath)
 	params := structs.Map(request)
-	statusCode, response, _, err := c.CallAPIMethod("PUT", baseURL, params, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("PUT", baseURL, params, c.Token, hostType, clientID)
 
 	responseError := apiResponseChecker(statusCode, response, "setUpgradeCheckingBypass")
 	if responseError != nil {
@@ -1079,14 +1077,14 @@ func (c *Client) setConfigFlag(request setFlagRequest, keyPath string) error {
 }
 
 // upgrade CVO ontap version
-func (c *Client) upgradeCVOOntapImage(apiRoot string, id string, ontapVersion string, isHa bool) error {
+func (c *Client) upgradeCVOOntapImage(apiRoot string, id string, ontapVersion string, isHa bool, clientID string) error {
 	// set config flag to skip the upgrade check
 	var setFlag setFlagRequest
 	setFlag.Value = true
 	setFlag.ValueType = "BOOLEAN"
 
 	log.Printf("Set config flag")
-	setFlagErr := c.setConfigFlag(setFlag, "skip-eligibility-paygo-upgrade")
+	setFlagErr := c.setConfigFlag(setFlag, "skip-eligibility-paygo-upgrade", clientID)
 	if setFlagErr != nil {
 		log.Printf("upgradeCVOOntapVersion failed on setConfigFlag call %v", setFlagErr)
 		return setFlagErr
@@ -1099,7 +1097,7 @@ func (c *Client) upgradeCVOOntapImage(apiRoot string, id string, ontapVersion st
 
 	baseURL := fmt.Sprintf("/working-environments/%s/update-image", id)
 	log.Printf("upgradeCVOOntapVersion - %s %v", baseURL, request)
-	updateErr := c.callCMUpdateAPI("POST", request, baseURL, id, "upgradeCVOOntapVersion")
+	updateErr := c.callCMUpdateAPI("POST", request, baseURL, id, "upgradeCVOOntapVersion", clientID)
 	if updateErr != nil {
 		log.Printf("upgradeCVOOntapVersion failed on API call %v", updateErr)
 		return updateErr
@@ -1110,7 +1108,7 @@ func (c *Client) upgradeCVOOntapImage(apiRoot string, id string, ontapVersion st
 	if isHa {
 		retryCount = retryCount * 2
 	}
-	err := c.waitOnCompletionOntapImageUpgrade(apiRoot, id, ontapVersion, retryCount, 60)
+	err := c.waitOnCompletionOntapImageUpgrade(apiRoot, id, ontapVersion, retryCount, 60, clientID)
 	if err != nil {
 		return fmt.Errorf("Upgrade ontap image %s failed %v", ontapVersion, err)
 	}
@@ -1118,20 +1116,20 @@ func (c *Client) upgradeCVOOntapImage(apiRoot string, id string, ontapVersion st
 	return nil
 }
 
-func (c *Client) doUpgradeCVOOntapVersion(id string, isHA bool, ontapVersion string) error {
+func (c *Client) doUpgradeCVOOntapVersion(id string, isHA bool, ontapVersion string, clientID string) error {
 	// only when the upgrade_ontap_version is true, use_latest_version is false and the ontap_version is not "latest"
 	log.Print("Check CVO ontap image upgrade status ... ")
-	apiRoot, _, err := c.getAPIRoot(id)
+	apiRoot, _, err := c.getAPIRoot(id, clientID)
 	if err != nil {
 		return fmt.Errorf("Cannot get root API")
 	}
 
-	upgradeVersion, err := c.upgradeOntapVersionAvailable(apiRoot, id, ontapVersion)
+	upgradeVersion, err := c.upgradeOntapVersionAvailable(apiRoot, id, ontapVersion, clientID)
 	if err != nil {
 		return err
 	}
 
-	return c.upgradeCVOOntapImage(apiRoot, id, upgradeVersion, isHA)
+	return c.upgradeCVOOntapImage(apiRoot, id, upgradeVersion, isHA, clientID)
 }
 
 func checkOntapVersionChangeWithoutUpgrade(d *schema.ResourceData) error {
@@ -1153,7 +1151,7 @@ func checkOntapVersionChangeWithoutUpgrade(d *schema.ResourceData) error {
 	return nil
 }
 
-func (c *Client) checkAndDoUpgradeOntapVersion(d *schema.ResourceData) error {
+func (c *Client) checkAndDoUpgradeOntapVersion(d *schema.ResourceData, clientID string) error {
 	upgradeOntapVersion := d.Get("upgrade_ontap_version").(bool)
 	if upgradeOntapVersion {
 		ontapVersion := d.Get("ontap_version").(string)
@@ -1166,7 +1164,7 @@ func (c *Client) checkAndDoUpgradeOntapVersion(d *schema.ResourceData) error {
 			return fmt.Errorf("ontap_version cannot be upgraded with \"use_latest_version\" true")
 		}
 		id := d.Id()
-		respErr := c.doUpgradeCVOOntapVersion(id, d.Get("is_ha").(bool), ontapVersion)
+		respErr := c.doUpgradeCVOOntapVersion(id, d.Get("is_ha").(bool), ontapVersion, clientID)
 		if respErr != nil {
 			currentVersion, _ := d.GetChange("ontap_version")
 			d.Set("ontap_version", currentVersion)

@@ -281,6 +281,7 @@ func resourceCVSGCPVolumeCreate(d *schema.ResourceData, meta interface{}) error 
 	volume.Name = d.Get("name").(string)
 	volume.Region = d.Get("region").(string)
 	volume.Network = d.Get("network").(string)
+	clientID := d.Get("client_id").(string)
 	volume.WorkingEnvironmentName = d.Get("working_environment_name").(string)
 	protocols := d.Get("protocol_types")
 	for _, protocol := range protocols.([]interface{}) {
@@ -315,7 +316,7 @@ func resourceCVSGCPVolumeCreate(d *schema.ResourceData, meta interface{}) error 
 	info := cvsInfo{}
 	info.AccountName = d.Get("account").(string)
 
-	res, err := client.createGCPVolume(volume, info)
+	res, err := client.createGCPVolume(volume, info, clientID)
 	if err != nil {
 		return err
 	}
@@ -326,7 +327,7 @@ func resourceCVSGCPVolumeCreate(d *schema.ResourceData, meta interface{}) error 
 
 func resourceCVSGCPVolumeRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Client)
-	client.ClientID = d.Get("client_id").(string)
+	clientID := d.Get("client_id").(string)
 	volume := gcpVolumeRequest{}
 	info := cvsInfo{}
 	volume.Name = d.Get("name").(string)
@@ -335,7 +336,7 @@ func resourceCVSGCPVolumeRead(d *schema.ResourceData, meta interface{}) error {
 	volume.VolumeID = d.Id()
 	info.AccountName = d.Get("account").(string)
 
-	res, err := client.getGCPVolume(volume, info)
+	res, err := client.getGCPVolume(volume, info, clientID)
 	if err != nil {
 		log.Print("Error reading volume")
 		return err
@@ -381,7 +382,7 @@ func resourceCVSGCPVolumeRead(d *schema.ResourceData, meta interface{}) error {
 
 func resourceCVSGCPVolumeDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Client)
-	client.ClientID = d.Get("client_id").(string)
+	clientID := d.Get("client_id").(string)
 	volume := gcpVolumeRequest{}
 	info := cvsInfo{}
 	volume.WorkingEnvironmentName = d.Get("working_environment_name").(string)
@@ -389,7 +390,7 @@ func resourceCVSGCPVolumeDelete(d *schema.ResourceData, meta interface{}) error 
 	info.AccountName = d.Get("account").(string)
 	volume.VolumeID = d.Id()
 
-	err := client.deleteGCPVolume(volume, info)
+	err := client.deleteGCPVolume(volume, info, clientID)
 	if err != nil {
 		log.Print("Error deleting volume")
 		return err

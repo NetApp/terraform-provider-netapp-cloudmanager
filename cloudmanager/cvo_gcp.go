@@ -74,9 +74,8 @@ type haParamsGCP struct {
 	VPC3FirewallRuleName           string `structs:"vpc3FirewallRuleName,omitempty"`
 }
 
-func (c *Client) createCVOGCP(cvoDetails createCVOGCPDetails) (cvoResult, error) {
-
-	log.Print("createCVO")
+func (c *Client) createCVOGCP(cvoDetails createCVOGCPDetails, clientID string) (cvoResult, error) {
+	log.Printf("\n\ncreateCVO %s client_id %s", cvoDetails.Name, clientID)
 
 	accessTokenResult, err := c.getAccessToken()
 	if err != nil {
@@ -86,7 +85,7 @@ func (c *Client) createCVOGCP(cvoDetails createCVOGCPDetails) (cvoResult, error)
 	c.Token = accessTokenResult.Token
 
 	if cvoDetails.WorkspaceID == "" {
-		tenantID, err := c.getTenant()
+		tenantID, err := c.getTenant(clientID)
 		if err != nil {
 			log.Print("getTenant request failed ", err)
 			return cvoResult{}, err
@@ -96,21 +95,21 @@ func (c *Client) createCVOGCP(cvoDetails createCVOGCPDetails) (cvoResult, error)
 	}
 
 	if cvoDetails.NssAccount == "" && (cvoDetails.VsaMetadata.LicenseType == "gcp-cot-premium-byol" || cvoDetails.VsaMetadata.LicenseType == "gcp-ha-cot-premium-byol") && !strings.HasPrefix(cvoDetails.SerialNumber, "Eval-") {
-		nssAccount, err := c.getNSS()
+		nssAccount, err := c.getNSS(clientID)
 		if err != nil {
 			log.Print("getNSS request failed ", err)
 			return cvoResult{}, err
 		}
-		log.Print("getNSS result ", nssAccount)
+		log.Printf("%s %s getNSS result %s", cvoDetails.Name, clientID, nssAccount)
 		cvoDetails.NssAccount = nssAccount
 	}
 
-	baseURL := c.getAPIRootForWorkingEnvironment(cvoDetails.IsHA, "")
+	baseURL := getAPIRootForWorkingEnvironment(cvoDetails.IsHA, "")
 
 	hostType := "CloudManagerHost"
 	params := structs.Map(cvoDetails)
 
-	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("POST", baseURL, params, c.Token, hostType)
+	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("POST", baseURL, params, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("createCVO request failed ", statusCode)
 		return cvoResult{}, err
@@ -121,7 +120,7 @@ func (c *Client) createCVOGCP(cvoDetails createCVOGCPDetails) (cvoResult, error)
 		return cvoResult{}, responseError
 	}
 
-	err = c.waitOnCompletion(onCloudRequestID, "CVO", "create", 60, 60)
+	err = c.waitOnCompletion(onCloudRequestID, "CVO", "create", 60, 60, clientID)
 	if err != nil {
 		return cvoResult{}, err
 	}
@@ -135,9 +134,9 @@ func (c *Client) createCVOGCP(cvoDetails createCVOGCPDetails) (cvoResult, error)
 	return result, nil
 }
 
-func (c *Client) deleteCVOGCP(id string, isHA bool) error {
+func (c *Client) deleteCVOGCP(id string, isHA bool, clientID string) error {
 
-	log.Print("deleteCVO")
+	log.Printf("deleteCVO: id %s client %s", id, clientID)
 
 	accessTokenResult, err := c.getAccessToken()
 	if err != nil {
@@ -146,13 +145,13 @@ func (c *Client) deleteCVOGCP(id string, isHA bool) error {
 	}
 	c.Token = accessTokenResult.Token
 
-	baseURL := c.getAPIRootForWorkingEnvironment(isHA, id)
+	baseURL := getAPIRootForWorkingEnvironment(isHA, id)
 
 	hostType := "CloudManagerHost"
 
-	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("DELETE", baseURL, nil, c.Token, hostType)
+	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("DELETE", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
-		log.Print("deleteCVO request failed ", statusCode)
+		log.Printf("deleteCVO %s request failed %#v", id, statusCode)
 		return err
 	}
 
@@ -161,7 +160,7 @@ func (c *Client) deleteCVOGCP(id string, isHA bool) error {
 		return responseError
 	}
 
-	err = c.waitOnCompletion(onCloudRequestID, "CVO", "delete", 40, 60)
+	err = c.waitOnCompletion(onCloudRequestID, "CVO", "delete", 40, 60, clientID)
 	if err != nil {
 		return err
 	}
