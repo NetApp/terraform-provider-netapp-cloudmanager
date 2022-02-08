@@ -75,7 +75,7 @@ type nssAccountResult struct {
 	PublicID string `json:"publicId"`
 }
 
-func (c *Client) getNSS() (string, error) {
+func (c *Client) getNSS(clientID string) (string, error) {
 
 	log.Print("getNSS")
 
@@ -90,7 +90,7 @@ func (c *Client) getNSS() (string, error) {
 
 	hostType := "CloudManagerHost"
 
-	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("getNSS request failed ", statusCode)
 		return "", err
@@ -119,7 +119,7 @@ func (c *Client) getNSS() (string, error) {
 	return result.NssAccounts[0].PublicID, nil
 }
 
-func (c *Client) getCVOAzureByID(id string) error {
+func (c *Client) getCVOAzureByID(id string, clientID string) error {
 
 	log.Print("getCVOAzureByID")
 
@@ -134,7 +134,7 @@ func (c *Client) getCVOAzureByID(id string) error {
 
 	hostType := "CloudManagerHost"
 
-	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("getCVOAzureByID request failed ", statusCode)
 		return err
@@ -148,7 +148,7 @@ func (c *Client) getCVOAzureByID(id string) error {
 	return nil
 }
 
-func (c *Client) getCVOAzure(id string) (string, error) {
+func (c *Client) getCVOAzure(id string, clientID string) (string, error) {
 
 	log.Print("getCVOAzure")
 
@@ -163,7 +163,7 @@ func (c *Client) getCVOAzure(id string) (string, error) {
 
 	hostType := "CloudManagerHost"
 
-	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("getCVOAzure request failed ", statusCode)
 		return "", err
@@ -191,7 +191,7 @@ func (c *Client) getCVOAzure(id string) (string, error) {
 	return "", nil
 }
 
-func (c *Client) createCVOAzure(cvoDetails createCVOAzureDetails) (cvoResult, error) {
+func (c *Client) createCVOAzure(cvoDetails createCVOAzureDetails, clientID string) (cvoResult, error) {
 
 	log.Print("createCVO")
 
@@ -203,7 +203,7 @@ func (c *Client) createCVOAzure(cvoDetails createCVOAzureDetails) (cvoResult, er
 	c.Token = accessTokenResult.Token
 
 	if cvoDetails.WorkspaceID == "" {
-		tenantID, err := c.getTenant()
+		tenantID, err := c.getTenant(clientID)
 		if err != nil {
 			log.Print("getTenant request failed ", err)
 			return cvoResult{}, err
@@ -213,7 +213,7 @@ func (c *Client) createCVOAzure(cvoDetails createCVOAzureDetails) (cvoResult, er
 	}
 
 	if cvoDetails.NssAccount == "" && !strings.HasPrefix(cvoDetails.SerialNumber, "Eval-") && (cvoDetails.VsaMetadata.LicenseType == "azure-cot-premium-byol" || cvoDetails.VsaMetadata.LicenseType == "azure-ha-cot-premium-byol") {
-		nssAccount, err := c.getNSS()
+		nssAccount, err := c.getNSS(clientID)
 		if err != nil {
 			log.Print("getNSS request failed ", err)
 			return cvoResult{}, err
@@ -254,7 +254,7 @@ func (c *Client) createCVOAzure(cvoDetails createCVOAzureDetails) (cvoResult, er
 	hostType := "CloudManagerHost"
 	params := structs.Map(cvoDetails)
 
-	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("POST", baseURL, params, c.Token, hostType)
+	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("POST", baseURL, params, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("createCVO request failed ", statusCode)
 		return cvoResult{}, err
@@ -265,7 +265,7 @@ func (c *Client) createCVOAzure(cvoDetails createCVOAzureDetails) (cvoResult, er
 		return cvoResult{}, responseError
 	}
 
-	err = c.waitOnCompletion(onCloudRequestID, "CVO", "create", creationWaitTime, 60)
+	err = c.waitOnCompletion(onCloudRequestID, "CVO", "create", creationWaitTime, 60, clientID)
 	if err != nil {
 		return cvoResult{}, err
 	}
@@ -279,7 +279,7 @@ func (c *Client) createCVOAzure(cvoDetails createCVOAzureDetails) (cvoResult, er
 	return result, nil
 }
 
-func (c *Client) deleteCVOAzure(id string, isHA bool) error {
+func (c *Client) deleteCVOAzure(id string, isHA bool, clientID string) error {
 
 	log.Print("deleteCVO")
 
@@ -300,7 +300,7 @@ func (c *Client) deleteCVOAzure(id string, isHA bool) error {
 
 	hostType := "CloudManagerHost"
 
-	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("DELETE", baseURL, nil, c.Token, hostType)
+	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("DELETE", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("deleteCVO request failed ", statusCode)
 		return err
@@ -311,7 +311,7 @@ func (c *Client) deleteCVOAzure(id string, isHA bool) error {
 		return responseError
 	}
 
-	err = c.waitOnCompletion(onCloudRequestID, "CVO", "delete", 40, 60)
+	err = c.waitOnCompletion(onCloudRequestID, "CVO", "delete", 40, 60, clientID)
 	if err != nil {
 		return err
 	}

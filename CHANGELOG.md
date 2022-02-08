@@ -1,4 +1,9 @@
-## 22.1.1 (Unreleased)
+## 22.1.2 (Unreleased)
+BUG FIXES:
+
+* Support resources operating in parallel
+
+## 22.1.1
 BUG FIXES:
 
 * resource/cvo for AWS, AZURE and GCP: add status check on instance_type update

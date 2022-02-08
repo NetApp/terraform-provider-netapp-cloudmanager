@@ -34,8 +34,8 @@ type cifsResponse struct {
 	OrganizationalUnit string   `json:"organizationalUnit"`
 }
 
-func (c *Client) createCIFS(cifs cifsRequest) error {
-	baseURL, _, err := c.getAPIRoot(cifs.WorkingEnvironmentID)
+func (c *Client) createCIFS(cifs cifsRequest, clientID string) error {
+	baseURL, _, err := c.getAPIRoot(cifs.WorkingEnvironmentID, clientID)
 	hostType := "CloudManagerHost"
 	if err != nil {
 		return err
@@ -47,7 +47,7 @@ func (c *Client) createCIFS(cifs cifsRequest) error {
 		baseURL = fmt.Sprintf("%s/working-environments/%s/cifs", baseURL, cifs.WorkingEnvironmentID)
 	}
 	param := structs.Map(cifs)
-	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("POST", baseURL, param, c.Token, hostType)
+	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("POST", baseURL, param, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("createCIFS request failed ", statusCode)
 		return err
@@ -56,7 +56,7 @@ func (c *Client) createCIFS(cifs cifsRequest) error {
 	if responseError != nil {
 		return responseError
 	}
-	err = c.waitOnCompletion(onCloudRequestID, "cifs", "create", 10, 10)
+	err = c.waitOnCompletion(onCloudRequestID, "cifs", "create", 10, 10, clientID)
 	if err != nil {
 		return err
 	}
@@ -64,9 +64,9 @@ func (c *Client) createCIFS(cifs cifsRequest) error {
 	return nil
 }
 
-func (c *Client) getCIFS(cifs cifsRequest) ([]cifsResponse, error) {
+func (c *Client) getCIFS(cifs cifsRequest, clientID string) ([]cifsResponse, error) {
 	var result []cifsResponse
-	baseURL, _, err := c.getAPIRoot(cifs.WorkingEnvironmentID)
+	baseURL, _, err := c.getAPIRoot(cifs.WorkingEnvironmentID, clientID)
 	if err != nil {
 		return result, err
 	}
@@ -76,7 +76,7 @@ func (c *Client) getCIFS(cifs cifsRequest) ([]cifsResponse, error) {
 	baseURL = fmt.Sprintf("%s/working-environments/%s/cifs", baseURL, cifs.WorkingEnvironmentID)
 
 	hostType := "CloudManagerHost"
-	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("createCIFS request failed ", statusCode)
 		return result, err
@@ -92,15 +92,15 @@ func (c *Client) getCIFS(cifs cifsRequest) ([]cifsResponse, error) {
 	return result, nil
 }
 
-func (c *Client) deleteCIFS(cifs cifsRequest) error {
-	baseURL, _, err := c.getAPIRoot(cifs.WorkingEnvironmentID)
+func (c *Client) deleteCIFS(cifs cifsRequest, clientID string) error {
+	baseURL, _, err := c.getAPIRoot(cifs.WorkingEnvironmentID, clientID)
 	hostType := "CloudManagerHost"
 	if err != nil {
 		return err
 	}
 	baseURL = fmt.Sprintf("%s/working-environments/%s/delete-cifs", baseURL, cifs.WorkingEnvironmentID)
 	param := structs.Map(cifs)
-	statusCode, response, _, err := c.CallAPIMethod("POST", baseURL, param, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("POST", baseURL, param, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("deleteCIFS request failed ", statusCode)
 		return err

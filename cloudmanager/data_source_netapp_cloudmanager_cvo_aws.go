@@ -31,12 +31,11 @@ func dataSourceCVOAWSRead(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("Reading CVO: %#v", d)
 	client := meta.(*Client)
 
-	if c, ok := d.GetOk("client_id"); ok {
-		client.ClientID = c.(string)
-	}
+	clientID := d.Get("client_id").(string)
+
 	if a, ok := d.GetOk("id"); ok {
 		WorkingEnvironmentID := a.(string)
-		workingEnvDetail, err := client.findWorkingEnvironmentByID(WorkingEnvironmentID)
+		workingEnvDetail, err := client.findWorkingEnvironmentByID(WorkingEnvironmentID, clientID)
 		if err != nil {
 			return fmt.Errorf("Cannot find working environment by working_environment_id %s", WorkingEnvironmentID)
 		}
@@ -44,7 +43,7 @@ func dataSourceCVOAWSRead(d *schema.ResourceData, meta interface{}) error {
 		d.Set("name", workingEnvDetail.Name)
 		d.Set("svm_name", workingEnvDetail.SvmName)
 	} else if a, ok = d.GetOk("name"); ok {
-		workingEnvDetail, err := client.findWorkingEnvironmentByName(a.(string))
+		workingEnvDetail, err := client.findWorkingEnvironmentByName(a.(string), clientID)
 		if err != nil {
 			return fmt.Errorf("Cannot find working environment by working_environment_name %s", a.(string))
 		}

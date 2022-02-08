@@ -150,7 +150,7 @@ func (c *Client) CallAWSInstanceCreate(occmDetails createOCCMDetails) (string, e
 		// Network interfaces and an instance-level security groups may not be specified on the same request
 		runInstancesInput.SecurityGroupIds = securityGroupIds
 	}
-
+	log.Print("CallAWSInstanceCreate occmDetails name:", occmDetails.Name)
 	runResult, err := svc.RunInstances(runInstancesInput)
 
 	if err != nil {
@@ -159,7 +159,7 @@ func (c *Client) CallAWSInstanceCreate(occmDetails createOCCMDetails) (string, e
 	}
 
 	log.Printf("Created instance %s", *runResult.Instances[0].InstanceId)
-
+	log.Print("After create intance - CallAWSInstanceCreate occmDetails name:", occmDetails.Name)
 	return *runResult.Instances[0].InstanceId, nil
 }
 
@@ -664,9 +664,8 @@ func (c *Client) CallAWSRegionGet(occmDetails createOCCMDetails) ([]string, erro
 }
 
 // CallAPIMethod can be used to make a request to any CVO/OCCM API method, receiving results as byte
-func (c *Client) CallAPIMethod(method string, baseURL string, params map[string]interface{}, token string, hostType string) (int, []byte, string, error) {
+func (c *Client) CallAPIMethod(method string, baseURL string, params map[string]interface{}, token string, hostType string, clientID string) (int, []byte, string, error) {
 	c.initOnce.Do(c.init)
-
 	c.waitForAvailableSlot()
 	defer c.releaseSlot()
 
@@ -679,7 +678,7 @@ func (c *Client) CallAPIMethod(method string, baseURL string, params map[string]
 	if params == nil {
 		paramsNil = true
 	}
-	statusCode, result, onCloudRequestID, err := c.restapiClient.Do(baseURL, hostType, token, paramsNil, c.AccountID, c.ClientID, &restapi.Request{
+	statusCode, result, onCloudRequestID, err := c.restapiClient.Do(baseURL, hostType, token, paramsNil, c.AccountID, clientID, &restapi.Request{
 		Method:                method,
 		Params:                params,
 		GCPDeploymentTemplate: c.GCPDeploymentTemplate,

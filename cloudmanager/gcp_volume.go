@@ -118,15 +118,15 @@ type weeklySchedule struct {
 	SnapshotsToKeep int    `structs:"snapshotsToKeep"`
 }
 
-func (c *Client) createGCPVolume(vol gcpVolumeRequest, info cvsInfo) (gcpVolumeResponse, error) {
-	baseURL, err := c.getCVSAPIRoot(info.AccountName, vol.WorkingEnvironmentName)
+func (c *Client) createGCPVolume(vol gcpVolumeRequest, info cvsInfo, clientID string) (gcpVolumeResponse, error) {
+	baseURL, err := c.getCVSAPIRoot(info.AccountName, vol.WorkingEnvironmentName, clientID)
 	if err != nil {
 		return gcpVolumeResponse{}, err
 	}
 	baseURL = fmt.Sprintf("%s/locations/%s/volumes", baseURL, vol.Region)
 	hostType := "CVSHost"
 	param := structs.Map(vol)
-	statusCode, response, _, err := c.CallAPIMethod("POST", baseURL, param, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("POST", baseURL, param, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("createGCPVolume request failed ", statusCode)
 		return gcpVolumeResponse{}, err
@@ -143,14 +143,14 @@ func (c *Client) createGCPVolume(vol gcpVolumeRequest, info cvsInfo) (gcpVolumeR
 	return result, nil
 }
 
-func (c *Client) deleteGCPVolume(vol gcpVolumeRequest, info cvsInfo) error {
-	baseURL, err := c.getCVSAPIRoot(info.AccountName, vol.WorkingEnvironmentName)
+func (c *Client) deleteGCPVolume(vol gcpVolumeRequest, info cvsInfo, clientID string) error {
+	baseURL, err := c.getCVSAPIRoot(info.AccountName, vol.WorkingEnvironmentName, clientID)
 	if err != nil {
 		return err
 	}
 	baseURL = fmt.Sprintf("%s/locations/%s/volumes/%s", baseURL, vol.Region, vol.VolumeID)
 	hostType := "CVSHost"
-	statusCode, response, _, err := c.CallAPIMethod("DELETE", baseURL, nil, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("DELETE", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("deleteGCPVolume request failed ", statusCode)
 		return err
@@ -162,14 +162,14 @@ func (c *Client) deleteGCPVolume(vol gcpVolumeRequest, info cvsInfo) error {
 	return nil
 }
 
-func (c *Client) getGCPVolume(vol gcpVolumeRequest, info cvsInfo) (gcpVolumeResponse, error) {
-	baseURL, err := c.getCVSAPIRoot(info.AccountName, vol.WorkingEnvironmentName)
+func (c *Client) getGCPVolume(vol gcpVolumeRequest, info cvsInfo, clientID string) (gcpVolumeResponse, error) {
+	baseURL, err := c.getCVSAPIRoot(info.AccountName, vol.WorkingEnvironmentName, clientID)
 	if err != nil {
 		return gcpVolumeResponse{}, err
 	}
 	baseURL = fmt.Sprintf("%s/locations/%s/volumes/%s", baseURL, vol.Region, vol.VolumeID)
 	hostType := "CVSHost"
-	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("getGCPVolume request failed ", statusCode)
 		return gcpVolumeResponse{}, err

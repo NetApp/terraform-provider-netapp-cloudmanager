@@ -68,12 +68,12 @@ type cvsInfo struct {
 	SubnetName         string `structs:"subnetName"`
 }
 
-func (c *Client) getAccountByName(name string) (string, error) {
+func (c *Client) getAccountByName(name string, clientID string) (string, error) {
 	log.Print("getAccount")
 
 	baseURL := "/tenancy/account"
 	hostType := "CloudManagerHost"
-	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("getAccount request failed ", statusCode)
 		return "", err
@@ -104,16 +104,16 @@ func (c *Client) getAccountByName(name string) (string, error) {
 	return results[0].AccountID, nil
 }
 
-func (c *Client) createANFVolume(vol anfVolumeRequest, info cvsInfo) error {
-	baseURL, err := c.getCVSAPIRoot(info.AccountName, vol.WorkingEnvironmentName)
+func (c *Client) createANFVolume(vol anfVolumeRequest, info cvsInfo, clientID string) error {
+	baseURL, err := c.getCVSAPIRoot(info.AccountName, vol.WorkingEnvironmentName, clientID)
 	if err != nil {
 		return err
 	}
-	subscription, err := c.getSubscription(baseURL, info.SubscriptionName)
+	subscription, err := c.getSubscription(baseURL, info.SubscriptionName, clientID)
 	if err != nil {
 		return err
 	}
-	subnet, err := c.getSubnetID(fmt.Sprintf("%s/subscriptions/%s", baseURL, subscription), info.VirtualNetworkName, info.SubnetName, vol.Location)
+	subnet, err := c.getSubnetID(fmt.Sprintf("%s/subscriptions/%s", baseURL, subscription), info.VirtualNetworkName, info.SubnetName, vol.Location, clientID)
 	if err != nil {
 		return err
 	}
@@ -121,7 +121,7 @@ func (c *Client) createANFVolume(vol anfVolumeRequest, info cvsInfo) error {
 	hostType := "CVSHost"
 	param := structs.Map(vol)
 	param["subnetId"] = subnet
-	statusCode, response, _, err := c.CallAPIMethod("POST", baseURL, param, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("POST", baseURL, param, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("createANFVolume request failed ", statusCode)
 		return err
@@ -134,16 +134,16 @@ func (c *Client) createANFVolume(vol anfVolumeRequest, info cvsInfo) error {
 	return nil
 }
 
-func (c *Client) getANFVolume(vol anfVolumeRequest, info cvsInfo) (anfVolumeResponse, error) {
-	baseURL, err := c.getCVSAPIRoot(info.AccountName, vol.WorkingEnvironmentName)
+func (c *Client) getANFVolume(vol anfVolumeRequest, info cvsInfo, clientID string) (anfVolumeResponse, error) {
+	baseURL, err := c.getCVSAPIRoot(info.AccountName, vol.WorkingEnvironmentName, clientID)
 	if err != nil {
 		return anfVolumeResponse{}, err
 	}
-	subscription, err := c.getSubscription(baseURL, info.SubscriptionName)
+	subscription, err := c.getSubscription(baseURL, info.SubscriptionName, clientID)
 	if err != nil {
 		return anfVolumeResponse{}, err
 	}
-	subnet, err := c.getSubnetID(fmt.Sprintf("%s/subscriptions/%s", baseURL, subscription), info.VirtualNetworkName, info.SubnetName, vol.Location)
+	subnet, err := c.getSubnetID(fmt.Sprintf("%s/subscriptions/%s", baseURL, subscription), info.VirtualNetworkName, info.SubnetName, vol.Location, clientID)
 	if err != nil {
 		return anfVolumeResponse{}, err
 	}
@@ -151,7 +151,7 @@ func (c *Client) getANFVolume(vol anfVolumeRequest, info cvsInfo) (anfVolumeResp
 	hostType := "CVSHost"
 	param := structs.Map(vol)
 	param["subnetId"] = subnet
-	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("getANFVolume request failed ", statusCode)
 		return anfVolumeResponse{}, err
@@ -169,7 +169,7 @@ func (c *Client) getANFVolume(vol anfVolumeRequest, info cvsInfo) (anfVolumeResp
 	return result, nil
 }
 
-func (c *Client) getCVSWorkingEnvironment(accountID string, WorkingEnvironment string) (string, string, error) {
+func (c *Client) getCVSWorkingEnvironment(accountID string, WorkingEnvironment string, clientID string) (string, string, error) {
 	if c.Token == "" {
 		accesTokenResult, err := c.getAccessToken()
 		if err != nil {
@@ -181,7 +181,7 @@ func (c *Client) getCVSWorkingEnvironment(accountID string, WorkingEnvironment s
 
 	baseURL := fmt.Sprintf("/cvs/accounts/%s/working-environments", accountID)
 	hostType := "CVSHost"
-	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("getCVSWorkingEnvironment request failed ", statusCode)
 		return "", "", err
@@ -205,7 +205,7 @@ func (c *Client) getCVSWorkingEnvironment(accountID string, WorkingEnvironment s
 	return "", "", fmt.Errorf(" working environment: %s doesn't exist", WorkingEnvironment)
 }
 
-func (c *Client) getCVSAPIRoot(accountName string, workingEnvironment string) (string, error) {
+func (c *Client) getCVSAPIRoot(accountName string, workingEnvironment string, clientID string) (string, error) {
 	if c.Token == "" {
 		accesTokenResult, err := c.getAccessToken()
 		if err != nil {
@@ -214,11 +214,11 @@ func (c *Client) getCVSAPIRoot(accountName string, workingEnvironment string) (s
 		}
 		c.Token = accesTokenResult.Token
 	}
-	accountID, err := c.getAccountByName(accountName)
+	accountID, err := c.getAccountByName(accountName, clientID)
 	if err != nil {
 		return "", err
 	}
-	credentialsID, provider, err := c.getCVSWorkingEnvironment(accountID, workingEnvironment)
+	credentialsID, provider, err := c.getCVSWorkingEnvironment(accountID, workingEnvironment, clientID)
 	if err != nil {
 		return "", err
 	}
@@ -234,7 +234,7 @@ func (c *Client) getCVSAPIRoot(accountName string, workingEnvironment string) (s
 	}
 }
 
-func (c *Client) getSubscription(baseURL string, subscription string) (string, error) {
+func (c *Client) getSubscription(baseURL string, subscription string, clientID string) (string, error) {
 	if c.Token == "" {
 		accesTokenResult, err := c.getAccessToken()
 		if err != nil {
@@ -245,7 +245,7 @@ func (c *Client) getSubscription(baseURL string, subscription string) (string, e
 	}
 	baseURL = fmt.Sprintf("%s/subscriptions", baseURL)
 	hostType := "CVSHost"
-	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("getSubscriptions request failed ", statusCode)
 		return "", err
@@ -270,7 +270,7 @@ func (c *Client) getSubscription(baseURL string, subscription string) (string, e
 
 }
 
-func (c *Client) getSubnetID(baseURL string, virtualNetwork string, subnet string, location string) (string, error) {
+func (c *Client) getSubnetID(baseURL string, virtualNetwork string, subnet string, location string, clientID string) (string, error) {
 	if c.Token == "" {
 		accesTokenResult, err := c.getAccessToken()
 		if err != nil {
@@ -281,7 +281,7 @@ func (c *Client) getSubnetID(baseURL string, virtualNetwork string, subnet strin
 	}
 	baseURL = fmt.Sprintf("%s/virtualNetworks?location=%s", baseURL, location)
 	hostType := "CVSHost"
-	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("getSubnetID request failed ", statusCode)
 		return "", err
@@ -311,18 +311,18 @@ func (c *Client) getSubnetID(baseURL string, virtualNetwork string, subnet strin
 
 }
 
-func (c *Client) deleteANFVolume(vol anfVolumeRequest, info cvsInfo) error {
-	baseURL, err := c.getCVSAPIRoot(info.AccountName, vol.WorkingEnvironmentName)
+func (c *Client) deleteANFVolume(vol anfVolumeRequest, info cvsInfo, clientID string) error {
+	baseURL, err := c.getCVSAPIRoot(info.AccountName, vol.WorkingEnvironmentName, clientID)
 	if err != nil {
 		return err
 	}
-	subscription, err := c.getSubscription(baseURL, info.SubscriptionName)
+	subscription, err := c.getSubscription(baseURL, info.SubscriptionName, clientID)
 	if err != nil {
 		return err
 	}
 	baseURL = fmt.Sprintf("%s/subscriptions/%s/resourceGroups/%s/netAppAccounts/%s/capacityPools/%s/volumes/%s", baseURL, subscription, info.ResourceGroupsName, info.NetAppAccountName, info.CapacityPools, vol.Name)
 	hostType := "CVSHost"
-	statusCode, response, _, err := c.CallAPIMethod("DELETE", baseURL, nil, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("DELETE", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("deleteANFVolume request failed ", statusCode)
 		return err

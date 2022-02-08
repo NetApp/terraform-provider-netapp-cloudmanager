@@ -197,7 +197,7 @@ func resourceOCCMGCPCreate(d *schema.ResourceData, meta interface{}) error {
 		occmDetails.Tags = tags
 	}
 
-	res, err := client.deployGCPVM(occmDetails, proxyCertificates)
+	res, err := client.deployGCPVM(occmDetails, proxyCertificates, "")
 	if err != nil {
 		log.Print("Error creating instance")
 		return err
@@ -230,10 +230,11 @@ func resourceOCCMGCPRead(d *schema.ResourceData, meta interface{}) error {
 	occmDetails.SubnetID = d.Get("subnet_id").(string)
 	client.GCPServiceAccountPath = d.Get("service_account_path").(string)
 	occmDetails.Company = d.Get("company").(string)
+	clientID := d.Get("client_id").(string)
 
 	id := d.Id() + "-vm-boot-deployment"
 
-	resID, err := client.getdeployGCPVM(occmDetails, id)
+	resID, err := client.getdeployGCPVM(occmDetails, id, clientID)
 	if err != nil {
 		log.Print("Error getting occm")
 		return err
@@ -244,7 +245,7 @@ func resourceOCCMGCPRead(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	if _, ok := d.GetOk("tags"); ok {
-		instance, err := client.getVMInstance(occmDetails)
+		instance, err := client.getVMInstance(occmDetails, clientID)
 		tagItems := instance["tags"].(map[string]interface{})
 		tags := tagItems["items"].([]interface{})
 		if err != nil {
@@ -280,10 +281,10 @@ func resourceOCCMGCPDelete(d *schema.ResourceData, meta interface{}) error {
 	occmDetails.Project = d.Get("project_id").(string)
 	client.GCPServiceAccountPath = d.Get("service_account_path").(string)
 	occmDetails.Region = d.Get("zone").(string)
-	client.ClientID = d.Get("client_id").(string)
+	clientID := d.Get("client_id").(string)
 	client.AccountID = d.Get("account_id").(string)
 
-	deleteErr := client.deleteOCCMGCP(occmDetails)
+	deleteErr := client.deleteOCCMGCP(occmDetails, clientID)
 	if deleteErr != nil {
 		return deleteErr
 	}
@@ -304,10 +305,11 @@ func resourceOCCMGCPExists(d *schema.ResourceData, meta interface{}) (bool, erro
 	occmDetails.SubnetID = d.Get("subnet_id").(string)
 	client.GCPServiceAccountPath = d.Get("service_account_path").(string)
 	occmDetails.Company = d.Get("company").(string)
+	clientID := d.Get("client_id").(string)
 
 	id := d.Id() + occmDetails.GCPCommonSuffixName
 
-	resID, err := client.getdeployGCPVM(occmDetails, id)
+	resID, err := client.getdeployGCPVM(occmDetails, id, clientID)
 	if err != nil {
 		log.Print("Error getting occm")
 		return false, err
@@ -334,9 +336,10 @@ func resourceOCCMGCPUpdate(d *schema.ResourceData, meta interface{}) error {
 	occmDetails.SubnetID = d.Get("subnet_id").(string)
 	client.GCPServiceAccountPath = d.Get("service_account_path").(string)
 	occmDetails.Company = d.Get("company").(string)
+	clientID := d.Get("client_id").(string)
 
 	if d.HasChange("tags") {
-		instance, err := client.getVMInstance(occmDetails)
+		instance, err := client.getVMInstance(occmDetails, clientID)
 		tagItems := instance["tags"].(map[string]interface{})
 		fingerprint := tagItems["fingerprint"].(string)
 		o := d.Get("tags").(*schema.Set)
@@ -348,7 +351,7 @@ func resourceOCCMGCPUpdate(d *schema.ResourceData, meta interface{}) error {
 			tags = append(tags, []string{"firewall-tag-bvsu", "http-server", "https-server"}...)
 		}
 		occmDetails.Tags = tags
-		err = client.setVMInstaceTags(occmDetails, fingerprint)
+		err = client.setVMInstaceTags(occmDetails, fingerprint, clientID)
 		if err != nil {
 			return err
 		}

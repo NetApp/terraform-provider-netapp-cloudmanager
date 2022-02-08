@@ -18,7 +18,7 @@ type nssAccountCredentials struct {
 	Password string `structs:"nssPassword"`
 }
 
-func (c *Client) createNssAccount(acc nssAccountRequest) (map[string]interface{}, error) {
+func (c *Client) createNssAccount(acc nssAccountRequest, clientID string) (map[string]interface{}, error) {
 	hostType := "CloudManagerHost"
 	baseURL := fmt.Sprint("/occm/api/accounts/nss")
 	param := structs.Map(acc)
@@ -29,7 +29,7 @@ func (c *Client) createNssAccount(acc nssAccountRequest) (map[string]interface{}
 		}
 		c.Token = accesTokenResult.Token
 	}
-	statusCode, response, _, err := c.CallAPIMethod("POST", baseURL, param, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("POST", baseURL, param, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("createNssAccount request failed ", statusCode)
 		return nil, err
@@ -45,7 +45,7 @@ func (c *Client) createNssAccount(acc nssAccountRequest) (map[string]interface{}
 	return res, nil
 }
 
-func (c *Client) getNssAccount(nssUserName string) (map[string]interface{}, error) {
+func (c *Client) getNssAccount(nssUserName string, clientID string) (map[string]interface{}, error) {
 	hostType := "CloudManagerHost"
 	baseURL := fmt.Sprint("/occm/api/accounts")
 	if c.Token == "" {
@@ -55,7 +55,7 @@ func (c *Client) getNssAccount(nssUserName string) (map[string]interface{}, erro
 		}
 		c.Token = accesTokenResult.Token
 	}
-	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("getNssAccount request failed ", statusCode)
 		return nil, err
@@ -79,7 +79,7 @@ func (c *Client) getNssAccount(nssUserName string) (map[string]interface{}, erro
 	return nil, nil
 }
 
-func (c *Client) deleteNssAccount(id string) error {
+func (c *Client) deleteNssAccount(id string, clientID string) error {
 	hostType := "CloudManagerHost"
 	baseURL := fmt.Sprintf("/occm/api/accounts/%s", id)
 	if c.Token == "" {
@@ -89,7 +89,7 @@ func (c *Client) deleteNssAccount(id string) error {
 		}
 		c.Token = accesTokenResult.Token
 	}
-	statusCode, response, _, err := c.CallAPIMethod("DELETE", baseURL, nil, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("DELETE", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("deleteNssAccount request failed ", statusCode)
 		return err

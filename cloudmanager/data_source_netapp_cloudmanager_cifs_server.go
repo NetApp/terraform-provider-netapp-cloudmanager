@@ -80,22 +80,22 @@ func dataSourceCVOCIFSRead(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("Fetching cifs: %#v", d)
 
 	client := meta.(*Client)
-	client.ClientID = d.Get("client_id").(string)
+	clientID := d.Get("client_id").(string)
 	cifs := cifsRequest{}
 	if v, ok := d.GetOk("working_environment_id"); ok {
 		cifs.WorkingEnvironmentID = v.(string)
-		weInfo, err := client.getWorkingEnvironmentInfo(v.(string))
+		weInfo, err := client.getWorkingEnvironmentInfo(v.(string), clientID)
 		if err != nil {
 			return nil
 		}
 		cifs.WorkingEnvironmentType = weInfo.WorkingEnvironmentType
-		weInfo, err = client.findWorkingEnvironmentByName(weInfo.Name)
+		weInfo, err = client.findWorkingEnvironmentByName(weInfo.Name, clientID)
 		if err != nil {
 			return err
 		}
 		cifs.SvmName = weInfo.SvmName
 	} else if v, ok := d.GetOk("working_environment_name"); ok {
-		weInfo, err := client.findWorkingEnvironmentByName(v.(string))
+		weInfo, err := client.findWorkingEnvironmentByName(v.(string), clientID)
 		if err != nil {
 			return nil
 		}
@@ -105,7 +105,7 @@ func dataSourceCVOCIFSRead(d *schema.ResourceData, meta interface{}) error {
 	} else {
 		return fmt.Errorf("either working_environment_id or working_environment_name is required")
 	}
-	res, err := client.getCIFS(cifs)
+	res, err := client.getCIFS(cifs, clientID)
 	if err != nil {
 		log.Print("Error reading cifs")
 		return err

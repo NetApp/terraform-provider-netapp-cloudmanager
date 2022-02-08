@@ -34,8 +34,8 @@ func dataSourceCVONssAccount() *schema.Resource {
 func dataSourceCVONssAccountRead(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("Getting nss account: %s", d.Get("username").(string))
 	client := meta.(*Client)
-	client.ClientID = d.Get("client_id").(string)
-	res, err := client.getNssAccount(d.Get("username").(string))
+	clientID := d.Get("client_id").(string)
+	res, err := client.getNssAccount(d.Get("username").(string), clientID)
 	if err != nil {
 		log.Printf("Error getting nss account: %s", d.Get("username").(string))
 		return err

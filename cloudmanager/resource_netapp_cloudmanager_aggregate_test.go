@@ -46,23 +46,23 @@ func testAccCheckAggregateDestroy(state *terraform.State) error {
 		if rs.Type != "netapp-cloudmanager_aggregate" {
 			continue
 		}
-		client.ClientID = rs.Primary.Attributes["client_id"]
+		clientID := rs.Primary.Attributes["client_id"]
 		var aggregate aggregateRequest
 		id := rs.Primary.ID
 		if aggr, ok := rs.Primary.Attributes["working_environment_id"]; ok {
 			aggregate.WorkingEnvironmentID = aggr
 		} else if name, ok := rs.Primary.Attributes["working_environment_name"]; ok {
-			info, err := client.findWorkingEnvironmentByName(name)
+			info, err := client.findWorkingEnvironmentByName(name, clientID)
 			if err != nil {
 				aggregate.WorkingEnvironmentID = info.PublicID
 			}
 		}
 
-		workingEnvDetail, err := client.getWorkingEnvironmentInfo(aggregate.WorkingEnvironmentID)
+		workingEnvDetail, err := client.getWorkingEnvironmentInfo(aggregate.WorkingEnvironmentID, clientID)
 		if err != nil {
 			return err
 		}
-		response, err := client.getAggregate(aggregate, id, workingEnvDetail.WorkingEnvironmentType)
+		response, err := client.getAggregate(aggregate, id, workingEnvDetail.WorkingEnvironmentType, clientID)
 		if err == nil {
 			if response.Name != "" {
 				return fmt.Errorf("aggregate (%s) still exists", id)
@@ -87,11 +87,11 @@ func testAccCheckAggregateExists(name string, aggregate *aggregateResult) resour
 		id := rs.Primary.ID
 		aggr := aggregateRequest{}
 
-		client.ClientID = rs.Primary.Attributes["client_id"]
+		clientID := rs.Primary.Attributes["client_id"]
 		if a, ok := rs.Primary.Attributes["working_environment_id"]; ok {
 			aggr.WorkingEnvironmentID = a
 		} else if a, ok := rs.Primary.Attributes["working_environment_name"]; ok {
-			info, err := client.findWorkingEnvironmentByName(a)
+			info, err := client.findWorkingEnvironmentByName(a, clientID)
 			if err != nil {
 				return err
 			}
@@ -100,11 +100,11 @@ func testAccCheckAggregateExists(name string, aggregate *aggregateResult) resour
 			return fmt.Errorf("Cannot find working environment")
 		}
 
-		workingEnvDetail, err := client.getWorkingEnvironmentInfo(aggr.WorkingEnvironmentID)
+		workingEnvDetail, err := client.getWorkingEnvironmentInfo(aggr.WorkingEnvironmentID, clientID)
 		if err != nil {
 			return err
 		}
-		response, err := client.getAggregate(aggr, id, workingEnvDetail.WorkingEnvironmentType)
+		response, err := client.getAggregate(aggr, id, workingEnvDetail.WorkingEnvironmentType, clientID)
 		if err != nil {
 			return err
 		}

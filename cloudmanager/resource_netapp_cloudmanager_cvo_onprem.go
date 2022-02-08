@@ -67,9 +67,9 @@ func resourceCVOOnPremCreate(d *schema.ResourceData, meta interface{}) error {
 	cvoDetails.ClusterUserName = d.Get("cluster_user_name").(string)
 	cvoDetails.WorkspaceID = d.Get("workspace_id").(string)
 	cvoDetails.Location = d.Get("location").(string)
-	client.ClientID = d.Get("client_id").(string)
+	clientID := d.Get("client_id").(string)
 
-	res, err := client.createCVOOnPrem(cvoDetails)
+	res, err := client.createCVOOnPrem(cvoDetails, clientID)
 	if err != nil {
 		log.Print("Error creating instance: ", err)
 		return err
@@ -88,9 +88,9 @@ func resourceCVOOnPremRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Client)
 
 	id := d.Id()
-	client.ClientID = d.Get("client_id").(string)
+	clientID := d.Get("client_id").(string)
 
-	_, err := client.getCVOOnPremByID(id)
+	_, err := client.getCVOOnPremByID(id, clientID)
 	if err != nil {
 		log.Print("Error reading cvo onprem: ", err)
 		return err
@@ -104,9 +104,9 @@ func resourceCVOOnPremDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Client)
 
 	id := d.Id()
-	client.ClientID = d.Get("client_id").(string)
+	clientID := d.Get("client_id").(string)
 
-	deleteErr := client.deleteCVOOnPrem(id)
+	deleteErr := client.deleteCVOOnPrem(id, clientID)
 	if deleteErr != nil {
 		log.Print("Error deleting cvo: ", deleteErr)
 		return deleteErr
@@ -120,9 +120,9 @@ func resourceCVOOnPremExists(d *schema.ResourceData, meta interface{}) (bool, er
 	client := meta.(*Client)
 
 	id := d.Id()
-	client.ClientID = d.Get("client_id").(string)
+	clientID := d.Get("client_id").(string)
 
-	resID, err := client.getCVOOnPrem(id)
+	resID, err := client.getCVOOnPrem(id, clientID)
 	if err != nil {
 		log.Print("Error getting cvo: ", err)
 		return false, err

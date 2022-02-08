@@ -157,18 +157,17 @@ type occmAgent struct {
 	AgentID string `json:"agentId"`
 }
 
-func (c *Client) getUserData(registerAgentTOService registerAgentTOServiceRequest, proxyCertificates []string) (string, error) {
+func (c *Client) getUserData(registerAgentTOService registerAgentTOServiceRequest, proxyCertificates []string, clientID string) (string, string, error) {
 	accesTokenResult, err := c.getAccessToken()
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
-	log.Print("getAccessToken  ", accesTokenResult.Token)
 	c.Token = accesTokenResult.Token
 
 	if c.AccountID == "" {
-		accountID, err := c.getAccount()
+		accountID, err := c.getAccount(clientID)
 		if err != nil {
-			return "", err
+			return "", "", err
 		}
 		log.Print("getAccount ", accountID)
 		registerAgentTOService.AccountID = accountID
@@ -176,20 +175,19 @@ func (c *Client) getUserData(registerAgentTOService registerAgentTOServiceReques
 		registerAgentTOService.AccountID = c.AccountID
 	}
 
-	userDataRespone, err := c.registerAgentTOService(registerAgentTOService)
+	userDataRespone, err := c.registerAgentTOService(registerAgentTOService, clientID)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
-	c.ClientID = userDataRespone.ClientID
+	newClientID := userDataRespone.ClientID
 	c.AccountID = userDataRespone.AccountID
-
+	log.Print("getUserData: clientID: ", newClientID)
 	userDataRespone.ProxySettings.ProxyCertificates = proxyCertificates
 	rawUserData, _ := json.MarshalIndent(userDataRespone, "", "\t")
 	userData := string(rawUserData)
 	log.Print("userData ", userData)
-
-	return userData, nil
+	return userData, newClientID, nil
 }
 
 func (c *Client) getAccessToken() (accesTokenResult, error) {
@@ -215,7 +213,7 @@ func (c *Client) getAccessToken() (accesTokenResult, error) {
 	accesTokenRequest.Audience = c.Audience
 
 	params := structs.Map(accesTokenRequest)
-	statusCode, response, _, err := c.CallAPIMethod("POST", "", params, "", hostType)
+	statusCode, response, _, err := c.CallAPIMethod("POST", "", params, "", hostType, "")
 	if err != nil {
 		log.Print("getAccessToken request failed ", statusCode)
 		return accesTokenResult{}, err
@@ -235,7 +233,7 @@ func (c *Client) getAccessToken() (accesTokenResult, error) {
 	return result, nil
 }
 
-func (c *Client) registerAgentTOService(registerAgentTOServiceRequest registerAgentTOServiceRequest) (createUserData, error) {
+func (c *Client) registerAgentTOService(registerAgentTOServiceRequest registerAgentTOServiceRequest, clientID string) (createUserData, error) {
 
 	baseURL := "/agents-mgmt/connector-setup"
 	hostType := "CloudManagerHost"
@@ -250,7 +248,7 @@ func (c *Client) registerAgentTOService(registerAgentTOServiceRequest registerAg
 	registerAgentTOServiceRequest.Placement.Provider = "AWS"
 
 	params := structs.Map(registerAgentTOServiceRequest)
-	statusCode, response, _, err := c.CallAPIMethod("POST", baseURL, params, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("POST", baseURL, params, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("registerAgentTOService request failed ", statusCode)
 		return createUserData{}, err
@@ -270,7 +268,7 @@ func (c *Client) registerAgentTOService(registerAgentTOServiceRequest registerAg
 	return result, nil
 }
 
-func (c *Client) getAccount() (string, error) {
+func (c *Client) getAccount(clientID string) (string, error) {
 
 	log.Print("getAccount")
 
@@ -278,7 +276,7 @@ func (c *Client) getAccount() (string, error) {
 
 	hostType := "CloudManagerHost"
 
-	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("getAccount request failed ", statusCode)
 		return "", err
@@ -297,7 +295,7 @@ func (c *Client) getAccount() (string, error) {
 
 	// when no account exists, create
 	if len(result) == 0 {
-		accountID, err := c.createAccount()
+		accountID, err := c.createAccount(clientID)
 		if err != nil {
 			log.Print("createAccount request failed")
 			return "", err
@@ -308,7 +306,7 @@ func (c *Client) getAccount() (string, error) {
 	return result[0].AccountID, nil
 }
 
-func (c *Client) createAccount() (string, error) {
+func (c *Client) createAccount(clientID string) (string, error) {
 
 	log.Print("createAccount")
 
@@ -316,7 +314,7 @@ func (c *Client) createAccount() (string, error) {
 
 	hostType := "CloudManagerHost"
 
-	statusCode, response, _, err := c.CallAPIMethod("POST", baseURL, nil, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("POST", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("createAccount request failed ", statusCode)
 		return "", err
@@ -336,7 +334,7 @@ func (c *Client) createAccount() (string, error) {
 	return result.AccountID, nil
 }
 
-func (c *Client) createAWSInstance(occmDetails createOCCMDetails) (string, error) {
+func (c *Client) createAWSInstance(occmDetails createOCCMDetails, clientID string) (string, error) {
 
 	instanceID, err := c.CallAWSInstanceCreate(occmDetails)
 	if err != nil {
@@ -348,7 +346,7 @@ func (c *Client) createAWSInstance(occmDetails createOCCMDetails) (string, error
 
 	retries := 16
 	for {
-		occmResp, err := c.checkOCCMStatus()
+		occmResp, err := c.checkOCCMStatus(clientID)
 		if err != nil {
 			return "", err
 		}
@@ -388,9 +386,8 @@ func (c *Client) getAWSInstance(occmDetails createOCCMDetails, id string) (ec2.I
 	return ec2.Instance{}, nil
 }
 
-func (c *Client) createOCCM(occmDetails createOCCMDetails, proxyCertificates []string) (OCCMMResult, error) {
-
-	log.Print("createOCCM")
+func (c *Client) createOCCM(occmDetails createOCCMDetails, proxyCertificates []string, clientID string) (OCCMMResult, error) {
+	log.Printf("createOCCM %s %s", occmDetails.Name, clientID)
 	if occmDetails.AMI == "" {
 
 		ami, err := c.CallAMIGet(occmDetails)
@@ -417,29 +414,30 @@ func (c *Client) createOCCM(occmDetails createOCCMDetails, proxyCertificates []s
 		registerAgentTOService.Extra.Proxy.ProxyPassword = occmDetails.ProxyPassword
 	}
 
-	userData, err := c.getUserData(registerAgentTOService, proxyCertificates)
+	userData, newClientID, err := c.getUserData(registerAgentTOService, proxyCertificates, clientID)
 	if err != nil {
 		return OCCMMResult{}, err
 	}
 	c.UserData = userData
-	instanceID, err := c.createAWSInstance(occmDetails)
+	var result OCCMMResult
+	result.ClientID = newClientID
+	result.AccountID = c.AccountID
+	instanceID, err := c.createAWSInstance(occmDetails, newClientID)
 	if err != nil {
 		return OCCMMResult{}, err
 	}
-	var result OCCMMResult
 	result.InstanceID = instanceID
-	result.ClientID = c.ClientID
-	result.AccountID = c.AccountID
 
+	log.Printf("createOCCM clientID: %s, cclient=%s", result.ClientID, newClientID)
 	return result, nil
 }
 
-func (c *Client) checkOCCMStatus() (occmAgent, error) {
-
-	baseURL := fmt.Sprintf("/agents-mgmt/agent/%sclients", c.ClientID)
+func (c *Client) checkOCCMStatus(clientID string) (occmAgent, error) {
+	log.Print("checkOCCMStatus client id: ", clientID)
+	baseURL := fmt.Sprintf("/agents-mgmt/agent/%sclients", clientID)
 
 	hostType := "CloudManagerHost"
-	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("checkOCCMStatus request failed ", statusCode)
 		return occmAgent{}, err
@@ -458,13 +456,13 @@ func (c *Client) checkOCCMStatus() (occmAgent, error) {
 	return result.Agent, nil
 }
 
-func (c *Client) callOCCMDelete() error {
+func (c *Client) callOCCMDelete(clientID string) error {
 
-	baseURL := fmt.Sprintf("/agents-mgmt/agent/%sclients", c.ClientID)
+	baseURL := fmt.Sprintf("/agents-mgmt/agent/%sclients", clientID)
 
 	hostType := "CloudManagerHost"
 
-	statusCode, response, _, err := c.CallAPIMethod("DELETE", baseURL, nil, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("DELETE", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("callOCCMDelete request failed ", statusCode)
 		return err
@@ -478,7 +476,7 @@ func (c *Client) callOCCMDelete() error {
 	return nil
 }
 
-func (c *Client) deleteOCCM(request deleteOCCMDetails) error {
+func (c *Client) deleteOCCM(request deleteOCCMDetails, clientID string) error {
 
 	err := c.CallAWSInstanceTerminate(request)
 	if err != nil {
@@ -496,7 +494,7 @@ func (c *Client) deleteOCCM(request deleteOCCMDetails) error {
 
 	retries := 30
 	for {
-		occmResp, err := c.checkOCCMStatus()
+		occmResp, err := c.checkOCCMStatus(clientID)
 		if err != nil {
 			return err
 		}
@@ -512,7 +510,7 @@ func (c *Client) deleteOCCM(request deleteOCCMDetails) error {
 		}
 	}
 
-	if err := c.callOCCMDelete(); err != nil {
+	if err := c.callOCCMDelete(clientID); err != nil {
 		return err
 	}
 
@@ -520,7 +518,7 @@ func (c *Client) deleteOCCM(request deleteOCCMDetails) error {
 }
 
 // only tags can be updated. Other update functionalities to be added.
-func (c *Client) updateOCCM(occmDetails createOCCMDetails, proxyCertificates []string, deleteTags []userTags, addModifyTags []userTags) error {
+func (c *Client) updateOCCM(occmDetails createOCCMDetails, proxyCertificates []string, deleteTags []userTags, addModifyTags []userTags, clientID string) error {
 
 	log.Print("updating OCCM")
 	if occmDetails.AMI == "" {
@@ -549,7 +547,7 @@ func (c *Client) updateOCCM(occmDetails createOCCMDetails, proxyCertificates []s
 		registerAgentTOService.Extra.Proxy.ProxyPassword = occmDetails.ProxyPassword
 	}
 
-	userData, err := c.getUserData(registerAgentTOService, proxyCertificates)
+	userData, _, err := c.getUserData(registerAgentTOService, proxyCertificates, clientID)
 	if err != nil {
 		return err
 	}
@@ -572,7 +570,7 @@ func (c *Client) updateOCCM(occmDetails createOCCMDetails, proxyCertificates []s
 	return nil
 }
 
-func (c *Client) getCompany() (string, error) {
+func (c *Client) getCompany(clientID string) (string, error) {
 	if c.Token == "" {
 		accesTokenResult, err := c.getAccessToken()
 		if err != nil {
@@ -582,7 +580,7 @@ func (c *Client) getCompany() (string, error) {
 	}
 	hostType := "CloudManagerHost"
 	baseURL := "/occm/api/occm/system/about"
-	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType)
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("getCompany request failed ", statusCode)
 		return "", err

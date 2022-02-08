@@ -93,10 +93,10 @@ func resourceAggregateCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*Client)
 
-	client.ClientID = d.Get("client_id").(string)
+	clientID := d.Get("client_id").(string)
 	aggregate := createAggregateRequest{}
 
-	workingEnv, err := client.getWorkingEnvironmentDetail(d)
+	workingEnv, err := client.getWorkingEnvironmentDetail(d, clientID)
 	if err != nil {
 		return fmt.Errorf("Cannot find working environment")
 	}
@@ -149,7 +149,7 @@ func resourceAggregateCreate(d *schema.ResourceData, meta interface{}) error {
 		aggregate.CapacityTier = "cloudStorage"
 	}
 
-	res, err := client.createAggregate(&aggregate)
+	res, err := client.createAggregate(&aggregate, clientID)
 	if err != nil {
 		log.Print("Error creating aggregate")
 		return err
@@ -167,11 +167,10 @@ func resourceAggregateRead(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("Reading Aggregate: %#v", d)
 	client := meta.(*Client)
 
-	client.ClientID = d.Get("client_id").(string)
-
+	clientID := d.Get("client_id").(string)
 	aggregate := aggregateRequest{}
 
-	workingEnv, err := client.getWorkingEnvironmentDetail(d)
+	workingEnv, err := client.getWorkingEnvironmentDetail(d, clientID)
 	if err != nil {
 		return fmt.Errorf("Cannot find working environment")
 	}
@@ -179,7 +178,7 @@ func resourceAggregateRead(d *schema.ResourceData, meta interface{}) error {
 
 	id := d.Id()
 
-	aggr, err := client.getAggregate(aggregate, id, workingEnv.WorkingEnvironmentType)
+	aggr, err := client.getAggregate(aggregate, id, workingEnv.WorkingEnvironmentType, clientID)
 	if err != nil {
 		log.Printf("Error getting aggregate. id = %v", id)
 		return err
@@ -196,10 +195,10 @@ func resourceAggregateDelete(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("Deleting Aggregate: %#v", d)
 
 	client := meta.(*Client)
-	client.ClientID = d.Get("client_id").(string)
+	clientID := d.Get("client_id").(string)
 	request := deleteAggregateRequest{}
 
-	workingEnvDetail, err := client.getWorkingEnvironmentDetail(d)
+	workingEnvDetail, err := client.getWorkingEnvironmentDetail(d, clientID)
 	if err != nil {
 		return fmt.Errorf("Cannot find working environment")
 	}
@@ -207,7 +206,7 @@ func resourceAggregateDelete(d *schema.ResourceData, meta interface{}) error {
 
 	request.Name = d.Get("name").(string)
 
-	deleteErr := client.deleteAggregate(request)
+	deleteErr := client.deleteAggregate(request, clientID)
 	if deleteErr != nil {
 		return deleteErr
 	}
@@ -218,10 +217,10 @@ func resourceAggregateDelete(d *schema.ResourceData, meta interface{}) error {
 func resourceAggregateUpdate(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("Updating Aggregate: %#v", d)
 	client := meta.(*Client)
-	client.ClientID = d.Get("client_id").(string)
+	clientID := d.Get("client_id").(string)
 	request := updateAggregateRequest{}
 
-	workingEnvDetail, err := client.getWorkingEnvironmentDetail(d)
+	workingEnvDetail, err := client.getWorkingEnvironmentDetail(d, clientID)
 	if err != nil {
 		return fmt.Errorf("Cannot find working environment")
 	}
@@ -238,7 +237,7 @@ func resourceAggregateUpdate(d *schema.ResourceData, meta interface{}) error {
 			return fmt.Errorf("Aggregate: number_of_disks cannot be reduced")
 		}
 	}
-	updateErr := client.updateAggregate(request)
+	updateErr := client.updateAggregate(request, clientID)
 	if updateErr != nil {
 		return updateErr
 	}
@@ -252,16 +251,16 @@ func resourceAggregateExists(d *schema.ResourceData, meta interface{}) (bool, er
 	log.Printf("Checking existence of Aggregate: %#v", d)
 	client := meta.(*Client)
 
-	client.ClientID = d.Get("client_id").(string)
+	clientID := d.Get("client_id").(string)
 	aggregate := aggregateRequest{}
 
-	workingEnv, err := client.getWorkingEnvironmentDetail(d)
+	workingEnv, err := client.getWorkingEnvironmentDetail(d, clientID)
 	if err != nil {
 		return false, fmt.Errorf("Cannot find working environment")
 	}
 	aggregate.WorkingEnvironmentID = workingEnv.PublicID
 	id := d.Id()
-	res, err := client.getAggregate(aggregate, id, workingEnv.WorkingEnvironmentType)
+	res, err := client.getAggregate(aggregate, id, workingEnv.WorkingEnvironmentType, clientID)
 	if err != nil {
 		log.Print("Error getting aggregate")
 		d.SetId("")

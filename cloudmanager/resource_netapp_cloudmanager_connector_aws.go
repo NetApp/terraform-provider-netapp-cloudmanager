@@ -216,7 +216,7 @@ func resourceOCCMAWSCreate(d *schema.ResourceData, meta interface{}) error {
 		}
 	}
 
-	res, err := client.createOCCM(occmDetails, proxyCertificates)
+	res, err := client.createOCCM(occmDetails, proxyCertificates, "")
 
 	if err != nil {
 		log.Print("Error creating instance")
@@ -240,7 +240,7 @@ func resourceOCCMAWSCreate(d *schema.ResourceData, meta interface{}) error {
 func resourceOCCMAWSRead(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("Reading OCCM: %#v", d)
 	client := meta.(*Client)
-
+	var clientID string
 	occmDetails := createOCCMDetails{}
 
 	occmDetails.Name = d.Get("name").(string)
@@ -251,6 +251,10 @@ func resourceOCCMAWSRead(d *schema.ResourceData, meta interface{}) error {
 	occmDetails.KeyName = d.Get("key_name").(string)
 	occmDetails.IamInstanceProfileName = d.Get("iam_instance_profile_name").(string)
 	occmDetails.Company = d.Get("company").(string)
+
+	if v, ok := d.GetOk("client_id"); ok {
+		clientID = v.(string)
+	}
 
 	if o, ok := d.GetOk("ami"); ok {
 		occmDetails.AMI = o.(string)
@@ -338,12 +342,8 @@ func resourceOCCMAWSRead(d *schema.ResourceData, meta interface{}) error {
 		d.Set("associate_public_ip_address", true)
 	}
 
-	if v, ok := d.GetOk("client_id"); ok {
-		client.ClientID = v.(string)
-	}
-
 	if _, ok := d.GetOk("company"); !ok {
-		company, err := client.getCompany()
+		company, err := client.getCompany(clientID)
 		if err != nil {
 			log.Printf("Error when reading system info from cloudmanager.")
 			return err
@@ -364,10 +364,10 @@ func resourceOCCMAWSDelete(d *schema.ResourceData, meta interface{}) error {
 	id := d.Id()
 	occmDetails.InstanceID = id
 	occmDetails.Region = d.Get("region").(string)
-	client.ClientID = d.Get("client_id").(string)
+	clientID := d.Get("client_id").(string)
 	client.AccountID = d.Get("account_id").(string)
 
-	deleteErr := client.deleteOCCM(occmDetails)
+	deleteErr := client.deleteOCCM(occmDetails, clientID)
 	if deleteErr != nil {
 		return deleteErr
 	}
@@ -437,7 +437,7 @@ func resourceOCCMAWSUpdate(d *schema.ResourceData, meta interface{}) error {
 			addModifyAwsTags = expandUserTags(addModifyTags)
 		}
 	}
-
+	clientID := d.Get("client_id").(string)
 	occmDetails.Region = d.Get("region").(string)
 	occmDetails.Name = d.Get("name").(string)
 	occmDetails.InstanceType = d.Get("instance_type").(string)
@@ -448,7 +448,7 @@ func resourceOCCMAWSUpdate(d *schema.ResourceData, meta interface{}) error {
 	occmDetails.Company = d.Get("company").(string)
 	occmDetails.InstanceID = d.Id()
 
-	err := client.updateOCCM(occmDetails, nil, deleteAwsTags, addModifyAwsTags)
+	err := client.updateOCCM(occmDetails, nil, deleteAwsTags, addModifyAwsTags, clientID)
 
 	if err != nil {
 		log.Print("Error updating instance")
