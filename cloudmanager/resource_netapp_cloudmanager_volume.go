@@ -607,13 +607,11 @@ func resourceVolumeCustomizeDiff(diff *schema.ResourceDiff, v interface{}) error
 	if !(diff.HasChange("name")) {
 		changeableParams := []string{"volume_protocol", "export_policy_type", "export_policy_ip", "export_policy_name", "export_policy_nfs_version",
 			"share_name", "permission", "users", "tiering_policy", "snapshot_policy_name"}
-		// Get list of changed keys
 		changedKeys := diff.GetChangedKeysPrefix("")
-		log.Print("Changed keys: ", changedKeys)
 		for _, key := range changedKeys {
 			found := false
 			for _, changeable := range changeableParams {
-				if key == changeable {
+				if strings.Contains(key, changeable) {
 					found = true
 					break
 				}
