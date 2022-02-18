@@ -42,7 +42,8 @@ The following arguments are supported:
 * `zone` - (Required, non-modifiable) The GCP zone where the Connector will be created.
 * `company` - (Required, non-modifiable) The name of the company of the user.
 * `service_account_email` - (Required, non-modifiable) The email of the service_account for the connector instance. This service account is used to allow the Connector to create Cloud Volume ONTAP.
-* `service_account_path` - (Required, non-modifiable) The local path of the service_account JSON file for GCP authorization purposes. This service account is used to create the Connector in GCP.
+* `service_account_path` - (Optional, non-modifiable) The local path of the service_account JSON file for GCP authorization purposes. This service account is used to create the Connector in GCP.  Either `service_account_path` or `service_account_key` must be set.  Conflicts with `service_account_key`.
+* `service_account_key` - (Optional, non-modifiable) A JSON string for the service account key for GCP authorization purposes.  This service account is used to create the Connector in GCP.  Either `service_account_path` or `service_account_key` must be set.  Conflicts with `service_account_path`.
 * `subnet_id` - (Optional, non-modifiable) The name of the subnet for the virtual machine. The default value is "Default"
 * `network_project_id` - (Optional, non-modifiable) The project id in GCP associated with the Subnet. If not provided, it’s assumed that the Subnet is within the previously specified project id.
 * `machine_type` - (Optional, non-modifiable) The machine_type for the Connector VM. The default value is "n1-standard-4"

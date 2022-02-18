@@ -43,8 +43,17 @@ func resourceOCCMGCP() *schema.Resource {
 			},
 			"service_account_path": {
 				Type:     schema.TypeString,
-				Required: true,
+				Required: false,
 				ForceNew: true,
+				ConflictsWith: []string{"service_account_key"},
+				Default: "",
+			},
+			"service_account_key": {
+				Type:     schema.TypeString,
+				Required: false,
+				ForceNew: true,
+				ConflictsWith: []string{"service_account_path"},
+				Default: "",
 			},
 			"machine_type": {
 				Type:     schema.TypeString,
@@ -140,7 +149,16 @@ func resourceOCCMGCPCreate(d *schema.ResourceData, meta interface{}) error {
 	occmDetails.SubnetID = d.Get("subnet_id").(string)
 	occmDetails.MachineType = d.Get("machine_type").(string)
 	occmDetails.ServiceAccountEmail = d.Get("service_account_email").(string)
-	client.GCPServiceAccountPath = d.Get("service_account_path").(string)
+	service_account_path := d.Get("service_account_path").(string)
+	if service_account_path == "" {
+		service_account_key, err := ioutil.ReadFile(service_account_path)
+		if err != nil {
+			return fmt.Errorf("Cannot read service account file: %s", err)
+		}
+		client.GCPServiceAccountKey = string(service_account_key)
+	} else {
+		client.GCPServiceAccountKey = d.Get("service_account_key").(string)
+	}
 	occmDetails.FirewallTags = d.Get("firewall_tags").(bool)
 	occmDetails.AssociatePublicIP = d.Get("associate_public_ip").(bool)
 	occmDetails.Company = d.Get("company").(string)
@@ -228,7 +246,16 @@ func resourceOCCMGCPRead(d *schema.ResourceData, meta interface{}) error {
 	occmDetails.GCPProject = d.Get("project_id").(string)
 	occmDetails.Region = d.Get("zone").(string)
 	occmDetails.SubnetID = d.Get("subnet_id").(string)
-	client.GCPServiceAccountPath = d.Get("service_account_path").(string)
+	service_account_path := d.Get("service_account_path").(string)
+	if service_account_path == "" {
+		service_account_key, err := ioutil.ReadFile(service_account_path)
+		if err != nil {
+			return fmt.Errorf("Cannot read service account file: %s", err)
+		}
+		client.GCPServiceAccountKey = string(service_account_key)
+	} else {
+		client.GCPServiceAccountKey = d.Get("service_account_key").(string)
+	}
 	occmDetails.Company = d.Get("company").(string)
 	clientID := d.Get("client_id").(string)
 
@@ -279,7 +306,16 @@ func resourceOCCMGCPDelete(d *schema.ResourceData, meta interface{}) error {
 	occmDetails.InstanceID = id
 	occmDetails.Name = d.Get("name").(string)
 	occmDetails.Project = d.Get("project_id").(string)
-	client.GCPServiceAccountPath = d.Get("service_account_path").(string)
+	service_account_path := d.Get("service_account_path").(string)
+	if service_account_path == "" {
+		service_account_key, err := ioutil.ReadFile(service_account_path)
+		if err != nil {
+			return fmt.Errorf("Cannot read service account file: %s", err)
+		}
+		client.GCPServiceAccountKey = string(service_account_key)
+	} else {
+		client.GCPServiceAccountKey = d.Get("service_account_key").(string)
+	}
 	occmDetails.Region = d.Get("zone").(string)
 	clientID := d.Get("client_id").(string)
 	client.AccountID = d.Get("account_id").(string)
@@ -303,7 +339,16 @@ func resourceOCCMGCPExists(d *schema.ResourceData, meta interface{}) (bool, erro
 	occmDetails.GCPProject = d.Get("project_id").(string)
 	occmDetails.Region = d.Get("zone").(string)
 	occmDetails.SubnetID = d.Get("subnet_id").(string)
-	client.GCPServiceAccountPath = d.Get("service_account_path").(string)
+	service_account_path := d.Get("service_account_path").(string)
+	if service_account_path == "" {
+		service_account_key, err := ioutil.ReadFile(service_account_path)
+		if err != nil {
+			return false, fmt.Errorf("Cannot read service account file: %s", err)
+		}
+		client.GCPServiceAccountKey = string(service_account_key)
+	} else {
+		client.GCPServiceAccountKey = d.Get("service_account_key").(string)
+	}
 	occmDetails.Company = d.Get("company").(string)
 	clientID := d.Get("client_id").(string)
 
@@ -334,7 +379,16 @@ func resourceOCCMGCPUpdate(d *schema.ResourceData, meta interface{}) error {
 	occmDetails.GCPProject = d.Get("project_id").(string)
 	occmDetails.Region = d.Get("zone").(string)
 	occmDetails.SubnetID = d.Get("subnet_id").(string)
-	client.GCPServiceAccountPath = d.Get("service_account_path").(string)
+	service_account_path := d.Get("service_account_path").(string)
+	if service_account_path == "" {
+		service_account_key, err := ioutil.ReadFile(service_account_path)
+		if err != nil {
+			return fmt.Errorf("Cannot read service account file: %s", err)
+		}
+		client.GCPServiceAccountKey = string(service_account_key)
+	} else {
+		client.GCPServiceAccountKey = d.Get("service_account_key").(string)
+	}
 	occmDetails.Company = d.Get("company").(string)
 	clientID := d.Get("client_id").(string)
 
