@@ -54,6 +54,7 @@ func resourceOCCMGCP() *schema.Resource {
 				ForceNew: true,
 				ConflictsWith: []string{"service_account_path"},
 				Default: "",
+				Sensitive: true,
 			},
 			"machine_type": {
 				Type:     schema.TypeString,
