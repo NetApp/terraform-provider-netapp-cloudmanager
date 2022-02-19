@@ -43,14 +43,14 @@ func resourceOCCMGCP() *schema.Resource {
 			},
 			"service_account_path": {
 				Type:     schema.TypeString,
-				Required: false,
+				Optional: true,
 				ForceNew: true,
 				ConflictsWith: []string{"service_account_key"},
 				Default: "",
 			},
 			"service_account_key": {
 				Type:     schema.TypeString,
-				Required: false,
+				Optional: true,
 				ForceNew: true,
 				ConflictsWith: []string{"service_account_path"},
 				Default: "",
@@ -390,15 +390,15 @@ func resourceOCCMGCPUpdate(d *schema.ResourceData, meta interface{}) error {
 }
 
 func getGCPServiceAccountKey(d *schema.ResourceData) (string, error) {
-	service_account_path := d.Get("service_account_path").(string)
-	service_account_key := d.Get("service_account_key").(string)
-	if service_account_path != "" {
-		service_account_key, err := ioutil.ReadFile(service_account_path)
+	serviceAccountPath := d.Get("service_account_path").(string)
+	serviceAccountKey := d.Get("service_account_key").(string)
+	if serviceAccountPath != "" {
+		serviceAccountKey, err := ioutil.ReadFile(serviceAccountPath)
 		if err != nil {
 			return "", fmt.Errorf("Cannot read service account file: %s", err)
 		}
-		return string(service_account_key), nil
-	} else if service_account_key != "" {
+		return string(serviceAccountKey), nil
+	} else if serviceAccountKey != "" {
 		return d.Get("service_account_key").(string), nil
 
 	}
