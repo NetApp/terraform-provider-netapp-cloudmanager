@@ -3,8 +3,6 @@ package restapi
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
@@ -19,21 +17,16 @@ type Request struct {
 	Method                string      `json:"method"`
 	Params                interface{} `json:"params"`
 	GCPDeploymentTemplate string
-	GCPServiceAccountPath string
+	GCPServiceAccountKey  string
 }
 
-func getGCPToken(url string, gcpServiceAccountPath string) (string, error) {
-
-	keyBytes, err := ioutil.ReadFile(gcpServiceAccountPath)
-	if err != nil {
-		return "", fmt.Errorf("Unable to read service account key file  %v", err)
-	}
+func getGCPToken(url string, gcpServiceAccountKey string) (string, error) {
 
 	var c = struct {
 		Email      string `json:"client_email"`
 		PrivateKey string `json:"private_key"`
 	}{}
-	json.Unmarshal(keyBytes, &c)
+	json.Unmarshal([]byte(gcpServiceAccountKey), &c)
 	config := &jwt.Config{
 		Email:      c.Email,
 		PrivateKey: []byte(c.PrivateKey),
@@ -87,7 +80,7 @@ func (r *Request) BuildHTTPReq(host string, token string, audience string, baseU
 			}
 		}
 
-		token, err = getGCPToken(url, r.GCPServiceAccountPath)
+		token, err = getGCPToken(url, r.GCPServiceAccountKey)
 		if err != nil {
 			return nil, err
 		}

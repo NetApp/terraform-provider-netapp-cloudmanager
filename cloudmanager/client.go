@@ -54,7 +54,7 @@ type Client struct {
 	GCPImageProject         string
 	GCPImageFamily          string
 	GCPDeploymentTemplate   string
-	GCPServiceAccountPath   string
+	GCPServiceAccountKey    string
 	CVSHostName             string
 
 	initOnce      sync.Once
@@ -682,7 +682,7 @@ func (c *Client) CallAPIMethod(method string, baseURL string, params map[string]
 		Method:                method,
 		Params:                params,
 		GCPDeploymentTemplate: c.GCPDeploymentTemplate,
-		GCPServiceAccountPath: c.GCPServiceAccountPath,
+		GCPServiceAccountKey:  c.GCPServiceAccountKey,
 	}, c.Simulator)
 	if err != nil {
 		return statusCode, nil, "", err

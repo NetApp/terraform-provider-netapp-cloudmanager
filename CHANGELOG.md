@@ -3,6 +3,11 @@ BUG FIXES:
 
 * Support resources operating in parallel
 
+NEW FEATURES:
+
+* resource/connector_gcp: add service_account_key option
+
+
 ## 22.1.1
 BUG FIXES:
 
