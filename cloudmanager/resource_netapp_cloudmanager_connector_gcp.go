@@ -401,7 +401,6 @@ func getGCPServiceAccountKey(d *schema.ResourceData) (string, error) {
 		return string(serviceAccountKey), nil
 	} else if serviceAccountKey != "" {
 		return d.Get("serviceAccountKey").(string), nil
-
 	}
 	return "", fmt.Errorf("Neither service_account_path nor service_account_key is set, unable to proceed")
 }
