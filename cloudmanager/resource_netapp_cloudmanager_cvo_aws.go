@@ -85,12 +85,13 @@ func resourceCVOAWS() *schema.Resource {
 			"license_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				Default:      "cot-standard-paygo",
+				Default:      "capacity-paygo",
 				ValidateFunc: validation.StringInSlice(AWSLicenseTypes, false),
 			},
 			"capacity_package_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Default:      "Essential",
 				ValidateFunc: validation.StringInSlice([]string{"Essential", "Professional", "Freemium"}, false),
 			},
 			"provided_license": {
@@ -415,6 +416,10 @@ func resourceCVOAWSCreate(d *schema.ResourceData, meta interface{}) error {
 	cvoDetails.IsHA = d.Get("is_ha").(bool)
 
 	if cvoDetails.IsHA == true {
+		if cvoDetails.VsaMetadata.LicenseType == "capacity-paygo" {
+			log.Print("Set licenseType as default value ha-capacity-paygo")
+			cvoDetails.VsaMetadata.LicenseType = "ha-capacity-paygo"
+		}
 		cvoDetails.HAParams.FailoverMode = d.Get("failover_mode").(string)
 		cvoDetails.HAParams.Node1SubnetID = d.Get("node1_subnet_id").(string)
 		cvoDetails.HAParams.Node2SubnetID = d.Get("node2_subnet_id").(string)

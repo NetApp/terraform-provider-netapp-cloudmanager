@@ -3,6 +3,10 @@ BUG FIXES:
 
 * Support resources operating in parallel
 
+ENHANCEMENTS:
+
+* Update the default license_type and capacity_package_name for the CVOs of AWS, AZURE and GCP
+
 NEW FEATURES:
 
 * resource/connector_gcp: add service_account_key option
