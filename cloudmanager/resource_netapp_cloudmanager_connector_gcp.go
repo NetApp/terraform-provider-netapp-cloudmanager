@@ -42,19 +42,19 @@ func resourceOCCMGCP() *schema.Resource {
 				ForceNew: true,
 			},
 			"service_account_path": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
+				Type:          schema.TypeString,
+				Optional:      true,
+				ForceNew:      true,
 				ConflictsWith: []string{"service_account_key"},
-				Default: "",
+				Default:       "",
 			},
 			"service_account_key": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
+				Type:          schema.TypeString,
+				Optional:      true,
+				ForceNew:      true,
 				ConflictsWith: []string{"service_account_path"},
-				Default: "",
-				Sensitive: true,
+				Default:       "",
+				Sensitive:     true,
 			},
 			"machine_type": {
 				Type:     schema.TypeString,
@@ -155,6 +155,7 @@ func resourceOCCMGCPCreate(d *schema.ResourceData, meta interface{}) error {
 	if err != nil {
 		return err
 	}
+
 	occmDetails.FirewallTags = d.Get("firewall_tags").(bool)
 	occmDetails.AssociatePublicIP = d.Get("associate_public_ip").(bool)
 	occmDetails.Company = d.Get("company").(string)
@@ -399,9 +400,7 @@ func getGCPServiceAccountKey(d *schema.ResourceData) (string, error) {
 		}
 		return string(serviceAccountKey), nil
 	} else if serviceAccountKey != "" {
-		return d.Get("service_account_key").(string), nil
-
+		return serviceAccountKey, nil
 	}
 	return "", fmt.Errorf("Neither service_account_path nor service_account_key is set, unable to proceed")
 }
-
