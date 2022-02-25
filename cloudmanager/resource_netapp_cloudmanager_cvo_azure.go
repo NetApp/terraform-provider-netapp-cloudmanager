@@ -86,13 +86,14 @@ func resourceCVOAzure() *schema.Resource {
 			"license_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				Default:      "azure-cot-standard-paygo",
+				Default:      "capacity-paygo",
 				ValidateFunc: validation.StringInSlice(AzureLicenseTypes, false),
 			},
 			"capacity_package_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
+				Default:      "Essential",
 				ValidateFunc: validation.StringInSlice([]string{"Essential", "Professional", "Freemium"}, false),
 			},
 			"provided_license": {
@@ -338,6 +339,10 @@ func resourceCVOAzureCreate(d *schema.ResourceData, meta interface{}) error {
 
 	cvoDetails.IsHA = d.Get("is_ha").(bool)
 	if cvoDetails.IsHA == true {
+		if cvoDetails.VsaMetadata.LicenseType == "capacity-paygo" {
+			log.Print("Set licenseType as default value ha-capacity-paygo")
+			cvoDetails.VsaMetadata.LicenseType = "ha-capacity-paygo"
+		}
 		if c, ok := d.GetOk("platform_serial_number_node1"); ok {
 			cvoDetails.HAParams.PlatformSerialNumberNode1 = c.(string)
 		}

@@ -178,7 +178,7 @@ func testAccAWSVsaVolume(clientID string, weName string) string {
 
 	vol1 := fmt.Sprintf(`
 	  resource "netapp-cloudmanager_volume" "nfs-volume-1" {
-		depends_on = [netapp-cloudmanager_cvo_aws.cvo-aws]
+		depends_on = [netapp-cloudmanager_cifs_server.cl-cifs]
 		provider = netapp-cloudmanager
 		name = "acc_test_vol_1"
 		size = 10
@@ -198,7 +198,7 @@ func testAccAWSVsaVolume(clientID string, weName string) string {
 
 	vol2 := fmt.Sprintf(`
 	resource "netapp-cloudmanager_volume" "nfs-volume-2" {
-		depends_on = [netapp-cloudmanager_cvo_aws.cvo-aws]
+		depends_on = [netapp-cloudmanager_cifs_server.cl-cifs]
 		provider = netapp-cloudmanager
 		name = "acc_test_vol_2"
 		size = 10
