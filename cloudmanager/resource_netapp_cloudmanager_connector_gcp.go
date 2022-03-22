@@ -5,6 +5,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
+	"os/user"
+	"path/filepath"
+	"runtime"
 
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -401,6 +405,35 @@ func getGCPServiceAccountKey(d *schema.ResourceData) (string, error) {
 		return string(serviceAccountKey), nil
 	} else if serviceAccountKey != "" {
 		return serviceAccountKey, nil
+	} else {
+		// Check if default application credential file exists
+		_, ok := os.LookupEnv("GOOGLE_APPLICATION_CREDENTIALS")
+		if ok {
+			return "", nil
+		}
+		if _, err := os.Stat(wellKnownFile()); err == nil {
+			return "", nil
+		}
 	}
 	return "", fmt.Errorf("Neither service_account_path nor service_account_key is set, unable to proceed")
+}
+
+func guessUnixHomeDir() string {
+	// Prefer $HOME over user.Current
+	if v := os.Getenv("HOME"); v != "" {
+		return v
+	}
+	// Else, fall back to user.Current:
+	if u, err := user.Current(); err == nil {
+		return u.HomeDir
+	}
+	return ""
+}
+
+func wellKnownFile() string {
+	const f = "application_default_credentials.json"
+	if runtime.GOOS == "windows" {
+		return filepath.Join(os.Getenv("APPDATA"), "gcloud", f)
+	}
+	return filepath.Join(guessUnixHomeDir(), ".config", "gcloud", f)
 }

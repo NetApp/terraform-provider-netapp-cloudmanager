@@ -10,6 +10,7 @@ ENHANCEMENTS:
 NEW FEATURES:
 
 * resource/connector_gcp: add service_account_key option
+* resource/connector_gcp: remove requirement for GCP service account JSON. Support authentication using User Application Default Credentials ("ADCs") as the authentication method. Enable ADCs by running the command gcloud auth application-default login.
 
 
 ## 22.1.1

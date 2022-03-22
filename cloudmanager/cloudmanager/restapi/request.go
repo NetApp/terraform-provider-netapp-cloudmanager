@@ -2,7 +2,9 @@ package restapi
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -21,31 +23,46 @@ type Request struct {
 }
 
 func getGCPToken(url string, gcpServiceAccountKey string) (string, error) {
-
-	var c = struct {
-		Email      string `json:"client_email"`
-		PrivateKey string `json:"private_key"`
-	}{}
-	json.Unmarshal([]byte(gcpServiceAccountKey), &c)
-	config := &jwt.Config{
-		Email:      c.Email,
-		PrivateKey: []byte(c.PrivateKey),
-		Scopes: []string{
-			"https://www.googleapis.com/auth/cloud-platform",
-			"https://www.googleapis.com/auth/compute",
-			"https://www.googleapis.com/auth/compute.readonly",
-			"https://www.googleapis.com/auth/ndev.cloudman",
-			"https://www.googleapis.com/auth/ndev.cloudman.readonly",
-			"https://www.googleapis.com/auth/devstorage.full_control",
-			"https://www.googleapis.com/auth/devstorage.read_write",
-		},
-		TokenURL: google.JWTTokenURL,
+	var token string
+	scopes := []string{
+		"https://www.googleapis.com/auth/cloud-platform",
+		"https://www.googleapis.com/auth/compute",
+		"https://www.googleapis.com/auth/compute.readonly",
+		"https://www.googleapis.com/auth/ndev.cloudman",
+		"https://www.googleapis.com/auth/ndev.cloudman.readonly",
+		"https://www.googleapis.com/auth/devstorage.full_control",
+		"https://www.googleapis.com/auth/devstorage.read_write",
 	}
-	gcpToken, err := config.TokenSource(oauth2.NoContext).Token()
-	if err != nil {
-		return "", err
+	if gcpServiceAccountKey != "" {
+		var c = struct {
+			Email      string `json:"client_email"`
+			PrivateKey string `json:"private_key"`
+		}{}
+		json.Unmarshal([]byte(gcpServiceAccountKey), &c)
+		config := &jwt.Config{
+			Email:      c.Email,
+			PrivateKey: []byte(c.PrivateKey),
+			Scopes:     scopes,
+			TokenURL:   google.JWTTokenURL,
+		}
+		gcpToken, err := config.TokenSource(oauth2.NoContext).Token()
+		if err != nil {
+			return "", err
+		}
+		token = gcpToken.AccessToken
+	} else {
+		// find default application credential
+		ctx := context.Background()
+		credential, err := google.FindDefaultCredentials(ctx, scopes...)
+		if err != nil {
+			return "", fmt.Errorf("cannot get credentials: %v", err)
+		}
+		t, err := credential.TokenSource.Token()
+		if err != nil {
+			return "", fmt.Errorf("getGCPToken failed on get token from credential: %v", err)
+		}
+		token = t.AccessToken
 	}
-	token := gcpToken.AccessToken
 
 	return token, nil
 }
