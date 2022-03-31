@@ -6,6 +6,7 @@ BUG FIXES:
 ENHANCEMENTS:
 
 * Update the default license_type and capacity_package_name for the CVOs of AWS, AZURE and GCP
+* Add snapmirror example
 
 NEW FEATURES:
 
