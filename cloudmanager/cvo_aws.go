@@ -362,16 +362,19 @@ func validateCVOParams(cvoDetails createCVOAWSDetails) error {
 		return fmt.Errorf("ontap_version parameter not required when having use_latest_version as true")
 	}
 
+	// by Node byol license for existing customers
 	if cvoDetails.VsaMetadata.PlatformSerialNumber != "" && cvoDetails.VsaMetadata.LicenseType != "cot-premium-byol" {
 		return fmt.Errorf("platform_serial_number parameter required only when having license_type as cot-premium-byol")
 	}
 
+	// by Node byol license for existing customers
 	if cvoDetails.IsHA == true && cvoDetails.VsaMetadata.LicenseType == "ha-cot-premium-byol" {
 		if cvoDetails.HAParams.PlatformSerialNumberNode1 == "" || cvoDetails.HAParams.PlatformSerialNumberNode2 == "" {
 			return fmt.Errorf("both platform_serial_number_node1 and platform_serial_number_node2 parameters are required when having ha type as true and license_type as ha-cot-premium-byol")
 		}
 	}
 
+	// by Node byol license for existing customers
 	if cvoDetails.IsHA == false && (cvoDetails.HAParams.PlatformSerialNumberNode1 != "" || cvoDetails.HAParams.PlatformSerialNumberNode2 != "") {
 		return fmt.Errorf("both platform_serial_number_node1 and platform_serial_number_node2 parameters are only required when having ha type as true and license_type as ha-cot-premium-byol")
 	}
@@ -392,6 +395,7 @@ func validateCVOParams(cvoDetails createCVOAWSDetails) error {
 		return fmt.Errorf("subnet_id not required when having ha as true")
 	}
 
+	// by Capacity license
 	if cvoDetails.VsaMetadata.CapacityPackageName != "" {
 		log.Print("Verify cvo parameter capacity_package_name is not empty")
 		if cvoDetails.IsHA == true && cvoDetails.VsaMetadata.LicenseType != "ha-capacity-paygo" {
@@ -403,7 +407,8 @@ func validateCVOParams(cvoDetails createCVOAWSDetails) error {
 	}
 
 	if strings.HasSuffix(cvoDetails.VsaMetadata.LicenseType, "capacity-paygo") && cvoDetails.VsaMetadata.CapacityPackageName == "" {
-		return fmt.Errorf("capacity_package_name is required on selecting Bring Your Own License with capacity based license type or Freemium")
+		return fmt.Errorf("capacity_package_name is required with capacity based license type")
 	}
+
 	return nil
 }

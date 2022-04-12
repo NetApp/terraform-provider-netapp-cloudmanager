@@ -2,9 +2,9 @@ package cloudmanager
 
 import (
 	"fmt"
-	"log"
-
 	"github.com/hashicorp/terraform/helper/validation"
+	"log"
+	"strings"
 
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -93,7 +93,6 @@ func resourceCVOAzure() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				Default:      "Essential",
 				ValidateFunc: validation.StringInSlice([]string{"Essential", "Professional", "Freemium"}, false),
 			},
 			"provided_license": {
@@ -290,6 +289,14 @@ func resourceCVOAzureCreate(d *schema.ResourceData, meta interface{}) error {
 	cvoDetails.VsaMetadata.OntapVersion = d.Get("ontap_version").(string)
 	cvoDetails.VsaMetadata.UseLatestVersion = d.Get("use_latest_version").(bool)
 	cvoDetails.VsaMetadata.LicenseType = d.Get("license_type").(string)
+	if c, ok := d.GetOk("capacity_package_name"); ok {
+		cvoDetails.VsaMetadata.CapacityPackageName = c.(string)
+	} else {
+		// by Capacity - set default capacity package name
+		if strings.HasSuffix(cvoDetails.VsaMetadata.LicenseType, "capacity-paygo") {
+			cvoDetails.VsaMetadata.CapacityPackageName = "Essential"
+		}
+	}
 	cvoDetails.VsaMetadata.InstanceType = d.Get("instance_type").(string)
 
 	if cvoDetails.DataEncryptionType == "AZURE" {
@@ -315,11 +322,6 @@ func resourceCVOAzureCreate(d *schema.ResourceData, meta interface{}) error {
 
 	if c, ok := d.GetOk("cloud_provider_account"); ok {
 		cvoDetails.CloudProviderAccount = c.(string)
-	}
-
-	if c, ok := d.GetOk("capacity_package_name"); ok {
-		cvoDetails.VsaMetadata.CapacityPackageName = c.(string)
-		log.Print("Get capacity_package_name")
 	}
 
 	if c, ok := d.GetOk("provided_license"); ok {

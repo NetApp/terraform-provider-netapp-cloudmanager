@@ -2,6 +2,7 @@
 BUG FIXES:
 
 * Support resources operating in parallel
+* Allow existing by Node license on CVO creation
 
 ENHANCEMENTS:
 

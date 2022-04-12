@@ -1,9 +1,9 @@
 package cloudmanager
 
 import (
-	"log"
-
 	"github.com/hashicorp/terraform/helper/validation"
+	"log"
+	"strings"
 
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -91,7 +91,6 @@ func resourceCVOAWS() *schema.Resource {
 			"capacity_package_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				Default:      "Essential",
 				ValidateFunc: validation.StringInSlice([]string{"Essential", "Professional", "Freemium"}, false),
 			},
 			"provided_license": {
@@ -354,6 +353,16 @@ func resourceCVOAWSCreate(d *schema.ResourceData, meta interface{}) error {
 	cvoDetails.VsaMetadata.LicenseType = d.Get("license_type").(string)
 	cvoDetails.VsaMetadata.InstanceType = d.Get("instance_type").(string)
 
+	// by Capacity
+	if c, ok := d.GetOk("capacity_package_name"); ok {
+		cvoDetails.VsaMetadata.CapacityPackageName = c.(string)
+	} else {
+		// by Capacity - set default capacity package name
+		if strings.HasSuffix(cvoDetails.VsaMetadata.LicenseType, "capacity-paygo") {
+			cvoDetails.VsaMetadata.CapacityPackageName = "Essential"
+		}
+	}
+
 	if cvoDetails.DataEncryptionType == "AWS" {
 		// Only one of KMS key id or KMS arn should be specified
 		if c, ok := d.GetOk("aws_encryption_kms_key_id"); ok {
@@ -403,10 +412,6 @@ func resourceCVOAWSCreate(d *schema.ResourceData, meta interface{}) error {
 
 	if c, ok := d.GetOk("kms_key_id"); ok {
 		cvoDetails.AwsEncryptionParameters.KmsKeyID = c.(string)
-	}
-
-	if c, ok := d.GetOk("capacity_package_name"); ok {
-		cvoDetails.VsaMetadata.CapacityPackageName = c.(string)
 	}
 
 	if c, ok := d.GetOk("provided_license"); ok {

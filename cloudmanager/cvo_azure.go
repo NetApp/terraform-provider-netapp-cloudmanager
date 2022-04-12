@@ -325,6 +325,7 @@ func validateCVOAzureParams(cvoDetails createCVOAzureDetails) error {
 		return fmt.Errorf("ontap_version parameter not required when having use_latest_version as true")
 	}
 
+	// by Node byol license
 	if cvoDetails.IsHA == true && cvoDetails.VsaMetadata.LicenseType == "azure-ha-cot-premium-byol" {
 		if cvoDetails.HAParams.PlatformSerialNumberNode1 == "" || cvoDetails.HAParams.PlatformSerialNumberNode2 == "" {
 			return fmt.Errorf("both platform_serial_number_node1 and platform_serial_number_node2 parameters are required when having ha type as true and license_type as azure-ha-cot-premium-byol")
@@ -335,12 +336,14 @@ func validateCVOAzureParams(cvoDetails createCVOAzureDetails) error {
 		return fmt.Errorf("both platform_serial_number_node1 and platform_serial_number_node2 parameters are not required when having ha type as false")
 	}
 
+	// by Node byol license
 	if cvoDetails.VsaMetadata.LicenseType == "azure-cot-premium-byol" {
 		if cvoDetails.SerialNumber == "" {
 			return fmt.Errorf("serial_number parameter is required when having license_type as azure-cot-premium-byol")
 		}
 	}
 
+	// by Capacity license
 	if cvoDetails.VsaMetadata.CapacityPackageName != "" {
 		if cvoDetails.IsHA == true && cvoDetails.VsaMetadata.LicenseType != "ha-capacity-paygo" {
 			return fmt.Errorf("license_type must be ha-capacity-paygo")
@@ -351,7 +354,7 @@ func validateCVOAzureParams(cvoDetails createCVOAzureDetails) error {
 	}
 
 	if strings.HasSuffix(cvoDetails.VsaMetadata.LicenseType, "capacity-paygo") && cvoDetails.VsaMetadata.CapacityPackageName == "" {
-		return fmt.Errorf("capacity_package_name is required on selecting Bring Your Own License with capacity based license type or Freemium")
+		return fmt.Errorf("capacity_package_name is required with capacity based license type")
 	}
 	return nil
 }
