@@ -48,19 +48,20 @@ type createCVOAWSDetails struct {
 
 // haParamsAWS the input for requesting a CVO
 type haParamsAWS struct {
-	ClusterFloatingIP         string   `structs:"clusterFloatingIP,omitempty"`
-	DataFloatingIP            string   `structs:"dataFloatingIP,omitempty"`
-	DataFloatingIP2           string   `structs:"dataFloatingIP2,omitempty"`
-	SvmFloatingIP             string   `structs:"svmFloatingIP,omitempty"`
-	FailoverMode              string   `structs:"failoverMode,omitempty"`
-	Node1SubnetID             string   `structs:"node1SubnetId,omitempty"`
-	Node2SubnetID             string   `structs:"node2SubnetId,omitempty"`
-	MediatorSubnetID          string   `structs:"mediatorSubnetId,omitempty"`
-	MediatorKeyPairName       string   `structs:"mediatorKeyPairName,omitempty"`
-	PlatformSerialNumberNode1 string   `structs:"platformSerialNumberNode1,omitempty"`
-	PlatformSerialNumberNode2 string   `structs:"platformSerialNumberNode2,omitempty"`
-	MediatorAssignPublicIP    *bool    `structs:"mediatorAssignPublicIP,omitempty"`
-	RouteTableIds             []string `structs:"routeTableIds,omitempty"`
+	ClusterFloatingIP           string   `structs:"clusterFloatingIP,omitempty"`
+	DataFloatingIP              string   `structs:"dataFloatingIP,omitempty"`
+	DataFloatingIP2             string   `structs:"dataFloatingIP2,omitempty"`
+	SvmFloatingIP               string   `structs:"svmFloatingIP,omitempty"`
+	FailoverMode                string   `structs:"failoverMode,omitempty"`
+	Node1SubnetID               string   `structs:"node1SubnetId,omitempty"`
+	Node2SubnetID               string   `structs:"node2SubnetId,omitempty"`
+	MediatorSubnetID            string   `structs:"mediatorSubnetId,omitempty"`
+	MediatorKeyPairName         string   `structs:"mediatorKeyPairName,omitempty"`
+	PlatformSerialNumberNode1   string   `structs:"platformSerialNumberNode1,omitempty"`
+	PlatformSerialNumberNode2   string   `structs:"platformSerialNumberNode2,omitempty"`
+	MediatorInstanceProfileName string   `structs:"mediatorInstanceProfileName,omitempty"`
+	MediatorAssignPublicIP      *bool    `structs:"mediatorAssignPublicIP,omitempty"`
+	RouteTableIds               []string `structs:"routeTableIds,omitempty"`
 }
 
 // ebsVolumeSize the input for requesting a CVO

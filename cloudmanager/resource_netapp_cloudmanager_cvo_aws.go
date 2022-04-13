@@ -270,6 +270,11 @@ func resourceCVOAWS() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"mediator_instance_profile_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"cluster_floating_ip": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -443,6 +448,9 @@ func resourceCVOAWSCreate(d *schema.ResourceData, meta interface{}) error {
 		routeTableIds := d.Get("route_table_ids")
 		for _, routeTableID := range routeTableIds.(*schema.Set).List() {
 			cvoDetails.HAParams.RouteTableIds = append(cvoDetails.HAParams.RouteTableIds, routeTableID.(string))
+		}
+		if c, ok := d.GetOk("mediator_instance_profile_name"); ok {
+			cvoDetails.HAParams.MediatorInstanceProfileName = c.(string)
 		}
 		if c, ok := d.GetOk("platform_serial_number_node1"); ok {
 			cvoDetails.HAParams.PlatformSerialNumberNode1 = c.(string)

@@ -113,6 +113,7 @@ The following arguments are supported:
 * `is_ha` - (Optional) Indicate whether the working environment is an HA pair or not [true, false]. The default is false.
 * `failover_mode` - (Optional) For HA, the failover mode for the HA pair: ['PrivateIP', 'FloatingIP']. 'PrivateIP' is for a single availability zone and 'FloatingIP' is for multiple availability zones.
 * `mediator_assign_public_ip` - (Optional) bool option to assign public IP. The default is 'true'.
+* `mediator_instance_profile_name` - (Optional) name of the mediator instance profile.
 * `platform_serial_number_node1` - (Optional) For HA BYOL, the serial number for the first node. This is required when using 'ha-cot-premium-byol'.
 * `platform_serial_number_node2` - (Optional) For HA BYOL, the serial number for the second node. This is required when using 'ha-cot-premium-byol'.
 * `node1_subnet_id` - (Optional) For HA, the subnet ID of the first node.
