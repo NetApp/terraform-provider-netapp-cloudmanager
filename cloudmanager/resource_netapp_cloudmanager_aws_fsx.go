@@ -1,6 +1,7 @@
 package cloudmanager
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/hashicorp/terraform/helper/validation"
@@ -128,6 +129,17 @@ func resourceAWSFSX() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"import_file_system": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+				Default:  false,
+			},
+			"file_system_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -145,6 +157,26 @@ func resourceAWSFSXCreate(d *schema.ResourceData, meta interface{}) error {
 	fsxDetails.WorkspaceID = d.Get("workspace_id").(string)
 	fsxDetails.ThroughputCapacity = d.Get("throughput_capacity").(int)
 	fsxDetails.FSXAdminPassword = d.Get("fsx_admin_password").(string)
+	fsxDetails.TenantID = d.Get("tenant_id").(string)
+
+	if d.Get("import_file_system").(bool) == true {
+		if d.Get("file_system_id").(string) == "" {
+			return fmt.Errorf("need file_system_id when importing file system")
+		}
+		fileSystemID := d.Get("file_system_id").(string)
+		fsxID, err := client.importAWSFSX(fsxDetails, fileSystemID)
+		if err != nil {
+			log.Print("Error importing AWS FSX")
+			return err
+		}
+
+		d.SetId(fsxID)
+
+		log.Printf("Created AWS FSX: %v", fsxID)
+
+		return resourceAWSFSXRead(d, meta)
+	}
+
 	addNameTag := true
 	if c, ok := d.GetOk("tags"); ok {
 		tags := c.(*schema.Set)
@@ -165,7 +197,6 @@ func resourceAWSFSXCreate(d *schema.ResourceData, meta interface{}) error {
 	log.Print("fsxdetails: ", fsxDetails)
 	fsxDetails.StorageCapacity.Size = d.Get("storage_capacity_size").(int)
 	fsxDetails.StorageCapacity.Unit = d.Get("storage_capacity_size_unit").(string)
-	fsxDetails.TenantID = d.Get("tenant_id").(string)
 
 	securityGroupIds := d.Get("security_group_ids")
 	for _, securityGroupID := range securityGroupIds.([]interface{}) {

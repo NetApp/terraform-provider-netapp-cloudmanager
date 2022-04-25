@@ -78,6 +78,15 @@ type status struct {
 	Lifecycle string `json:"lifecycle"`
 }
 
+// recoverAWSFSXDetails the users input for importing a FSX
+type recoverAWSFSXDetails struct {
+	Name           string `structs:"name"`
+	AWSCredentials string `structs:"credentialsId"`
+	WorkspaceID    string `structs:"workspaceId"`
+	Region         string `structs:"region"`
+	FileSystemID   string `structs:"fileSystemId"`
+}
+
 // check if name tag exists
 func hasNameTag(tags []fsxTags) bool {
 	for _, v := range tags {
@@ -210,6 +219,84 @@ func (c *Client) getAWSFSXByID(id string, tenantID string) (fsxResult, error) {
 	}
 
 	return result, nil
+}
+
+func (c *Client) importAWSFSX(fsxDetails createAWSFSXDetails, fileSystemID string) (string, error) {
+
+	log.Print("importAWSFSX")
+
+	accessTokenResult, err := c.getAccessToken()
+	if err != nil {
+		log.Print("in importAWSFSX request, failed to get AccessToken")
+		return "", fmt.Errorf("in importAWSFSX request, failed to get AccessToken: %s", err)
+	}
+	c.Token = accessTokenResult.Token
+
+	fsxDetails.AWSCredentials, err = c.getAWSCredentialsID(fsxDetails.AWSCredentials, fsxDetails.TenantID)
+	if err != nil {
+		log.Print("importAWSFSX request failed ", err)
+		return "", fmt.Errorf("importAWSFSX request failed: %s", err)
+	}
+
+	baseURL := fmt.Sprintf("/fsx-ontap/working-environments/%s/discover?credentials-id=%s&workspace-id=%s&region=%s",
+		fsxDetails.TenantID, fsxDetails.AWSCredentials, fsxDetails.WorkspaceID, fsxDetails.Region)
+
+	hostType := "CloudManagerHost"
+
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, "")
+	if err != nil {
+		log.Print("importAWSFSX request failed ", statusCode)
+		return "", fmt.Errorf("importAWSFSX request failed: %s", err)
+	}
+
+	responseError := apiResponseChecker(statusCode, response, "importAWSFSX")
+	if responseError != nil {
+		return "", responseError
+	}
+
+	var result []fsxResult
+	if err := json.Unmarshal(response, &result); err != nil {
+		log.Print("Failed to unmarshall response from importAWSFSX ", err)
+		return "", err
+	}
+
+	idFound := false
+	for _, fsxID := range result {
+		log.Print(string(fsxID.ID))
+		if fsxID.ID == fileSystemID {
+			idFound = true
+			break
+		}
+	}
+
+	if idFound == false {
+		return "", fmt.Errorf("file_system_id provided could not be found")
+	}
+
+	recoverAWSFSXDetails := recoverAWSFSXDetails{}
+
+	recoverAWSFSXDetails.AWSCredentials = fsxDetails.AWSCredentials
+	recoverAWSFSXDetails.Name = fsxDetails.Name
+	recoverAWSFSXDetails.Region = fsxDetails.Region
+	recoverAWSFSXDetails.WorkspaceID = fsxDetails.WorkspaceID
+	recoverAWSFSXDetails.FileSystemID = fileSystemID
+
+	baseURL = fmt.Sprintf("/fsx-ontap/working-environments/%s/recover", fsxDetails.TenantID)
+
+	params := structs.Map(recoverAWSFSXDetails)
+
+	statusCode, response, _, err = c.CallAPIMethod("POST", baseURL, params, c.Token, hostType, "")
+	if err != nil {
+		log.Print("importAWSFSX request failed ", statusCode)
+		return "", fmt.Errorf("importAWSFSX request failed: %s", err)
+	}
+
+	responseError = apiResponseChecker(statusCode, response, "importAWSFSX")
+	if responseError != nil {
+		return "", responseError
+	}
+
+	return fileSystemID, nil
 }
 
 func (c *Client) createAWSFSX(fsxDetails createAWSFSXDetails) (fsxResult, error) {

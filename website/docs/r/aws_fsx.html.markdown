@@ -60,6 +60,8 @@ The following arguments are supported:
 * `security_group_ids` - (Optional) The ID of the security group for the working environment.
 * `endpoint_ip_address_range` - (Optional) The endpoint IP address range.
 * `route_table_ids` - (Optional) The list of route table IDs that will be updated with the floating IPs.
+* `import_file_system` - (Optional) bool option to existing import AWS file system to CloudManager. The default is 'false'.
+* `file_system_id` - (Optional) The AWS file system ID to import to CloudManager. Required when import_file_system is 'true'.
 
 The `tags` block supports the following:
 * `tag_key` - (Required) The key of the tag.
