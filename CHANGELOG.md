@@ -1,4 +1,9 @@
-## 22.1.2 (Unreleased)
+## 22.4.0
+BUG FIXES:
+
+* resource/connector_gcp: Support shared vpc.
+
+## 22.2.2
 BUG FIXES:
 
 * Support resources operating in parallel
@@ -15,6 +20,7 @@ NEW FEATURES:
 * resource/connector_gcp: remove requirement for GCP service account JSON. Support authentication using User Application Default Credentials ("ADCs") as the authentication method. Enable ADCs by running the command gcloud auth application-default login.
 * resource/cvo_aws: new option mediator_instance_profile_name.
 * resource/aws_fsx: import AWS FSX to CloudManager.
+* resource/connector_azure: add storage_account option. Support user defined storage account.
 
 
 ## 22.1.1

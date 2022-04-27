@@ -226,6 +226,14 @@ func (c *Client) CallDeployAzureVM(occmDetails createOCCMDetails) (string, error
 		"value": occmDetails.AdminUsername,
 	}
 
+	if occmDetails.StorageAccount == "" {
+		occmDetails.StorageAccount = strings.ToLower(occmDetails.Name) + "sa"
+	}
+
+	(*params)["storageAccount"] = map[string]string{
+		"value": occmDetails.StorageAccount,
+	}
+
 	if c.AzureEnvironmentForOCCM == "stage" {
 		(*params)["environment"] = map[string]string{
 			"value": c.AzureEnvironmentForOCCM,
@@ -272,7 +280,7 @@ func (c *Client) CallDeployAzureVM(occmDetails createOCCMDetails) (string, error
 		return "", err
 	}
 	deploymentsClient.Authorizer = authorizer
-
+	log.Printf("storageAccount %s virtualMachinesName %s", (*params)["storageAccount"], (*params)["virtualMachineName"])
 	deploymentFuture, err := deploymentsClient.CreateOrUpdate(
 		context.Background(),
 		occmDetails.ResourceGroup,
@@ -388,12 +396,16 @@ func (c *Client) CallDeleteAzureVM(occmDetails deleteOCCMDetails) error {
 
 	log.Print("deleting storage account")
 
+	if occmDetails.StorageAccount == "" {
+		occmDetails.StorageAccount = strings.ToLower(occmDetails.Name) + "sa"
+	}
+
 	storageAccountsClient := storage.NewAccountsClient(occmDetails.SubscriptionID)
 	storageAccountsClient.Authorizer = authorizer
 	_, err = storageAccountsClient.Delete(
 		context.Background(),
 		occmDetails.ResourceGroup,
-		occmDetails.Name+"sa",
+		occmDetails.StorageAccount,
 	)
 	if err != nil {
 		return fmt.Errorf("cannot delete storage account: %v", err)

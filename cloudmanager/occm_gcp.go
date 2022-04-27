@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/fatih/structs"
@@ -223,10 +224,14 @@ func (c *Client) deployGCPVM(occmDetails createOCCMDetails, proxyCertificates []
 	} else {
 		projectID = occmDetails.GCPProject
 	}
+	subnetID, err := convertSubnetID(projectID, occmDetails, occmDetails.SubnetID)
+	if err != nil {
+		return OCCMMResult{}, err
+	}
 	t.Properties.NetworkInterfaces = []networkInterface{
 		{AccessConfigs: accessConfigs,
 			Kind:       "compute#networkInterface",
-			Subnetwork: fmt.Sprintf("projects/%s/regions/%s/subnetworks/%s", projectID, occmDetails.Region, occmDetails.SubnetID),
+			Subnetwork: subnetID,
 		},
 	}
 	t.Properties.ServiceAccounts = []serviceAccount{{Email: occmDetails.ServiceAccountEmail, Scopes: gcpSaScopes}}
@@ -430,4 +435,12 @@ func (c *Client) deleteOCCMGCP(request deleteOCCMDetails, clientID string) error
 	}
 
 	return nil
+}
+
+func convertSubnetID(projectID string, occmDetails createOCCMDetails, input string) (string, error) {
+	if !strings.Contains(input, "/") {
+		return fmt.Sprintf("projects/%s/regions/%s/subnetworks/%s", projectID, occmDetails.Region, occmDetails.SubnetID), nil
+	}
+	return input, nil
+
 }

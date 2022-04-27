@@ -27,10 +27,13 @@ func (c *Client) callParameters() string {
             "value": "string"
         },
         "customData": {
-        "value": "string"
+            "value": "string"
         },
         "environment": {
             "value": "string"
+        },
+        "storageAccount": {
+            "type": "string"
         }
     }`
 }
@@ -65,18 +68,21 @@ func (c *Client) callTemplate() string {
                 "type": "string"
             },
             "customData": {
-              "type": "string"
+                "type": "string"
             },
             "environment": {
-              "type": "string",
-              "defaultValue": "prod"
+                "type": "string",
+                "defaultValue": "prod"
+            },
+            "storageAccount": {
+                "type": "string"
             }
         },
         "variables": {
             "vnetId": "[parameters('virtualNetworkId')]",
             "subnetRef": "[parameters('subnetId')]",
             "networkInterfaceName": "[concat(parameters('virtualMachineName'),'-nic')]",
-            "diagnosticsStorageAccountName": "[concat(toLower(parameters('virtualMachineName')),'sa')]",
+            "diagnosticsStorageAccountName": "[parameters('storageAccount')]",
             "diagnosticsStorageAccountId": "[concat('Microsoft.Storage/storageAccounts/', variables('diagnosticsStorageAccountName'))]",
             "diagnosticsStorageAccountType": "Standard_LRS",
             "publicIpAddressName": "[concat(parameters('virtualMachineName'),'-ip')]",
@@ -252,18 +258,21 @@ func (c *Client) callTemplateDisablePublicIP() string {
                 "type": "string"
             },
             "customData": {
-              "type": "string"
+                "type": "string"
             },
             "environment": {
-              "type": "string",
-              "defaultValue": "prod"
+                "type": "string",
+                "defaultValue": "prod"
+            },
+            "storageAccount": {
+                "type": "string"
             }
         },
         "variables": {
             "vnetId": "[parameters('virtualNetworkId')]",
             "subnetRef": "[parameters('subnetId')]",
             "networkInterfaceName": "[concat(parameters('virtualMachineName'),'-nic')]",
-            "diagnosticsStorageAccountName": "[concat(toLower(parameters('virtualMachineName')),'sa')]",
+            "diagnosticsStorageAccountName": "[parameters('storageAccount')]",
             "diagnosticsStorageAccountId": "[concat('Microsoft.Storage/storageAccounts/', variables('diagnosticsStorageAccountName'))]",
             "diagnosticsStorageAccountType": "Standard_LRS",
             "publicIpAddressName": "[concat(parameters('virtualMachineName'),'-ip')]",

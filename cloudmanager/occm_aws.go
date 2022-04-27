@@ -66,6 +66,7 @@ type createOCCMDetails struct {
 	EnableTerminationProtection  *bool
 	AwsTags                      []userTags
 	Tags                         []string
+	StorageAccount               string
 }
 
 // deleteOCCMDetails the users input for deleting a occm
@@ -78,6 +79,7 @@ type deleteOCCMDetails struct {
 	Region              string
 	Project             string
 	GCPCommonSuffixName string
+	StorageAccount      string
 }
 
 // OCCMMResult the users input for creating a occm

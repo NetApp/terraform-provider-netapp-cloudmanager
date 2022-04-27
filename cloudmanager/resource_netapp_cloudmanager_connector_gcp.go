@@ -9,6 +9,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -67,10 +68,11 @@ func resourceOCCMGCP() *schema.Resource {
 				ForceNew: true,
 			},
 			"subnet_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Default:  "default",
-				ForceNew: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      "default",
+				ForceNew:     true,
+				ValidateFunc: validateSubnet(),
 			},
 			"network_project_id": {
 				Type:     schema.TypeString,
@@ -436,4 +438,27 @@ func wellKnownFile() string {
 		return filepath.Join(os.Getenv("APPDATA"), "gcloud", f)
 	}
 	return filepath.Join(guessUnixHomeDir(), ".config", "gcloud", f)
+}
+
+func validateSubnet() schema.SchemaValidateFunc {
+	return func(i interface{}, k string) (s []string, es []error) {
+		v, ok := i.(string)
+		if !ok {
+			es = append(es, fmt.Errorf("expected type of %s to be string", k))
+			return
+		}
+		v = strings.ToLower(v)
+		slices := strings.Split(v, "/")
+		errorMessage := "invalid format of subnet, the correct format is either <subnetID> or projects/<projectID>/regions/<region>/subnetworks/<subnetID>"
+		if len(slices) != 1 && len(slices) != 6 {
+			es = append(es, fmt.Errorf(errorMessage))
+			return
+		}
+
+		if len(slices) == 6 && (slices[0] != "projects" || slices[2] != "regions" || slices[4] != "subnetworks") {
+			es = append(es, fmt.Errorf(errorMessage))
+			return
+		}
+		return
+	}
 }
