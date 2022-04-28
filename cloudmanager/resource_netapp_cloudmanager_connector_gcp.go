@@ -5,6 +5,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
+	"os/user"
+	"path/filepath"
+	"runtime"
+	"strings"
 
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -63,10 +68,11 @@ func resourceOCCMGCP() *schema.Resource {
 				ForceNew: true,
 			},
 			"subnet_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Default:  "default",
-				ForceNew: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      "default",
+				ForceNew:     true,
+				ValidateFunc: validateSubnet(),
 			},
 			"network_project_id": {
 				Type:     schema.TypeString,
@@ -401,6 +407,58 @@ func getGCPServiceAccountKey(d *schema.ResourceData) (string, error) {
 		return string(serviceAccountKey), nil
 	} else if serviceAccountKey != "" {
 		return serviceAccountKey, nil
+	} else {
+		// Check if default application credential file exists
+		_, ok := os.LookupEnv("GOOGLE_APPLICATION_CREDENTIALS")
+		if ok {
+			return "", nil
+		}
+		if _, err := os.Stat(wellKnownFile()); err == nil {
+			return "", nil
+		}
 	}
 	return "", fmt.Errorf("Neither service_account_path nor service_account_key is set, unable to proceed")
+}
+
+func guessUnixHomeDir() string {
+	// Prefer $HOME over user.Current
+	if v := os.Getenv("HOME"); v != "" {
+		return v
+	}
+	// Else, fall back to user.Current:
+	if u, err := user.Current(); err == nil {
+		return u.HomeDir
+	}
+	return ""
+}
+
+func wellKnownFile() string {
+	const f = "application_default_credentials.json"
+	if runtime.GOOS == "windows" {
+		return filepath.Join(os.Getenv("APPDATA"), "gcloud", f)
+	}
+	return filepath.Join(guessUnixHomeDir(), ".config", "gcloud", f)
+}
+
+func validateSubnet() schema.SchemaValidateFunc {
+	return func(i interface{}, k string) (s []string, es []error) {
+		v, ok := i.(string)
+		if !ok {
+			es = append(es, fmt.Errorf("expected type of %s to be string", k))
+			return
+		}
+		v = strings.ToLower(v)
+		slices := strings.Split(v, "/")
+		errorMessage := "invalid format of subnet, the correct format is either <subnetID> or projects/<projectID>/regions/<region>/subnetworks/<subnetID>"
+		if len(slices) != 1 && len(slices) != 6 {
+			es = append(es, fmt.Errorf(errorMessage))
+			return
+		}
+
+		if len(slices) == 6 && (slices[0] != "projects" || slices[2] != "regions" || slices[4] != "subnetworks") {
+			es = append(es, fmt.Errorf(errorMessage))
+			return
+		}
+		return
+	}
 }

@@ -92,7 +92,6 @@ func resourceCVOGCP() *schema.Resource {
 			"capacity_package_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				Default:      "Essential",
 				ValidateFunc: validation.StringInSlice([]string{"Essential", "Professional", "Freemium"}, false),
 			},
 			"provided_license": {
@@ -317,6 +316,16 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 	cvoDetails.VsaMetadata.OntapVersion = d.Get("ontap_version").(string)
 	cvoDetails.VsaMetadata.UseLatestVersion = d.Get("use_latest_version").(bool)
 	cvoDetails.VsaMetadata.LicenseType = d.Get("license_type").(string)
+
+	if c, ok := d.GetOk("capacity_package_name"); ok {
+		cvoDetails.VsaMetadata.CapacityPackageName = c.(string)
+	} else {
+		// by Capacity - set default capacity package name
+		if strings.HasSuffix(cvoDetails.VsaMetadata.LicenseType, "capacity-paygo") {
+			cvoDetails.VsaMetadata.CapacityPackageName = "Essential"
+		}
+	}
+
 	cvoDetails.VpcID = d.Get("vpc_id").(string)
 	cvoDetails.Project = d.Get("project_id").(string)
 	cvoDetails.VsaMetadata.InstanceType = d.Get("instance_type").(string)
@@ -353,10 +362,6 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 
 	if c, ok := d.GetOk("nss_account"); ok {
 		cvoDetails.NssAccount = c.(string)
-	}
-
-	if c, ok := d.GetOk("capacity_package_name"); ok {
-		cvoDetails.VsaMetadata.CapacityPackageName = c.(string)
 	}
 
 	if c, ok := d.GetOk("provided_license"); ok {

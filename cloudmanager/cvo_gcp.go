@@ -206,22 +206,25 @@ func validateCVOGCPParams(cvoDetails createCVOGCPDetails) error {
 		return fmt.Errorf("ontap_version parameter not required when having use_latest_version as true")
 	}
 
+	// by Node byol license
 	if cvoDetails.IsHA && cvoDetails.VsaMetadata.LicenseType == "gcp-ha-cot-premium-byol" {
 		if cvoDetails.HAParams.PlatformSerialNumberNode1 == "" || cvoDetails.HAParams.PlatformSerialNumberNode2 == "" {
 			return fmt.Errorf("both platform_serial_number_node1 and platform_serial_number_node2 parameters are required when having ha type as true and license_type as gcp-ha-cot-premium-byol")
 		}
 	}
-
+	// by Node byol license
 	if !cvoDetails.IsHA && (cvoDetails.HAParams.PlatformSerialNumberNode1 != "" || cvoDetails.HAParams.PlatformSerialNumberNode2 != "") {
 		return fmt.Errorf("both platform_serial_number_node1 and platform_serial_number_node2 parameters are only required when having ha type as true and license_type as gcp-ha-cot-premium-byol")
 	}
 
+	// by Node byol license
 	if cvoDetails.VsaMetadata.LicenseType == "gcp-cot-premium-byol" {
 		if cvoDetails.SerialNumber == "" {
 			return fmt.Errorf("serial_number parameter is required when having license_type as gcp-cot-premium-byol")
 		}
 	}
 
+	// by Capacity license
 	if cvoDetails.VsaMetadata.CapacityPackageName != "" {
 		if cvoDetails.IsHA && cvoDetails.VsaMetadata.LicenseType != "ha-capacity-paygo" {
 			return fmt.Errorf("license_type must be ha-capacity-paygo")
@@ -232,7 +235,7 @@ func validateCVOGCPParams(cvoDetails createCVOGCPDetails) error {
 	}
 
 	if strings.HasSuffix(cvoDetails.VsaMetadata.LicenseType, "capacity-paygo") && cvoDetails.VsaMetadata.CapacityPackageName == "" {
-		return fmt.Errorf("capacity_package_name is required on selecting Bring Your Own License with capacity based license type or Freemium")
+		return fmt.Errorf("capacity_package_name is required with capacity based license type")
 	}
 	return nil
 }

@@ -127,6 +127,11 @@ func resourceOCCMAzure() *schema.Resource {
 				ForceNew:  true,
 				Sensitive: true,
 			},
+			"storage_account": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -204,6 +209,10 @@ func resourceOCCMAzureCreate(d *schema.ResourceData, meta interface{}) error {
 		occmDetails.AssociatePublicIPAddress = &associatePublicIPAddress
 	}
 
+	if o, ok := d.GetOk("storage_account"); ok {
+		occmDetails.StorageAccount = o.(string)
+	}
+
 	res, err := client.createOCCMAzure(occmDetails, proxyCertificates, "")
 	if err != nil {
 		log.Print("Error creating instance")
@@ -245,6 +254,10 @@ func resourceOCCMAzureRead(d *schema.ResourceData, meta interface{}) error {
 		occmDetails.ResourceGroup = o.(string)
 	}
 
+	if o, ok := d.GetOk("storage_account"); ok {
+		occmDetails.StorageAccount = o.(string)
+	}
+
 	id := d.Id()
 
 	resID, err := client.getdeployAzureVM(occmDetails, id)
@@ -274,6 +287,9 @@ func resourceOCCMAzureDelete(d *schema.ResourceData, meta interface{}) error {
 	occmDetails.Location = d.Get("location").(string)
 	if o, ok := d.GetOk("resource_group"); ok {
 		occmDetails.ResourceGroup = o.(string)
+	}
+	if o, ok := d.GetOk("storage_account"); ok {
+		occmDetails.StorageAccount = o.(string)
 	}
 	clientID := d.Get("client_id").(string)
 	client.AccountID = d.Get("account_id").(string)

@@ -1,9 +1,9 @@
 package cloudmanager
 
 import (
-	"log"
-
 	"github.com/hashicorp/terraform/helper/validation"
+	"log"
+	"strings"
 
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -91,7 +91,6 @@ func resourceCVOAWS() *schema.Resource {
 			"capacity_package_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				Default:      "Essential",
 				ValidateFunc: validation.StringInSlice([]string{"Essential", "Professional", "Freemium"}, false),
 			},
 			"provided_license": {
@@ -271,6 +270,11 @@ func resourceCVOAWS() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"mediator_instance_profile_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"cluster_floating_ip": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -354,6 +358,16 @@ func resourceCVOAWSCreate(d *schema.ResourceData, meta interface{}) error {
 	cvoDetails.VsaMetadata.LicenseType = d.Get("license_type").(string)
 	cvoDetails.VsaMetadata.InstanceType = d.Get("instance_type").(string)
 
+	// by Capacity
+	if c, ok := d.GetOk("capacity_package_name"); ok {
+		cvoDetails.VsaMetadata.CapacityPackageName = c.(string)
+	} else {
+		// by Capacity - set default capacity package name
+		if strings.HasSuffix(cvoDetails.VsaMetadata.LicenseType, "capacity-paygo") {
+			cvoDetails.VsaMetadata.CapacityPackageName = "Essential"
+		}
+	}
+
 	if cvoDetails.DataEncryptionType == "AWS" {
 		// Only one of KMS key id or KMS arn should be specified
 		if c, ok := d.GetOk("aws_encryption_kms_key_id"); ok {
@@ -405,10 +419,6 @@ func resourceCVOAWSCreate(d *schema.ResourceData, meta interface{}) error {
 		cvoDetails.AwsEncryptionParameters.KmsKeyID = c.(string)
 	}
 
-	if c, ok := d.GetOk("capacity_package_name"); ok {
-		cvoDetails.VsaMetadata.CapacityPackageName = c.(string)
-	}
-
 	if c, ok := d.GetOk("provided_license"); ok {
 		cvoDetails.VsaMetadata.ProvidedLicense = c.(string)
 	}
@@ -438,6 +448,9 @@ func resourceCVOAWSCreate(d *schema.ResourceData, meta interface{}) error {
 		routeTableIds := d.Get("route_table_ids")
 		for _, routeTableID := range routeTableIds.(*schema.Set).List() {
 			cvoDetails.HAParams.RouteTableIds = append(cvoDetails.HAParams.RouteTableIds, routeTableID.(string))
+		}
+		if c, ok := d.GetOk("mediator_instance_profile_name"); ok {
+			cvoDetails.HAParams.MediatorInstanceProfileName = c.(string)
 		}
 		if c, ok := d.GetOk("platform_serial_number_node1"); ok {
 			cvoDetails.HAParams.PlatformSerialNumberNode1 = c.(string)
