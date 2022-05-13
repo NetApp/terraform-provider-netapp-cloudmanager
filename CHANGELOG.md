@@ -1,3 +1,8 @@
+## 22.5.0
+NEW FEATURES:
+
+* resource/connector_aws: support returning public_ip_address of the aws connector.
+
 ## 22.4.0
 BUG FIXES:
 
