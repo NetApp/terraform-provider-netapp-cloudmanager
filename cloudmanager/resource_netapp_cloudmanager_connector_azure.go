@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"strings"
 
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -41,14 +42,16 @@ func resourceOCCMAzure() *schema.Resource {
 				ForceNew: true,
 			},
 			"subnet_id": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: validateAzureSubnet(),
 			},
 			"vnet_id": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: validateAzureVnet(),
 			},
 			"vnet_resource_group": {
 				Type:     schema.TypeString,
@@ -336,4 +339,48 @@ func resourceOCCMAzureExists(d *schema.ResourceData, meta interface{}) (bool, er
 	}
 
 	return true, nil
+}
+
+func validateAzureSubnet() schema.SchemaValidateFunc {
+	return func(i interface{}, k string) (s []string, es []error) {
+		v, ok := i.(string)
+		if !ok {
+			es = append(es, fmt.Errorf("expected type of %s to be string", k))
+			return
+		}
+		slices := strings.Split(v, "/")
+		errorMessage := "invalid format of subnet, the correct format is either <subnetID> or /subscriptions/<subscriptionID>/resourceGroups/<resource group>/providers/Microsoft.Network/virtualNetworks/<vnet ID>/subnets/<subnetID>"
+		if len(slices) != 1 && len(slices) != 11 {
+			es = append(es, fmt.Errorf(errorMessage))
+			return
+		}
+
+		if len(slices) == 11 && (slices[1] != "subscriptions" || slices[3] != "resourceGroups" || slices[5] != "providers" || slices[6] != "Microsoft.Network" || slices[7] != "virtualNetworks" || slices[9] != "subnets") {
+			es = append(es, fmt.Errorf(errorMessage))
+			return
+		}
+		return
+	}
+}
+
+func validateAzureVnet() schema.SchemaValidateFunc {
+	return func(i interface{}, k string) (s []string, es []error) {
+		v, ok := i.(string)
+		if !ok {
+			es = append(es, fmt.Errorf("expected type of %s to be string", k))
+			return
+		}
+		slices := strings.Split(v, "/")
+		errorMessage := "invalid format of vnet_id, the correct format is either <vnetID> or /subscriptions/<subscriptionID>/resourceGroups/<resource group>/providers/Microsoft.Network/virtualNetworks/<vnet ID>"
+		if len(slices) != 1 && len(slices) != 9 {
+			es = append(es, fmt.Errorf(errorMessage))
+			return
+		}
+
+		if len(slices) == 9 && (slices[1] != "subscriptions" || slices[3] != "resourceGroups" || slices[5] != "providers" || slices[6] != "Microsoft.Network" || slices[7] != "virtualNetworks") {
+			es = append(es, fmt.Errorf(errorMessage))
+			return
+		}
+		return
+	}
 }

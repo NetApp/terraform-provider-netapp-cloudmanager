@@ -240,22 +240,32 @@ func (c *Client) CallDeployAzureVM(occmDetails createOCCMDetails) (string, error
 		}
 	}
 
-	var vnetID string
 	var networkSecurityGroupName string
 
-	if occmDetails.VnetResourceGroup != "" {
-		vnetID = fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s", occmDetails.SubscriptionID, occmDetails.VnetResourceGroup, occmDetails.VnetID)
-	} else {
-		vnetID = fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s", occmDetails.SubscriptionID, occmDetails.ResourceGroup, occmDetails.VnetID)
+	vnetID := occmDetails.VnetID
+	if !strings.Contains(occmDetails.VnetID, "/") {
+		log.Print("Compose vnetID...")
+		resourceGroup := occmDetails.ResourceGroup
+		if occmDetails.VnetResourceGroup != "" {
+			resourceGroup = occmDetails.VnetResourceGroup
+		}
+		vnetID = fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s", occmDetails.SubscriptionID, resourceGroup, occmDetails.VnetID)
 	}
-
+	log.Print("CallDeployAzureVM vnetID: ")
+	log.Print(vnetID)
 	if occmDetails.NetworkSecurityResourceGroup != "" {
 		networkSecurityGroupName = fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/networkSecurityGroups/%s", occmDetails.SubscriptionID, occmDetails.NetworkSecurityResourceGroup, occmDetails.NetworkSecurityGroupName)
 	} else {
 		networkSecurityGroupName = fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/networkSecurityGroups/%s", occmDetails.SubscriptionID, occmDetails.ResourceGroup, occmDetails.NetworkSecurityGroupName)
 	}
 
-	subnetID := fmt.Sprintf("%s/subnets/%s", vnetID, occmDetails.SubnetID)
+	subnetID := occmDetails.SubnetID
+	if !strings.Contains(occmDetails.SubnetID, "/") {
+		log.Print("Compose subnetID...")
+		subnetID = fmt.Sprintf("%s/subnets/%s", vnetID, occmDetails.SubnetID)
+	}
+	log.Print("CallDeployAzureVM subnetID:")
+	log.Print(subnetID)
 
 	(*params)["virtualNetworkId"] = map[string]string{
 		"value": vnetID,
@@ -296,6 +306,7 @@ func (c *Client) CallDeployAzureVM(occmDetails createOCCMDetails) (string, error
 	if err != nil {
 		return "", err
 	}
+	log.Print("Wait for completion...")
 	err = deploymentFuture.Future.WaitForCompletionRef(context.Background(), deploymentsClient.BaseClient.Client)
 	if err != nil {
 		return "", err

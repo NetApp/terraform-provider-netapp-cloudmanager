@@ -3,6 +3,9 @@ NEW FEATURES:
 
 * resource/connector_aws: support returning public_ip_address of the aws connector.
 
+ENHANCEMENTS:
+* resource/connector_azure: support full subnet_id and vnet_id
+
 ## 22.4.0
 BUG FIXES:
 

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/fatih/structs"
@@ -90,14 +91,26 @@ func (c *Client) createOCCMAzure(occmDetails createOCCMDetails, proxyCertificate
 		registerAgentTOService.Extra.Proxy.ProxyPassword = occmDetails.ProxyPassword
 	}
 
-	if occmDetails.VnetResourceGroup != "" {
-		registerAgentTOService.Placement.Network = fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s", occmDetails.SubscriptionID, occmDetails.VnetResourceGroup, occmDetails.VnetID)
+	if !strings.Contains(occmDetails.VnetID, "/") {
+		log.Print("Compose vnetID...")
+		resourceGroup := occmDetails.ResourceGroup
+		if occmDetails.VnetResourceGroup != "" {
+			resourceGroup = occmDetails.VnetResourceGroup
+		}
+		registerAgentTOService.Placement.Network = fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s", occmDetails.SubscriptionID, resourceGroup, occmDetails.VnetID)
 	} else {
-		registerAgentTOService.Placement.Network = fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s", occmDetails.SubscriptionID, occmDetails.ResourceGroup, occmDetails.VnetID)
+		registerAgentTOService.Placement.Network = occmDetails.VnetID
 	}
-
-	registerAgentTOService.Placement.Subnet = fmt.Sprintf("%s/subnets/%s", registerAgentTOService.Placement.Network, occmDetails.SubnetID)
-
+	log.Print("createOCCMAzure VnetID: ")
+	log.Print(registerAgentTOService.Placement.Network)
+	if !strings.Contains(occmDetails.SubnetID, "/") {
+		log.Print("Compose subnetID...")
+		registerAgentTOService.Placement.Subnet = fmt.Sprintf("%s/subnets/%s", registerAgentTOService.Placement.Network, occmDetails.SubnetID)
+	} else {
+		registerAgentTOService.Placement.Subnet = occmDetails.SubnetID
+	}
+	log.Print("createOCCMAzure SubnetID: ")
+	log.Print(registerAgentTOService.Placement.Subnet)
 	userData, newClientID, err := c.getCustomData(registerAgentTOService, proxyCertificates, clientID)
 	if err != nil {
 		return OCCMMResult{}, err
