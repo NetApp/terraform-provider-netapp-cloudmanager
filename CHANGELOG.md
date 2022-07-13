@@ -5,6 +5,7 @@ NEW FEATURES:
 
 ENHANCEMENTS:
 * resource/connector_azure: support full subnet_id and vnet_id
+* resource/aggregate: better handle multi creation with count
 
 ## 22.4.0
 BUG FIXES:

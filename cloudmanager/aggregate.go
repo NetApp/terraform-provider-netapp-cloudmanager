@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/fatih/structs"
 )
@@ -151,7 +153,7 @@ func (c *Client) getAggregate(request aggregateRequest, name string, sourceWorki
 
 	for i := range aggregates {
 		if aggregates[i].Name == name {
-			log.Printf("Found aggregate: %v", aggregates[i])
+			log.Printf("Found aggregate: %#v state %s", aggregates[i], aggregates[i].State)
 			return aggregates[i], nil
 		}
 	}
@@ -162,7 +164,7 @@ func (c *Client) getAggregate(request aggregateRequest, name string, sourceWorki
 
 // create aggregate
 func (c *Client) createAggregate(request *createAggregateRequest, clientID string) (aggregateResult, error) {
-	log.Print("createAggregate... ")
+	log.Printf("createAggregate %v... ", (*request).Name)
 	params := structs.Map(request)
 	hostType := "CloudManagerHost"
 
@@ -174,23 +176,39 @@ func (c *Client) createAggregate(request *createAggregateRequest, clientID strin
 		return aggregateResult{}, err
 	}
 	baseURL = fmt.Sprintf("%s/aggregates", rootURL)
-	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("POST", baseURL, params, c.Token, hostType, clientID)
-	if err != nil {
-		log.Print("createAggregate request failed")
-		return aggregateResult{}, err
-	}
 
-	responseError := apiResponseChecker(statusCode, response, "createAggregate")
-	if responseError != nil {
-		return aggregateResult{}, responseError
-	}
-
-	// wait for creation
-	log.Print("Wait for aggregate creation.")
-	err = c.waitOnCompletion(onCloudRequestID, "Aggregate", "create", 10, 60, clientID)
-	log.Print("Finish waiting.")
-	if err != nil {
-		return aggregateResult{}, err
+	retries := 0
+	maxRetries := 24 // max retry 150 sec * 24 = 1hr
+	for {
+		log.Print("Call aggregate creation API... ", (*request).Name)
+		statusCode, response, onCloudRequestID, err := c.CallAPIMethod("POST", baseURL, params, c.Token, hostType, clientID)
+		if err != nil {
+			log.Print("createAggregate request failed", (*request).Name)
+			return aggregateResult{}, err
+		}
+		responseError := apiResponseChecker(statusCode, response, "createAggregate")
+		if responseError != nil {
+			if strings.Contains(responseError.Error(), "code: 409, message: {\"message\":\"Couldn't perform action Create Aggregate, because there are ongoing operations which might interfere with it") {
+				if retries >= maxRetries {
+					log.Print("Failed: Reached aggregate creation max retries.")
+					break
+				}
+				retries++
+				log.Print("Wait for 150 seconds... ", retries)
+				time.Sleep(150 * time.Second)
+			} else {
+				return aggregateResult{}, responseError
+			}
+		} else {
+			// wait for creation
+			log.Print("Wait for aggregate creation... ", (*request).Name)
+			err = c.waitOnCompletion(onCloudRequestID, "Aggregate", "create", 15, 60, clientID)
+			log.Print("Finish waiting... ", (*request).Name)
+			if err != nil {
+				return aggregateResult{}, err
+			}
+			break
+		}
 	}
 
 	workingEnvDetail, err := c.getWorkingEnvironmentInfo(request.WorkingEnvironmentID, clientID)
@@ -204,6 +222,7 @@ func (c *Client) createAggregate(request *createAggregateRequest, clientID strin
 	if err != nil {
 		return aggregateResult{}, err
 	}
+	log.Printf("Aggregate %v status %v", aggregate.Name, aggregate.State)
 	return aggregate, nil
 }
 
