@@ -142,9 +142,9 @@ func resourceCVOGCP() *schema.Resource {
 				ForceNew: true,
 			},
 			"writing_speed_state": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"NORMAL", "HIGH"}, true),
 			},
 			"capacity_tier": {
 				Type:         schema.TypeString,
@@ -357,7 +357,7 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	if c, ok := d.GetOk("writing_speed_state"); ok {
-		cvoDetails.WritingSpeedState = c.(string)
+		cvoDetails.WritingSpeedState = strings.ToUpper(c.(string))
 	}
 
 	if c, ok := d.GetOk("nss_account"); ok {
@@ -466,9 +466,6 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 		if c, ok := d.GetOk("vpc3_firewall_rule_name"); ok {
 			cvoDetails.HAParams.VPC3FirewallRuleName = c.(string)
 		}
-	} else if cvoDetails.WritingSpeedState == "" {
-		cvoDetails.WritingSpeedState = "NORMAL"
-		d.Set("writing_speed_state", "NORMAL")
 	}
 
 	err := validateCVOGCPParams(cvoDetails)
@@ -504,7 +501,9 @@ func resourceCVOGCPRead(d *schema.ResourceData, meta interface{}) error {
 		log.Print("Error getting cvo")
 		return err
 	}
-
+	if c, ok := d.GetOk("writing_speed_state"); ok {
+		d.Set("writing_speed_state", c.(string))
+	}
 	return nil
 }
 
@@ -554,6 +553,25 @@ func resourceCVOGCPUpdate(d *schema.ResourceData, meta interface{}) error {
 		if respErr != nil {
 			return respErr
 		}
+	}
+
+	// check if writing_speed_state is changed
+	if d.HasChange("writing_speed_state") {
+		currentWritingSpeedState, expectWritingSpeedState := d.GetChange("writing_speed_state")
+		if currentWritingSpeedState.(string) == "" && strings.ToUpper(expectWritingSpeedState.(string)) == "NORMAL" {
+			d.Set("writing_speed_state", expectWritingSpeedState.(string))
+			log.Print("writing_speed_state: default value is NORMAL. No change call is needed.")
+			return nil
+		}
+		if strings.EqualFold(currentWritingSpeedState.(string), expectWritingSpeedState.(string)) {
+			d.Set("writing_speed_state", expectWritingSpeedState.(string))
+		} else {
+			respErr := updateCVOWritingSpeedState(d, meta, clientID)
+			if respErr != nil {
+				return respErr
+			}
+		}
+		return nil
 	}
 
 	// check if gcp_label has changes

@@ -6,6 +6,10 @@ NEW FEATURES:
 ENHANCEMENTS:
 * resource/connector_azure: support full subnet_id and vnet_id
 * resource/aggregate: better handle multi creation with count
+* resource/cvo for AWS, AZURE and GCP: add writing_speed_state update
+
+BUG FIXES:
+* resource/cvo for AWS, AZURE and GCP: fix force recreation on writing_speed_state  ([#104](https://github.com/NetApp/terraform-provider-netapp-cloudmanager/issues/104))
 
 ## 22.4.0
 BUG FIXES:

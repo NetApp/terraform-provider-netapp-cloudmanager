@@ -147,9 +147,9 @@ func resourceCVOAzure() *schema.Resource {
 				ForceNew: true,
 			},
 			"writing_speed_state": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"NORMAL", "HIGH"}, true),
 			},
 			"capacity_tier": {
 				Type:         schema.TypeString,
@@ -309,7 +309,7 @@ func resourceCVOAzureCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	if c, ok := d.GetOk("writing_speed_state"); ok {
-		cvoDetails.WritingSpeedState = c.(string)
+		cvoDetails.WritingSpeedState = strings.ToUpper(c.(string))
 	}
 
 	if c, ok := d.GetOk("nss_account"); ok {
@@ -406,7 +406,9 @@ func resourceCVOAzureRead(d *schema.ResourceData, meta interface{}) error {
 		log.Print("Error getting cvo")
 		return err
 	}
-
+	if c, ok := d.GetOk("writing_speed_state"); ok {
+		d.Set("writing_speed_state", c.(string))
+	}
 	return nil
 }
 
@@ -465,6 +467,26 @@ func resourceCVOAzureUpdate(d *schema.ResourceData, meta interface{}) error {
 		}
 		return resourceCVOAzureRead(d, meta)
 	}
+
+	// check if writing_speed_state is changed
+	if d.HasChange("writing_speed_state") {
+		currentWritingSpeedState, expectWritingSpeedState := d.GetChange("writing_speed_state")
+		if currentWritingSpeedState.(string) == "" && strings.ToUpper(expectWritingSpeedState.(string)) == "NORMAL" {
+			d.Set("writing_speed_state", expectWritingSpeedState.(string))
+			log.Print("writing_speed_state: default value is NORMAL. No change call is needed.")
+			return nil
+		}
+		if strings.EqualFold(currentWritingSpeedState.(string), expectWritingSpeedState.(string)) {
+			d.Set("writing_speed_state", expectWritingSpeedState.(string))
+		} else {
+			respErr := updateCVOWritingSpeedState(d, meta, clientID)
+			if respErr != nil {
+				return respErr
+			}
+		}
+		return nil
+	}
+
 	// upgrade ontap version
 	// only when the upgrade_ontap_version is true and the ontap_version is not "latest"
 	upgradeErr := client.checkAndDoUpgradeOntapVersion(d, clientID)
