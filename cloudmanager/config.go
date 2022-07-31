@@ -7,13 +7,14 @@ import (
 
 // Config is a struct for user input
 type configStuct struct {
-	RefreshToken string
-	SaSecretKey  string
-	SaClientID   string
-	Environment  string
-	CVOHostName  string
-	Simulator    bool
-	AWSProfile   string
+	RefreshToken       string
+	SaSecretKey        string
+	SaClientID         string
+	Environment        string
+	CVOHostName        string
+	Simulator          bool
+	AWSProfile         string
+	AWSProfileFilePath string
 }
 
 // Client is the main function to connect to the APi
@@ -66,6 +67,7 @@ func (c *configStuct) clientFun() (*Client, error) {
 		client.SetSimulator(c.Simulator)
 	}
 	client.AWSProfile = c.AWSProfile
+	client.AWSProfileFilePath = c.AWSProfileFilePath
 
 	return client, nil
 }

@@ -45,7 +45,11 @@ func Provider() terraform.ResourceProvider {
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("AWS_PROFILE", nil),
-				Default:     "default",
+			},
+			"aws_profile_file_path": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("AWS_PROFILE_FILE_PATH", nil),
 			},
 		},
 
@@ -86,7 +90,13 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		SaSecretKey:  d.Get("sa_secret_key").(string),
 		SaClientID:   d.Get("sa_client_id").(string),
 		Simulator:    d.Get("simulator").(bool),
-		AWSProfile:   d.Get("aws_profile").(string),
+	}
+
+	if v, ok := d.GetOk("aws_profile"); ok {
+		config.AWSProfile = v.(string)
+	}
+	if v, ok := d.GetOk("aws_profile_file_path"); ok {
+		config.AWSProfileFilePath = v.(string)
 	}
 
 	return config.clientFun()
