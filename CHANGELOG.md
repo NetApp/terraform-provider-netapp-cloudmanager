@@ -1,7 +1,8 @@
-## 22.5.0
+## 22.8.0
 NEW FEATURES:
 
 * resource/connector_aws: support returning public_ip_address of the aws connector.
+* add Terraform variable aws_profile_file_path to specify aws credentials file location. ([#90](https://github.com/NetApp/terraform-provider-netapp-cloudmanager/issues/90))
 
 ENHANCEMENTS:
 * resource/connector_azure: support full subnet_id and vnet_id
