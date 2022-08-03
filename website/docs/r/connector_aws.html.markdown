@@ -76,6 +76,7 @@ The following attributes are exported in addition to the arguments listed above:
 * `id` - The EC2 instance ID.
 * `client_id` - The unique client ID of the Connector. Can be used in other resources.
 * `account_id` - The NetApp tenancy account ID.
+* `public_ip_address` - The public IP of the connector.
 
 ## Unique id versus name
 

@@ -57,22 +57,28 @@ type Client struct {
 	GCPServiceAccountKey    string
 	CVSHostName             string
 
-	initOnce      sync.Once
-	instanceInput *restapi.Client
-	restapiClient *restapi.Client
-	requestSlots  chan int
-	Simulator     bool
-	AWSProfile    string
+	initOnce           sync.Once
+	instanceInput      *restapi.Client
+	restapiClient      *restapi.Client
+	requestSlots       chan int
+	Simulator          bool
+	AWSProfile         string
+	AWSProfileFilePath string
 }
 
 // CallAWSInstanceCreate can be used to make a request to create AWS Instance
 func (c *Client) CallAWSInstanceCreate(occmDetails createOCCMDetails) (string, error) {
 
-	sess := session.Must(session.NewSession(
-		&aws.Config{
-			Region:      aws.String(occmDetails.Region),
-			Credentials: credentials.NewSharedCredentials("", c.AWSProfile),
-		}))
+	var sess *session.Session
+	if c.AWSProfile != "" {
+		sess = session.Must(session.NewSession(
+			&aws.Config{
+				Region:      aws.String(occmDetails.Region),
+				Credentials: credentials.NewSharedCredentials(c.AWSProfileFilePath, c.AWSProfile),
+			}))
+	} else {
+		sess = session.Must(session.NewSession(aws.NewConfig().WithRegion(occmDetails.Region)))
+	}
 
 	// Create EC2 service client
 	svc := ec2.New(sess)
@@ -166,11 +172,16 @@ func (c *Client) CallAWSInstanceCreate(occmDetails createOCCMDetails) (string, e
 // CallAWSInstanceTerminate can be used to make a request to terminate AWS Instance
 func (c *Client) CallAWSInstanceTerminate(occmDetails deleteOCCMDetails) error {
 
-	sess := session.Must(session.NewSession(
-		&aws.Config{
-			Region:      aws.String(occmDetails.Region),
-			Credentials: credentials.NewSharedCredentials("", c.AWSProfile),
-		}))
+	var sess *session.Session
+	if c.AWSProfile != "" {
+		sess = session.Must(session.NewSession(
+			&aws.Config{
+				Region:      aws.String(occmDetails.Region),
+				Credentials: credentials.NewSharedCredentials(c.AWSProfileFilePath, c.AWSProfile),
+			}))
+	} else {
+		sess = session.Must(session.NewSession(aws.NewConfig().WithRegion(occmDetails.Region)))
+	}
 
 	// Create EC2 service client
 	svc := ec2.New(sess)
@@ -240,22 +251,32 @@ func (c *Client) CallDeployAzureVM(occmDetails createOCCMDetails) (string, error
 		}
 	}
 
-	var vnetID string
 	var networkSecurityGroupName string
 
-	if occmDetails.VnetResourceGroup != "" {
-		vnetID = fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s", occmDetails.SubscriptionID, occmDetails.VnetResourceGroup, occmDetails.VnetID)
-	} else {
-		vnetID = fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s", occmDetails.SubscriptionID, occmDetails.ResourceGroup, occmDetails.VnetID)
+	vnetID := occmDetails.VnetID
+	if !strings.Contains(occmDetails.VnetID, "/") {
+		log.Print("Compose vnetID...")
+		resourceGroup := occmDetails.ResourceGroup
+		if occmDetails.VnetResourceGroup != "" {
+			resourceGroup = occmDetails.VnetResourceGroup
+		}
+		vnetID = fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s", occmDetails.SubscriptionID, resourceGroup, occmDetails.VnetID)
 	}
-
+	log.Print("CallDeployAzureVM vnetID: ")
+	log.Print(vnetID)
 	if occmDetails.NetworkSecurityResourceGroup != "" {
 		networkSecurityGroupName = fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/networkSecurityGroups/%s", occmDetails.SubscriptionID, occmDetails.NetworkSecurityResourceGroup, occmDetails.NetworkSecurityGroupName)
 	} else {
 		networkSecurityGroupName = fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/networkSecurityGroups/%s", occmDetails.SubscriptionID, occmDetails.ResourceGroup, occmDetails.NetworkSecurityGroupName)
 	}
 
-	subnetID := fmt.Sprintf("%s/subnets/%s", vnetID, occmDetails.SubnetID)
+	subnetID := occmDetails.SubnetID
+	if !strings.Contains(occmDetails.SubnetID, "/") {
+		log.Print("Compose subnetID...")
+		subnetID = fmt.Sprintf("%s/subnets/%s", vnetID, occmDetails.SubnetID)
+	}
+	log.Print("CallDeployAzureVM subnetID:")
+	log.Print(subnetID)
 
 	(*params)["virtualNetworkId"] = map[string]string{
 		"value": vnetID,
@@ -296,6 +317,7 @@ func (c *Client) CallDeployAzureVM(occmDetails createOCCMDetails) (string, error
 	if err != nil {
 		return "", err
 	}
+	log.Print("Wait for completion...")
 	err = deploymentFuture.Future.WaitForCompletionRef(context.Background(), deploymentsClient.BaseClient.Client)
 	if err != nil {
 		return "", err
@@ -458,11 +480,18 @@ func (c *Client) CallDeleteAzureVM(occmDetails deleteOCCMDetails) error {
 
 // CallAMIGet can be used to make a request to get AWS AMI
 func (c *Client) CallAMIGet(occmDetails createOCCMDetails) (string, error) {
-	sess := session.Must(session.NewSession(
-		&aws.Config{
-			Region:      aws.String(occmDetails.Region),
-			Credentials: credentials.NewSharedCredentials("", c.AWSProfile),
-		}))
+
+	var sess *session.Session
+	if c.AWSProfile != "" {
+		sess = session.Must(session.NewSession(
+			&aws.Config{
+				Region:      aws.String(occmDetails.Region),
+				Credentials: credentials.NewSharedCredentials(c.AWSProfileFilePath, c.AWSProfile),
+			}))
+	} else {
+		sess = session.Must(session.NewSession(aws.NewConfig().WithRegion(occmDetails.Region)))
+	}
+
 	svc := ec2.New(sess)
 	input := &ec2.DescribeImagesInput{
 		Owners: []*string{
@@ -500,12 +529,17 @@ func (c *Client) CallAMIGet(occmDetails createOCCMDetails) (string, error) {
 
 // CallVPCGet can be used to make a request to get AWS AMI
 func (c *Client) CallVPCGet(subnet string, region string) (string, error) {
+	var sess *session.Session
+	if c.AWSProfile != "" {
+		sess = session.Must(session.NewSession(
+			&aws.Config{
+				Region:      aws.String(region),
+				Credentials: credentials.NewSharedCredentials(c.AWSProfileFilePath, c.AWSProfile),
+			}))
+	} else {
+		sess = session.Must(session.NewSession(aws.NewConfig().WithRegion(region)))
+	}
 
-	sess := session.Must(session.NewSession(
-		&aws.Config{
-			Region:      aws.String(region),
-			Credentials: credentials.NewSharedCredentials("", c.AWSProfile),
-		}))
 	svc := ec2.New(sess)
 	input := &ec2.DescribeSubnetsInput{
 		SubnetIds: []*string{
@@ -592,11 +626,18 @@ func (c *Client) CallAWSInstanceGet(occmDetails createOCCMDetails) ([]ec2.Instan
 		}
 		return res, nil
 	}
-	sess := session.Must(session.NewSession(
-		&aws.Config{
-			Region:      aws.String(occmDetails.Region),
-			Credentials: credentials.NewSharedCredentials("", c.AWSProfile),
-		}))
+
+	var sess *session.Session
+	if c.AWSProfile != "" {
+		sess = session.Must(session.NewSession(
+			&aws.Config{
+				Region:      aws.String(occmDetails.Region),
+				Credentials: credentials.NewSharedCredentials(c.AWSProfileFilePath, c.AWSProfile),
+			}))
+	} else {
+		sess = session.Must(session.NewSession(aws.NewConfig().WithRegion(occmDetails.Region)))
+	}
+
 	svc := ec2.New(sess)
 	input := &ec2.DescribeInstancesInput{
 		Filters: []*ec2.Filter{
@@ -650,10 +691,15 @@ func (c *Client) CallAWSInstanceGet(occmDetails createOCCMDetails) ([]ec2.Instan
 
 // CallAWSRegionGet describe all regions.
 func (c *Client) CallAWSRegionGet(occmDetails createOCCMDetails) ([]string, error) {
-	sess := session.Must(session.NewSession(
-		&aws.Config{
-			Credentials: credentials.NewSharedCredentials("", c.AWSProfile),
-		}))
+	var sess *session.Session
+	if c.AWSProfile != "" {
+		sess = session.Must(session.NewSession(
+			&aws.Config{
+				Credentials: credentials.NewSharedCredentials(c.AWSProfileFilePath, c.AWSProfile),
+			}))
+	} else {
+		sess = session.Must(session.NewSession())
+	}
 	svc := ec2.New(sess)
 
 	result, err := svc.DescribeRegions(nil)
@@ -765,11 +811,17 @@ func (c *Client) GetSimulator() bool {
 
 // CallAWSTagCreate creates tag
 func (c *Client) CallAWSTagCreate(occmDetails createOCCMDetails) error {
-	sess := session.Must(session.NewSession(
-		&aws.Config{
-			Region:      aws.String(occmDetails.Region),
-			Credentials: credentials.NewSharedCredentials("", c.AWSProfile),
-		}))
+
+	var sess *session.Session
+	if c.AWSProfile != "" {
+		sess = session.Must(session.NewSession(
+			&aws.Config{
+				Region:      aws.String(occmDetails.Region),
+				Credentials: credentials.NewSharedCredentials(c.AWSProfileFilePath, c.AWSProfile),
+			}))
+	} else {
+		sess = session.Must(session.NewSession(aws.NewConfig().WithRegion(occmDetails.Region)))
+	}
 
 	svc := ec2.New(sess)
 
@@ -805,11 +857,17 @@ func (c *Client) CallAWSTagCreate(occmDetails createOCCMDetails) error {
 
 // CallAWSTagDelete deletes tag
 func (c *Client) CallAWSTagDelete(occmDetails createOCCMDetails) error {
-	sess := session.Must(session.NewSession(
-		&aws.Config{
-			Region:      aws.String(occmDetails.Region),
-			Credentials: credentials.NewSharedCredentials("", c.AWSProfile),
-		}))
+
+	var sess *session.Session
+	if c.AWSProfile != "" {
+		sess = session.Must(session.NewSession(
+			&aws.Config{
+				Region:      aws.String(occmDetails.Region),
+				Credentials: credentials.NewSharedCredentials(c.AWSProfileFilePath, c.AWSProfile),
+			}))
+	} else {
+		sess = session.Must(session.NewSession(aws.NewConfig().WithRegion(occmDetails.Region)))
+	}
 
 	svc := ec2.New(sess)
 
@@ -845,11 +903,18 @@ func (c *Client) CallAWSTagDelete(occmDetails createOCCMDetails) error {
 
 // CallAWSDescribeInstanceAttribute returns disableAPITermination.
 func (c *Client) CallAWSDescribeInstanceAttribute(occmDetails createOCCMDetails) (bool, error) {
-	sess := session.Must(session.NewSession(
-		&aws.Config{
-			Region:      aws.String(occmDetails.Region),
-			Credentials: credentials.NewSharedCredentials("", c.AWSProfile),
-		}))
+
+	var sess *session.Session
+	if c.AWSProfile != "" {
+		sess = session.Must(session.NewSession(
+			&aws.Config{
+				Region:      aws.String(occmDetails.Region),
+				Credentials: credentials.NewSharedCredentials(c.AWSProfileFilePath, c.AWSProfile),
+			}))
+	} else {
+		sess = session.Must(session.NewSession(aws.NewConfig().WithRegion(occmDetails.Region)))
+	}
+
 	svc := ec2.New(sess)
 	input := &ec2.DescribeInstanceAttributeInput{
 		Attribute:  aws.String("disableApiTermination"),

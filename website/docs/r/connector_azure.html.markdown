@@ -49,9 +49,9 @@ The following arguments are supported:
 * `location` - (Required) The location where the Cloud Manager Connector will be created.
 * `company` - (Required) The name of the company of the user.
 * `resource_group` - (Required) The resource group in Azure where the resources will be created.
-* `subnet_id` - (Required) The name of the subnet for the virtual machine.
+* `subnet_id` - (Required) The name of the subnet for the virtual machine. Two formats are supported: either <subnetID> or /subscriptions/<subscriptionID>/resourceGroups/<resourceGroup>/providers/Microsoft.Network/virtualNetworks/<vnetID>/subnets/<subnetID>
 * `subscription_id` - (Required) The ID of the Azure subscription.
-* `vnet_id` - (Required) The name of the virtual network.
+* `vnet_id` - (Required) The name of the virtual network. Two formats are supported: either <vnetID> or /subscriptions/<subscriptionID>/resourceGroups/<resourceGroup>/providers/Microsoft.Network/virtualNetworks/<vnetID>
 * `network_security_group_name` - (Required) The name of the security group for the instance.
 * `admin_username` - (Required) The user name for the Connector.
 * `admin_password` - (Required) The password for the Connector.

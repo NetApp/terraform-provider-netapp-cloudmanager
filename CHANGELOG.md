@@ -1,3 +1,17 @@
+## 22.8.0
+NEW FEATURES:
+
+* resource/connector_aws: support returning public_ip_address of the aws connector.
+* add Terraform variable aws_profile_file_path to specify aws credentials file location. ([#90](https://github.com/NetApp/terraform-provider-netapp-cloudmanager/issues/90))
+
+ENHANCEMENTS:
+* resource/connector_azure: support full subnet_id and vnet_id
+* resource/aggregate: better handle multi creation with count
+* resource/cvo for AWS, AZURE and GCP: add writing_speed_state update
+
+BUG FIXES:
+* resource/cvo for AWS, AZURE and GCP: fix force recreation on writing_speed_state  ([#104](https://github.com/NetApp/terraform-provider-netapp-cloudmanager/issues/104))
+
 ## 22.4.0
 BUG FIXES:
 

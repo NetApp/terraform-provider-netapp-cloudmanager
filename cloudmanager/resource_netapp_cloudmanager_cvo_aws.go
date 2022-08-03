@@ -134,9 +134,9 @@ func resourceCVOAWS() *schema.Resource {
 				ForceNew: true,
 			},
 			"writing_speed_state": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"NORMAL", "HIGH"}, true),
 			},
 			"iops": {
 				Type:     schema.TypeInt,
@@ -384,7 +384,7 @@ func resourceCVOAWSCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	if c, ok := d.GetOk("writing_speed_state"); ok {
-		cvoDetails.WritingSpeedState = c.(string)
+		cvoDetails.WritingSpeedState = strings.ToUpper(c.(string))
 	}
 
 	if c, ok := d.GetOk("platform_serial_number"); ok {
@@ -506,6 +506,9 @@ func resourceCVOAWSRead(d *schema.ResourceData, meta interface{}) error {
 	if _, ok := d.GetOk("route_table_ids"); ok {
 		d.Set("route_table_ids", routeTables)
 	}
+	if c, ok := d.GetOk("writing_speed_state"); ok {
+		d.Set("writing_speed_state", c.(string))
+	}
 	return nil
 }
 
@@ -566,6 +569,25 @@ func resourceCVOAWSUpdate(d *schema.ResourceData, meta interface{}) error {
 			return respErr
 		}
 		return resourceCVOAWSRead(d, meta)
+	}
+
+	// check if writing_speed_state is changed
+	if d.HasChange("writing_speed_state") {
+		currentWritingSpeedState, expectWritingSpeedState := d.GetChange("writing_speed_state")
+		if currentWritingSpeedState.(string) == "" && strings.ToUpper(expectWritingSpeedState.(string)) == "NORMAL" {
+			d.Set("writing_speed_state", expectWritingSpeedState.(string))
+			log.Print("writing_speed_state: default value is NORMAL. No change call is needed.")
+			return nil
+		}
+		if strings.EqualFold(currentWritingSpeedState.(string), expectWritingSpeedState.(string)) {
+			d.Set("writing_speed_state", expectWritingSpeedState.(string))
+		} else {
+			respErr := updateCVOWritingSpeedState(d, meta, clientID)
+			if respErr != nil {
+				return respErr
+			}
+		}
+		return nil
 	}
 
 	// upgrade ontap version

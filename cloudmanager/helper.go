@@ -183,6 +183,11 @@ type changeTierLevelRequest struct {
 	Level string `structs:"level"`
 }
 
+// changeWritingSpeedStateRequest the input for writing speed state change
+type changeWritingSpeedStateRequest struct {
+	WritingSpeedState string `structs:"writingSpeedState"`
+}
+
 // upgradeOntapVersionRequest
 type upgradeOntapVersionRequest struct {
 	UpdateType      string `structs:"updateType"`
@@ -925,9 +930,14 @@ func updateCVOSVMPassword(d *schema.ResourceData, meta interface{}, clientID str
 	return nil
 }
 
-func (c *Client) waitOnCompletionCVOUpdate(apiRoot string, id string, retryCount int, waitInterval int, clientID string) error {
+func (c *Client) waitOnCompletionCVOUpdate(id string, retryCount int, waitInterval int, clientID string) error {
 	// check upgrade status
 	log.Print("Check CVO update status")
+	// check upgrade status
+	apiRoot, _, err := c.getAPIRoot(id, clientID)
+	if err != nil {
+		return fmt.Errorf("Cannot get root API")
+	}
 
 	for {
 		cvoResp, err := c.getWorkingEnvironmentProperties(apiRoot, id, "status,ontapClusterProperties", clientID)
@@ -967,16 +977,11 @@ func updateCVOLicenseInstanceType(d *schema.ResourceData, meta interface{}, clie
 		return updateErr
 	}
 	// check upgrade status
-	apiRoot, _, err := client.getAPIRoot(id, clientID)
-	if err != nil {
-		return fmt.Errorf("Cannot get root API")
-	}
-
 	retryCount := 65
 	if d.Get("is_ha").(bool) {
 		retryCount = retryCount * 2
 	}
-	err = client.waitOnCompletionCVOUpdate(apiRoot, id, retryCount, 60, clientID)
+	err := client.waitOnCompletionCVOUpdate(id, retryCount, 60, clientID)
 	if err != nil {
 		return fmt.Errorf("Update CVO failed %v", err)
 	}
@@ -998,6 +1003,35 @@ func updateCVOTierLevel(d *schema.ResourceData, meta interface{}, clientID strin
 		return updateErr
 	}
 	log.Printf("Updated %s tier_level: %v", id, request)
+	return nil
+}
+
+// update writing_speed_state of a specific CVO
+func updateCVOWritingSpeedState(d *schema.ResourceData, meta interface{}, clientID string) error {
+	client := meta.(*Client)
+	var request changeWritingSpeedStateRequest
+	if c, ok := d.GetOk("writing_speed_state"); ok {
+		request.WritingSpeedState = strings.ToUpper(c.(string))
+	}
+	log.Printf("writing_speed_state value %s", request.WritingSpeedState)
+	id := d.Id()
+	baseURL := fmt.Sprintf("/working-environments/%s/writing-speed", id)
+	updateErr := client.callCMUpdateAPI("PUT", request, baseURL, id, "updateCVOWritingSpeedState", clientID)
+	if updateErr != nil {
+		return updateErr
+	}
+
+	// check upgrade status
+	retryCount := 10
+	if d.Get("is_ha").(bool) {
+		retryCount = retryCount * 2
+	}
+
+	err := client.waitOnCompletionCVOUpdate(id, retryCount, 60, clientID)
+	if err != nil {
+		return fmt.Errorf("Update CVO failed %v", err)
+	}
+	log.Printf("Updated %s writing_speed_state: %v", id, request)
 	return nil
 }
 

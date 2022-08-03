@@ -137,6 +137,11 @@ func resourceOCCMAWS() *schema.Resource {
 					},
 				},
 			},
+			"public_ip_address": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -340,6 +345,7 @@ func resourceOCCMAWSRead(d *schema.ResourceData, meta interface{}) error {
 		d.Set("associate_public_ip_address", false)
 	} else {
 		d.Set("associate_public_ip_address", true)
+		d.Set("public_ip_address", *res.PublicIpAddress)
 	}
 
 	if _, ok := d.GetOk("company"); !ok {

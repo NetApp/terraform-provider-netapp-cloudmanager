@@ -37,6 +37,7 @@ provider "netapp-cloudmanager" {
   sa_secret_key         = var.cloudmanager_sa_secret_key
   sa_client_id          = var.cloudmanager_sa_client_id
   aws_profile           = var.cloudmanager_aws_profile
+  aws_profile_file_path = var.cloudmanager_aws_profile_file_path
 }
 ```
 
@@ -48,8 +49,27 @@ The following arguments are used to configure the netapp-cloudmanager provider:
 * `sa_client_id` - (Optional) This is the service account client ID for NetApp Cloud Manager API operations. The service account can be created on [NetApp Cloud Central](https://services.cloud.netapp.com/). The client id and secret key will be provided on service account creation.
 * `sa_secret_key` - (Optional) This is the service account client ID for NetApp Cloud Manager API operations. The service account can be created on [NetApp Cloud Central](https://services.cloud.netapp.com/). The client id and secret key will be provided on service account creation.
 * `aws_profile` - (Optional) This is the profile name of the aws credentials file in your home directory, for example,~/.aws/credentials. If not specified, profile named default is used.
+* `aws_profile_file_path` - (Optional) Path to the shared credentials file. Shortcuts like $HOME and ~ do not work.
 
+## Config AWS Credentials
+AWS looks for credentials in the following orders:
 
+Environment Variables
+Shared Credentials file
+Shared Configuration file (if SharedConfig is enabled)
+EC2 Instance Metadata (credentials only)
+
+If neither aws_profile nor aws_profile_file_path is specified, the provider look for cred in the mentioned order.
+If one of aws_profile and aws_profile_file_path is specified, the unspecified option has default value:
+
+If aws_profile_file_path is empty, it will look for "AWS_SHARED_CREDENTIALS_FILE" env variable. If the 
+env value is empty will default to current user's home directory.
+Linux/OSX: "$HOME/.aws/credentials"
+Windows:   "%USERPROFILE%\.aws\credentials"
+
+AWS Profile to extract credentials from the shared credentials file. If empty
+will default to environment variable "AWS_PROFILE" or "default" if
+environment variable is also not set.
 
 
 ## Required Privileges

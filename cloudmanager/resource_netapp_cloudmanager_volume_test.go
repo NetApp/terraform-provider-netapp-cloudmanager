@@ -268,8 +268,8 @@ func testAccAWSVsaVolume(clientID string, weName string) string {
 			size = 10
 			unit = "GB"
 			enable_thin_provisioning = true
-			enable_compression = false
-			enable_deduplication = false
+			enable_compression = true
+			enable_deduplication = true
 			snapshot_policy_name = "default"
 			igroups = ["test_igroup"]
 			initiator {
