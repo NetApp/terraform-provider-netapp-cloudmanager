@@ -1,3 +1,7 @@
+## 22.8.1
+BUG FIXES:
+* resource/connector_aws: fix bug whe get instance returns error, but error is not returned to upstream.
+
 ## 22.8.0
 NEW FEATURES:
 

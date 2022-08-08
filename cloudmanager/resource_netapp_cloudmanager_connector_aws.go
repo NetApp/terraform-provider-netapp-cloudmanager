@@ -273,8 +273,12 @@ func resourceOCCMAWSRead(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
+	if res.InstanceId == nil {
+		return fmt.Errorf("Connector %s not found", occmDetails.Name)
+	}
+
 	if *res.InstanceId != id {
-		return fmt.Errorf("Expected occm ID %v, Response could not find", id)
+		return fmt.Errorf("Expected occm ID %s, Response could not find", id)
 	}
 
 	if occmDetails.Region == "" {
