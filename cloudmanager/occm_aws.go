@@ -374,7 +374,7 @@ func (c *Client) getAWSInstance(occmDetails createOCCMDetails, id string) (ec2.I
 	res, err := c.CallAWSInstanceGet(occmDetails)
 	returnOCCM := createOCCMDetails{}
 	if err != nil {
-		return ec2.Instance{}, nil
+		return ec2.Instance{}, err
 	}
 	log.Printf("getAWSInstance result: %#v", res)
 	for _, instance := range res {
