@@ -61,6 +61,8 @@ The following arguments are supported:
 * `nss_account` - (Optional) The NetApp Support Site account ID to use with this Cloud Volumes ONTAP system. If the license type is BYOL and an NSS account isn't provided, Cloud Manager tries to use the first existing NSS account.
 * `writing_speed_state` - (Optional) The write speed setting for Cloud Volumes ONTAP: ['NORMAL','HIGH']. The default is 'NORMAL'. This argument is not relevant for HA pairs.
 * `firewall_rule` - (Optional) The name of the firewall rule for Cloud Volumes ONTAP. If not provided, Cloud Manager generates the rule.
+* `backup_volumes_to_cbs` - (Optional) Automatically enable back up of all volumes to Google Cloud buckets [true, false].
+* `enable_compliance` - (Optional) Enable the Cloud Compliance service on the working environment [true, false].
 * `is_ha` - (Optional) Indicate whether the working environment is an HA pair or not [true, false]. The default is false.
 * `platform_serial_number_node1` - (Optional) For HA BYOL, the serial number for the first node.
 * `platform_serial_number_node2` - (Optional) For HA BYOL, the serial number for the second node.

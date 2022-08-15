@@ -181,13 +181,11 @@ func resourceCVOAWS() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 				ForceNew: true,
-				Default:  false,
 			},
 			"enable_compliance": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				ForceNew: true,
-				Default:  false,
 			},
 			"enable_monitoring": {
 				Type:     schema.TypeBool,
@@ -342,8 +340,15 @@ func resourceCVOAWSCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 	cvoDetails.OptimizedNetworkUtilization = d.Get("optimized_network_utilization").(bool)
 	cvoDetails.InstanceTenancy = d.Get("instance_tenancy").(string)
-	cvoDetails.BackupVolumesToCbs = d.Get("backup_volumes_to_cbs").(bool)
-	cvoDetails.EnableCompliance = d.Get("enable_compliance").(bool)
+
+	if c, ok := d.GetOk("backup_volumes_to_cbs"); ok {
+		cvoDetails.BackupVolumesToCbs = c.(bool)
+	}
+
+	if c, ok := d.GetOk("enable_compliance"); ok {
+		cvoDetails.EnableCompliance = c.(bool)
+	}
+
 	cvoDetails.EnableMonitoring = d.Get("enable_monitoring").(bool)
 	if c, ok := d.GetOk("aws_tag"); ok {
 		tags := c.(*schema.Set)

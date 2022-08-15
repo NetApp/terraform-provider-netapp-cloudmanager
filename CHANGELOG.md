@@ -1,3 +1,7 @@
+## 22.8.2
+NEW ENHANCEMENTS:
+* resource/cvo for AWS, AZURE and GCP: support backup_volumes_to_cbs and enable_compliance 
+
 ## 22.8.1
 BUG FIXES:
 * resource/connector_aws: fix bug whe get instance returns error, but error is not returned to upstream.

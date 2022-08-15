@@ -180,6 +180,16 @@ func resourceCVOGCP() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"backup_volumes_to_cbs": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
+			"enable_compliance": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
 			"is_ha": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -335,6 +345,14 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 		if labels.Len() > 0 {
 			cvoDetails.GCPLabels = expandGCPLabels(labels)
 		}
+	}
+
+	if c, ok := d.GetOk("backup_volumes_to_cbs"); ok {
+		cvoDetails.BackupVolumesToCbs = c.(bool)
+	}
+
+	if c, ok := d.GetOk("enable_compliance"); ok {
+		cvoDetails.EnableCompliance = c.(bool)
 	}
 
 	var networkProjectID string

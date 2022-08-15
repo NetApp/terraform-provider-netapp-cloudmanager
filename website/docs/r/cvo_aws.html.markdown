@@ -106,8 +106,8 @@ The following arguments are supported:
 * `instance_profile_name` - (Optional) The instance profile name for the working environment. If not provided, Cloud Manager creates the instance profile.
 * `security_group_id` - (Optional) The ID of the security group for the working environment. If not provided, Cloud Manager creates the security group.
 * `cloud_provider_account` - (Optional) The cloud provider credentials id to use when deploying the Cloud Volumes ONTAP system. You can find the ID in Cloud Manager from the Settings > Credentials page. If not specified, Cloud Manager uses the instance profile of the Connector.
-* `backup_volumes_to_cbs` - (Optional) Automatically enable back up of all volumes to S3 [true, false]. The default is false.
-* `enable_compliance` - (Optional) Enable the Cloud Compliance service on the working environment [true, false]. The default is false.
+* `backup_volumes_to_cbs` - (Optional) Automatically enable back up of all volumes to S3 [true, false].
+* `enable_compliance` - (Optional) Enable the Cloud Compliance service on the working environment [true, false].
 * `enable_monitoring` - (Optional) Enable the Monitoring service on the working environment [true, false]. The default is false.
 * `optimized_network_utilization` - (Optional) Use optimized network utilization [true, false]. The default is true.
 * `is_ha` - (Optional) Indicate whether the working environment is an HA pair or not [true, false]. The default is false.
