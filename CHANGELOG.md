@@ -1,6 +1,9 @@
 ## 22.8.2
 NEW ENHANCEMENTS:
-* resource/cvo for AWS, AZURE and GCP: support backup_volumes_to_cbs and enable_compliance 
+* resource/cvo for AWS, AZURE and GCP: support backup_volumes_to_cbs and enable_compliance
+
+BUG FIXES:
+* resource/volume: remove default values of enable_thin_provisioning, enable_compression and enable_deduplication.
 
 ## 22.8.1
 BUG FIXES:
