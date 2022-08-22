@@ -1,3 +1,11 @@
+## 22.8.2
+NEW ENHANCEMENTS:
+* resource/cvo for AWS, AZURE and GCP: support backup_volumes_to_cbs and enable_compliance
+* resource/connector for AWS, AZURE and GCP: wait for creation to complete increase to 15 minutes.
+
+BUG FIXES:
+* resource/volume: remove default values of enable_thin_provisioning, enable_compression and enable_deduplication.
+
 ## 22.8.1
 BUG FIXES:
 * resource/connector_aws: fix bug whe get instance returns error, but error is not returned to upstream.

@@ -132,7 +132,7 @@ func (c *Client) createOCCMAzure(occmDetails createOCCMDetails, proxyCertificate
 	log.Print("Sleep for 2 minutes")
 	time.Sleep(time.Duration(120) * time.Second)
 
-	retries := 16
+	retries := 26
 	for {
 		occmResp, err := c.checkOCCMStatus(newClientID)
 		if err != nil {

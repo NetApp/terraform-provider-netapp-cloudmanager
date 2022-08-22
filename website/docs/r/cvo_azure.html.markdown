@@ -108,8 +108,8 @@ The following arguments are supported:
 * `writing_speed_state` - (Optional) The write speed setting for Cloud Volumes ONTAP: ['NORMAL','HIGH']. The default is 'NORMAL'. This argument is not relevant for HA pairs.
 * `security_group_id` - (Optional) The name of the security group (full identifier: /subscriptions/xxxxxx/resourceGroups/rg_westus/providers/Microsoft.Network/networkSecurityGroups/CVO-SG). If not provided, Cloud Manager creates the security group.
 * `cloud_provider_account` - (Optional) The cloud provider credentials id to use when deploying the Cloud Volumes ONTAP system. You can find the ID in Cloud Manager from the Settings > Credentials page. If not specified, Cloud Manager uses the managed service identity of the Connector virtual machine.
-* `backup_volumes_to_cbs` - (Optional) Automatically enable back up of all volumes to Azure Blob [true, false]. The default is false.
-* `enable_compliance` - (Optional) Enable the Cloud Compliance service on the working environment [true, false]. The default is false.
+* `backup_volumes_to_cbs` - (Optional) Automatically enable back up of all volumes to Azure Blob [true, false].
+* `enable_compliance` - (Optional) Enable the Cloud Compliance service on the working environment [true, false].
 * `enable_monitoring` - (Optional) Enable the Monitoring service on the working environment [true, false]. The default is false.
 * `is_ha` - (Optional) Indicate whether the working environment is an HA pair or not [true, false]. The default is false.
 * `platform_serial_number_node1` - (Optional) For HA BYOL, the serial number for the first node.

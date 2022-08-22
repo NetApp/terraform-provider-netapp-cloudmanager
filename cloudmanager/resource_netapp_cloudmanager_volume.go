@@ -58,17 +58,14 @@ func resourceCVOVolume() *schema.Resource {
 			"enable_thin_provisioning": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				Default:  true,
 			},
 			"enable_compression": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				Default:  true,
 			},
 			"enable_deduplication": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				Default:  true,
 			},
 			"client_id": {
 				Type:     schema.TypeString,
@@ -188,9 +185,18 @@ func resourceCVOVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 	quote.Size.Unit = d.Get("unit").(string)
 	quote.SnapshotPolicyName = d.Get("snapshot_policy_name").(string)
 	quote.ProviderVolumeType = d.Get("provider_volume_type").(string)
-	quote.EnableDeduplication = d.Get("enable_deduplication").(bool)
-	quote.EnableThinProvisioning = d.Get("enable_thin_provisioning").(bool)
-	quote.EnableCompression = d.Get("enable_compression").(bool)
+	if v, ok := d.GetOk("enable_deduplication"); ok {
+		quote.EnableDeduplication = v.(bool)
+		volume.EnableThinProvisioning = v.(bool)
+	}
+	if v, ok := d.GetOk("enable_thin_provisioning"); ok {
+		quote.EnableThinProvisioning = v.(bool)
+		volume.EnableThinProvisioning = v.(bool)
+	}
+	if v, ok := d.GetOk("enable_compression"); ok {
+		quote.EnableCompression = v.(bool)
+		volume.EnableCompression = v.(bool)
+	}
 	quote.VerifyNameUniqueness = true // hard code to always true
 	if v, ok := d.GetOk("iops"); ok {
 		quote.Iops = v.(int)
@@ -253,9 +259,6 @@ func resourceCVOVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 	volume.ProviderVolumeType = d.Get("provider_volume_type").(string)
 	volume.Name = d.Get("name").(string)
 	volume.SnapshotPolicyName = d.Get("snapshot_policy_name").(string)
-	volume.EnableThinProvisioning = d.Get("enable_thin_provisioning").(bool)
-	volume.EnableCompression = d.Get("enable_compression").(bool)
-	volume.EnableDeduplication = d.Get("enable_deduplication").(bool)
 	volume.Size.Size = d.Get("size").(float64)
 	volume.Size.Unit = d.Get("unit").(string)
 	volumeProtocol := d.Get("volume_protocol").(string)

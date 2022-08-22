@@ -4,8 +4,8 @@ resource "netapp-cloudmanager_volume" "cvo-volume" {
   size = 10
   unit = "GB"
   enable_thin_provisioning = true
-  enable_compression = true
-  enable_deduplication = true
+  enable_compression = false
+  enable_deduplication = false
   snapshot_policy_name = "default"
   export_policy_type = "custom"
   export_policy_ip = ["10.30.0.1/16"]
@@ -20,8 +20,8 @@ resource "netapp-cloudmanager_volume" "cvo-volume-2" {
   size = 2
   unit = "TB"
   enable_thin_provisioning = true
-  enable_compression = true
-  enable_deduplication = true
+  enable_compression = false
+  enable_deduplication = false
   snapshot_policy_name = "default"
   working_environment_name = "justincluster"
   export_policy_name = "export-svm_justincluster-test_vol_2"
@@ -39,8 +39,8 @@ resource "netapp-cloudmanager_volume" "cvo-volume-3" {
   size = 10
   unit = "GB"
   enable_thin_provisioning = true
-  enable_compression = true
-  enable_deduplication = true
+  enable_compression = false
+  enable_deduplication = false
   snapshot_policy_name = "default"
   working_environment_name = "justincluster"
   export_policy_name = "export-svm_justincluster-test_vol_3"
@@ -58,8 +58,8 @@ resource "netapp-cloudmanager_volume" "cvo-volume-4" {
   size = 10
   unit = "GB"
   enable_thin_provisioning = true
-  enable_compression = true
-  enable_deduplication = true
+  enable_compression = false
+  enable_deduplication = false
   snapshot_policy_name = "default"
   working_environment_name = "justincluster"
   provider_volume_type = "io1"
@@ -79,8 +79,8 @@ resource "netapp-cloudmanager_volume" "cvo-volume-ha-1" {
   size = 10
   unit = "GB"
   enable_thin_provisioning = true
-  enable_compression = true
-  enable_deduplication = true
+  enable_compression = false
+  enable_deduplication = false
   snapshot_policy_name = "default"
   export_policy_type = "custom"
   export_policy_ip = ["10.30.0.1/16"]
@@ -95,8 +95,8 @@ resource "netapp-cloudmanager_volume" "cvo-volume-ha-2" {
   size = 2
   unit = "TB"
   enable_thin_provisioning = true
-  enable_compression = true
-  enable_deduplication = true
+  enable_compression = false
+  enable_deduplication = false
   snapshot_policy_name = "default"
   working_environment_name = "justinclusters"
   export_policy_type = "custom"
@@ -114,8 +114,8 @@ resource "netapp-cloudmanager_volume" "cifs-volume-1" {
   size = 10
   unit = "GB"
   enable_thin_provisioning = true
-  enable_compression = true
-  enable_deduplication = true
+  enable_compression = false
+  enable_deduplication = false
   snapshot_policy_name = "default"
   share_name = "share_cifs"
   permission = "full_control"

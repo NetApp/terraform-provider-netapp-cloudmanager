@@ -83,9 +83,9 @@ The following arguments are supported:
 * `size_unit` - (Required) ['Byte' or 'KB' or 'MB' or 'GB' or 'TB'].
 * `provider_volume_type` - (Required) The underlying cloud provider volume type. For AWS: ['gp3', 'gp2', 'io1', 'st1', 'sc1']. For Azure: ['Premium_LRS','Standard_LRS','StandardSSD_LRS']. For GCP: ['pd-balanced', 'pd-ssd','pd-standard']
 * `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
-* `enable_thin_provisioning` - (Optional) Enable thin provisioning. The default is 'true'.
-* `enable_compression` - (Optional) Enable compression. The default is 'true'.
-* `enable_deduplication` - (Optional) Enable deduplication. The default is 'true'.
+* `enable_thin_provisioning` - (Optional) Enable thin provisioning.
+* `enable_compression` - (Optional) Enable compression.
+* `enable_deduplication` - (Optional) Enable deduplication.
 * `aggregate_name ` - (Optional) The aggregate in which the volume will be created. If not provided, Cloud Manager chooses the best aggregate for you.
 * `volume_protocol` - (Optional) The protocol for the volume: ['nfs', 'cifs', 'iscsi']. This affects the provided parameters. The default is 'nfs'
 * `working_environment_id` - (Optional) The public ID of the working environment where the volume will be created. The ID can be optional if working_environment_name is provided. You can find the ID from the previous create Cloud Volumes ONTAP action as shown in the example, or from the Information page of the Cloud Volumes ONTAP working environment on [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).

@@ -38,6 +38,8 @@ type createCVOGCPDetails struct {
 	GCPLabels               []gcpLabels             `structs:"gcpLabels,omitempty"`
 	GcpEncryptionParameters gcpEncryptionParameters `structs:"gcpEncryptionParameters,omitempty"`
 	FirewallRule            string                  `structs:"firewallRule,omitempty"`
+	BackupVolumesToCbs      bool                    `structs:"backupVolumesToCbs"`
+	EnableCompliance        bool                    `structs:"enableCompliance"`
 	IsHA                    bool
 	HAParams                haParamsGCP `structs:"haParams,omitempty"`
 }
@@ -109,6 +111,7 @@ func (c *Client) createCVOGCP(cvoDetails createCVOGCPDetails, clientID string) (
 	hostType := "CloudManagerHost"
 	params := structs.Map(cvoDetails)
 
+	log.Printf("Create GCP CVO: %#v", params)
 	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("POST", baseURL, params, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("createCVO request failed ", statusCode)
