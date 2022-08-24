@@ -30,6 +30,7 @@ type createCVOAWSDetails struct {
 	TierLevel                   string                  `structs:"tierLevel,omitempty"`
 	NssAccount                  string                  `structs:"nssAccount,omitempty"`
 	WritingSpeedState           string                  `structs:"writingSpeedState,omitempty"`
+	ClusterKeyPairName          string                  `structs:"clusterKeyPairName,omitempty"`
 	IOPS                        int                     `structs:"iops,omitempty"`
 	Throughput                  int                     `structs:"throughput,omitempty"`
 	OptimizedNetworkUtilization bool                    `structs:"optimizedNetworkUtilization"`

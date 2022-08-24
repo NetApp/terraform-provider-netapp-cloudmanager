@@ -199,6 +199,11 @@ func resourceCVOAWS() *schema.Resource {
 				ForceNew: true,
 				Default:  true,
 			},
+			"cluster_key_pair_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"kms_key_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -347,6 +352,10 @@ func resourceCVOAWSCreate(d *schema.ResourceData, meta interface{}) error {
 
 	if c, ok := d.GetOk("enable_compliance"); ok {
 		cvoDetails.EnableCompliance = c.(bool)
+	}
+
+	if c, ok := d.GetOk("cluster_key_pair_name"); ok {
+		cvoDetails.ClusterKeyPairName = c.(string)
 	}
 
 	cvoDetails.EnableMonitoring = d.Get("enable_monitoring").(bool)
