@@ -126,6 +126,7 @@ The following arguments are supported:
 * `svm_floating_ip` - (Optional) For HA FloatingIP, the SVM management floating IP address.
 * `route_table_ids` - (Optional) For HA FloatingIP, the list of route table IDs that will be updated with the floating IPs.
 * `upgrade_ontap_version` - (Optional) Indicates whether to upgrade ontap image with `ontap_version`. To upgrade ontap image, `ontap_version` cannot be 'latest' and `use_latest_version` needs to be false.
+* `mediator_security_group_id` - (Optional) For HA only, mediator security group id.
 
 The `aws_tag` block supports the following:
 * `tag_key` - (Required) The key of the tag.

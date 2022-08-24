@@ -1,4 +1,8 @@
 ## 22.8.3
+
+NEW FEATURES:
+* resource/cvo_aws: add mediator_security_group_id option.
+
 NEW ENHANCEMENTS:
 * resource/cvo for AWS: add cluster_key_pair_name parameter for key pair on SSH authentication.
 

@@ -1,9 +1,10 @@
 package cloudmanager
 
 import (
-	"github.com/hashicorp/terraform/helper/validation"
 	"log"
 	"strings"
+
+	"github.com/hashicorp/terraform/helper/validation"
 
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -320,6 +321,11 @@ func resourceCVOAWS() *schema.Resource {
 				Optional: true,
 				Default:  false,
 			},
+			"mediator_security_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -472,6 +478,9 @@ func resourceCVOAWSCreate(d *schema.ResourceData, meta interface{}) error {
 
 		if c, ok := d.GetOk("platform_serial_number_node2"); ok {
 			cvoDetails.HAParams.PlatformSerialNumberNode2 = c.(string)
+		}
+		if c, ok := d.GetOk("mediator_security_group_id"); ok {
+			cvoDetails.HAParams.MediatorSecurityGroupID = c.(string)
 		}
 	} else {
 		if c, ok := d.GetOk("subnet_id"); ok {
