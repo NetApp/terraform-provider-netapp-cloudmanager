@@ -30,6 +30,7 @@ type createCVOAWSDetails struct {
 	TierLevel                   string                  `structs:"tierLevel,omitempty"`
 	NssAccount                  string                  `structs:"nssAccount,omitempty"`
 	WritingSpeedState           string                  `structs:"writingSpeedState,omitempty"`
+	ClusterKeyPairName          string                  `structs:"clusterKeyPairName,omitempty"`
 	IOPS                        int                     `structs:"iops,omitempty"`
 	Throughput                  int                     `structs:"throughput,omitempty"`
 	OptimizedNetworkUtilization bool                    `structs:"optimizedNetworkUtilization"`
@@ -61,6 +62,7 @@ type haParamsAWS struct {
 	PlatformSerialNumberNode2   string   `structs:"platformSerialNumberNode2,omitempty"`
 	MediatorInstanceProfileName string   `structs:"mediatorInstanceProfileName,omitempty"`
 	MediatorAssignPublicIP      *bool    `structs:"mediatorAssignPublicIP,omitempty"`
+	MediatorSecurityGroupID     string   `structs:"mediatorSecurityGroupId,omitempty"`
 	RouteTableIds               []string `structs:"routeTableIds,omitempty"`
 }
 

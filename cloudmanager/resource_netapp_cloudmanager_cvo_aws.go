@@ -1,9 +1,10 @@
 package cloudmanager
 
 import (
-	"github.com/hashicorp/terraform/helper/validation"
 	"log"
 	"strings"
+
+	"github.com/hashicorp/terraform/helper/validation"
 
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -199,6 +200,11 @@ func resourceCVOAWS() *schema.Resource {
 				ForceNew: true,
 				Default:  true,
 			},
+			"cluster_key_pair_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"kms_key_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -315,6 +321,11 @@ func resourceCVOAWS() *schema.Resource {
 				Optional: true,
 				Default:  false,
 			},
+			"mediator_security_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -347,6 +358,10 @@ func resourceCVOAWSCreate(d *schema.ResourceData, meta interface{}) error {
 
 	if c, ok := d.GetOk("enable_compliance"); ok {
 		cvoDetails.EnableCompliance = c.(bool)
+	}
+
+	if c, ok := d.GetOk("cluster_key_pair_name"); ok {
+		cvoDetails.ClusterKeyPairName = c.(string)
 	}
 
 	cvoDetails.EnableMonitoring = d.Get("enable_monitoring").(bool)
@@ -463,6 +478,9 @@ func resourceCVOAWSCreate(d *schema.ResourceData, meta interface{}) error {
 
 		if c, ok := d.GetOk("platform_serial_number_node2"); ok {
 			cvoDetails.HAParams.PlatformSerialNumberNode2 = c.(string)
+		}
+		if c, ok := d.GetOk("mediator_security_group_id"); ok {
+			cvoDetails.HAParams.MediatorSecurityGroupID = c.(string)
 		}
 	} else {
 		if c, ok := d.GetOk("subnet_id"); ok {

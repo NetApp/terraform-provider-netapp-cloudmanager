@@ -1,6 +1,14 @@
+## 22.8.3
+
+NEW FEATURES:
+* resource/cvo_aws: add mediator_security_group_id option.
+
+NEW ENHANCEMENTS:
+* resource/cvo for AWS: add cluster_key_pair_name parameter for key pair on SSH authentication.
+
 ## 22.8.2
 NEW ENHANCEMENTS:
-* resource/cvo for AWS, AZURE and GCP: support backup_volumes_to_cbs and enable_compliance
+* resource/cvo for AWS, AZURE and GCP: support backup_volumes_to_cbs and enable_compliance.
 * resource/connector for AWS, AZURE and GCP: wait for creation to complete increase to 15 minutes.
 
 BUG FIXES:

@@ -85,13 +85,14 @@ The following arguments are supported:
 * `vpc_id` - (Optional) The VPC ID where the working environment will be created. If this argument isn't provided, the VPC will be calculated by using the provided subnet ID.
 * `workspace_id` - (Optional) The ID of the Cloud Manager workspace where you want to deploy Cloud Volumes ONTAP. If not provided, Cloud Manager uses the first workspace. You can find the ID from the Workspace tab on [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
 * `data_encryption_type` - (Optional) The type of encryption to use for the working environment: ['AWS', 'NONE']. The default is 'AWS'.
-* `aws_encryption_kms_key_id` - (Optional) AWS encryption parameters. It is required if using aws encryption. Only one of KMS key id or KMS arn should be specified
-* `aws_encryption_kms_key_arn` - (Optional) AWS encryption parameters. It is requried if using aws encryption. Only one of KMS key id or KMS arn should be specified
+* `aws_encryption_kms_key_id` - (Optional) AWS encryption parameters. It is required if using aws encryption. Only one of KMS key id or KMS arn should be specified.
+* `aws_encryption_kms_key_arn` - (Optional) AWS encryption parameters. It is requried if using aws encryption. Only one of KMS key id or KMS arn should be specified.
 * `ebs_volume_size` - (Optional) EBS volume size for the first data aggregate. For GB, the unit can be: [100 or 500]. For TB, the unit can be: [1,2,4,8,16]. The default is '1' .
 * `ebs_volume_size_unit` - (Optional) ['GB' or 'TB']. The default is 'TB'.
 * `ebs_volume_type` - (Optional) The EBS volume type for the first data aggregate ['gp3', 'gp2','io1','st1','sc1']. The default is 'gp2'.
 * `iops` - (Optional) Provisioned IOPS. Required only when 'ebs_volume_type' is 'io1' or 'gp3'.
 * `throughput` - (Optional) Required only when 'ebs_volume_type' is 'gp3'.
+* `cluster_key_pair_name` - (Optional) Use for SSH authentication key pair method.
 * `ontap_version` - (Optional) The required ONTAP version. Ignored if 'use_latest_version' is set to true. The default is to use the latest version.
 * `use_latest_version` - (Optional) Indicates whether to use the latest available ONTAP version. The default is 'true'.
 * `license_type` - (Optional) The type of license to use. For single node: (by Capacity): ['capacity-paygo'], (by Node paygo): ['cot-explore-paygo','cot-standard-paygo', 'cot-premium-paygo'], (by Node byol): ['cot-premium-byol']. For HA: (by Capacity): ['ha-capacity-paygo'], (by Node paygo): ['ha-cot-explore-paygo','ha-cot-standard-paygo','ha-cot-premium-paygo'], (by Node byol): 'ha-cot-premium-byol']. The default is 'capacity-paygo' for single node, and 'ha-capacity-paygo' for HA.
@@ -125,6 +126,7 @@ The following arguments are supported:
 * `svm_floating_ip` - (Optional) For HA FloatingIP, the SVM management floating IP address.
 * `route_table_ids` - (Optional) For HA FloatingIP, the list of route table IDs that will be updated with the floating IPs.
 * `upgrade_ontap_version` - (Optional) Indicates whether to upgrade ontap image with `ontap_version`. To upgrade ontap image, `ontap_version` cannot be 'latest' and `use_latest_version` needs to be false.
+* `mediator_security_group_id` - (Optional) For HA only, mediator security group id.
 
 The `aws_tag` block supports the following:
 * `tag_key` - (Required) The key of the tag.
