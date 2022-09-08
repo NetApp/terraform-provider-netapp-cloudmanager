@@ -13,6 +13,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/resources/mgmt/resources"
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/storage/mgmt/storage"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-07-01/network"
+	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -64,6 +65,7 @@ type Client struct {
 	Simulator          bool
 	AWSProfile         string
 	AWSProfileFilePath string
+	AzureAuthMethods   []string
 }
 
 // CallAWSInstanceCreate can be used to make a request to create AWS Instance
@@ -204,6 +206,33 @@ func (c *Client) CallAWSInstanceTerminate(occmDetails deleteOCCMDetails) error {
 	return nil
 }
 
+// AzureAuthorize - Azure authorization using env or cli or both
+func (c *Client) AzureAuthorize() (autorest.Authorizer, error) {
+	var err error = fmt.Errorf("method must be one of cli, env, or file.  Got: %s", c.AzureAuthMethods)
+	for _, method := range c.AzureAuthMethods {
+		var authorizer autorest.Authorizer
+		switch method {
+		case "cli":
+			authorizer, err = auth.NewAuthorizerFromCLI()
+			log.Print("Authorizing azure from CLI ", err)
+		case "env":
+			authorizer, err = auth.NewAuthorizerFromEnvironment()
+			log.Print("Authorizing azure from environment ", err)
+		// TODO
+		// case "file":
+		// 	authorizer, err = auth.NewAuthorizerFromFile('<file name>')
+		// 	log.Print("Authorizing azure from file ", err)
+		default:
+			err = fmt.Errorf("method must be one of cli, env, or file.  Got: %s", method)
+		}
+		if err == nil {
+			return authorizer, nil
+		}
+	}
+	log.Print("Failed to authorize with Azure using any of", c.AzureAuthMethods)
+	return nil, err
+}
+
 // CallDeployAzureVM can be used to make a request to deploy Azure VM
 func (c *Client) CallDeployAzureVM(occmDetails createOCCMDetails) (string, error) {
 
@@ -295,10 +324,9 @@ func (c *Client) CallDeployAzureVM(occmDetails createOCCMDetails) (string, error
 	}
 
 	deploymentsClient := resources.NewDeploymentsClient(occmDetails.SubscriptionID)
-	authorizer, err := auth.NewAuthorizerFromCLI()
+	authorizer, err := c.AzureAuthorize()
 	if err != nil {
-		log.Print("Could not authorize azure ", err)
-		return "", err
+		return "", fmt.Errorf("cannot authorize: %v", err)
 	}
 	deploymentsClient.Authorizer = authorizer
 	log.Printf("storageAccount %s virtualMachinesName %s", (*params)["storageAccount"], (*params)["virtualMachineName"])
@@ -331,10 +359,9 @@ func (c *Client) CallDeployAzureVM(occmDetails createOCCMDetails) (string, error
 func (c *Client) CallGetAzureVM(occmDetails createOCCMDetails) (string, error) {
 
 	deploymentsClient := resources.NewDeploymentsClient(occmDetails.SubscriptionID)
-	authorizer, err := auth.NewAuthorizerFromCLI()
+	authorizer, err := c.AzureAuthorize()
 	if err != nil {
-		log.Print("Could not authorize azure ", err)
-		return "", err
+		return "", fmt.Errorf("cannot authorize: %v", err)
 	}
 	deploymentsClient.Authorizer = authorizer
 
@@ -358,7 +385,7 @@ func (c *Client) CallGetAzureVM(occmDetails createOCCMDetails) (string, error) {
 // CallDeleteAzureVM can be used to make a request to delete Azure VM
 func (c *Client) CallDeleteAzureVM(occmDetails deleteOCCMDetails) error {
 
-	authorizer, err := auth.NewAuthorizerFromCLI()
+	authorizer, err := c.AzureAuthorize()
 	if err != nil {
 		return fmt.Errorf("cannot authorize: %v", err)
 	}
@@ -564,10 +591,9 @@ func (c *Client) CallVPCGet(subnet string, region string) (string, error) {
 func (c *Client) CallVNetGet(subscriptionID string, resourceGroup string) (string, string, error) {
 
 	vNet := network.NewVirtualNetworksClient(subscriptionID)
-	authorizer, err := auth.NewAuthorizerFromCLI()
+	authorizer, err := c.AzureAuthorize()
 	if err != nil {
-		log.Print("Could not authorize azure ", err)
-		return "", "", err
+		return "", "", fmt.Errorf("cannot authorize: %v", err)
 	}
 	vNet.Authorizer = authorizer
 
@@ -590,10 +616,9 @@ func (c *Client) CallVNetGet(subscriptionID string, resourceGroup string) (strin
 func (c *Client) CallVNetGetCidr(subscriptionID string, resourceGroup string, vnet string) (string, error) {
 
 	vNet := network.NewVirtualNetworksClient(subscriptionID)
-	authorizer, err := auth.NewAuthorizerFromCLI()
+	authorizer, err := c.AzureAuthorize()
 	if err != nil {
-		log.Print("Could not authorize azure ", err)
-		return "", err
+		return "", fmt.Errorf("cannot authorize: %v", err)
 	}
 	vNet.Authorizer = authorizer
 

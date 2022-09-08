@@ -4,6 +4,7 @@ go 1.15
 
 require (
 	github.com/Azure/azure-sdk-for-go v46.4.0+incompatible
+	github.com/Azure/go-autorest/autorest v0.11.28
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.3
 	github.com/aws/aws-sdk-go v1.35.5
 	github.com/fatih/structs v1.1.0

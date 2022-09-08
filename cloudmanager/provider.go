@@ -1,6 +1,7 @@
 package cloudmanager
 
 import (
+	"fmt"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
 )
@@ -51,6 +52,14 @@ func Provider() terraform.ResourceProvider {
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("AWS_PROFILE_FILE_PATH", nil),
 			},
+			"azure_auth_methods": {
+				Type: schema.TypeList,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("AZURE_AUTH_METHODS", nil),
+			},
 		},
 
 		ResourcesMap: map[string]*schema.Resource{
@@ -84,7 +93,7 @@ func Provider() terraform.ResourceProvider {
 }
 
 func providerConfigure(d *schema.ResourceData) (interface{}, error) {
-	config := configStuct{
+	config := configStruct{
 		RefreshToken: d.Get("refresh_token").(string),
 		Environment:  d.Get("environment").(string),
 		SaSecretKey:  d.Get("sa_secret_key").(string),
@@ -98,6 +107,20 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	if v, ok := d.GetOk("aws_profile_file_path"); ok {
 		config.AWSProfileFilePath = v.(string)
 	}
-
+	if v, ok := d.GetOk("azure_auth_methods"); ok {
+		// a bit complicated, as the type is only known at runtime
+		intMethods := v.([]interface{})
+		config.AzureAuthMethods = make([]string, len(intMethods))
+		for i, method := range intMethods {
+			value := method.(string)
+			// TODO: add file
+			if value != "cli" && value != "env" {
+				return &Client{}, fmt.Errorf("expecting azure_auth_methods to be one or more of [env, cli], got: %s", value)
+			}
+			config.AzureAuthMethods[i] = value
+		}
+	} else {
+		config.AzureAuthMethods = []string{"env", "cli"}
+	}
 	return config.clientFun()
 }

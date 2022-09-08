@@ -1,10 +1,8 @@
 ## 22.9.0
 
 NEW FEATURES:
-* azure: support ENV variables in addition to `az login`.  Added `azure_auth_methods` to define which methods to use.
-
-NEW ENHANCEMENTS:
 * add retries on the task status check for handling status 504 cases
+* azure: support ENV variables in addition to `az login`.  Added `azure_auth_methods` to define which methods to use.
 
 BUG FIXES:
 * resource/connector_gcp: update machine_type default value.
