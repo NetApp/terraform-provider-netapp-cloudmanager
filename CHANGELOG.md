@@ -1,3 +1,8 @@
+## 22.9.0
+
+NEW ENHANCEMENTS:
+* add retries on the task status check for handling status 504 cases
+
 ## 22.8.3
 
 NEW FEATURES:

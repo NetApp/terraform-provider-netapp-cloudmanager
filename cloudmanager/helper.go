@@ -222,12 +222,16 @@ func (c *Client) checkTaskStatus(id string, clientID string) (int, string, error
 
 	var statusCode int
 	var response []byte
-	networkRetries := 3
+	networkRetries := 6
 	for {
 		code, result, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
-		if err != nil {
+		if err != nil || code == 504 {
 			if networkRetries > 0 {
-				time.Sleep(1 * time.Second)
+				if code == 504 {
+					time.Sleep(15 * time.Second)
+				} else {
+					time.Sleep(1 * time.Second)
+				}
 				networkRetries--
 				log.Printf("checkTaskStatus id=%s code=%v error=%v Retries %v client=%s", id, code, err, networkRetries, clientID)
 			} else {
