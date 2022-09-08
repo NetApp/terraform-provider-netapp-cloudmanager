@@ -1,10 +1,12 @@
 ## 22.9.0
-
 NEW ENHANCEMENTS:
 * add retries on the task status check for handling status 504 cases
 
-## 22.8.3
+BUG FIXES:
+* resource/connector_gcp: update machine_type default value.
 
+
+## 22.8.3
 NEW FEATURES:
 * resource/cvo_aws: add mediator_security_group_id option.
 
