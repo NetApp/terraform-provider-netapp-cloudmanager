@@ -38,6 +38,7 @@ provider "netapp-cloudmanager" {
   sa_client_id          = var.cloudmanager_sa_client_id
   aws_profile           = var.cloudmanager_aws_profile
   aws_profile_file_path = var.cloudmanager_aws_profile_file_path
+  azure_auth_methods    = var.cloudmanager_azure_auth_methods
 }
 ```
 
@@ -50,8 +51,9 @@ The following arguments are used to configure the netapp-cloudmanager provider:
 * `sa_secret_key` - (Optional) This is the service account client ID for NetApp Cloud Manager API operations. The service account can be created on [NetApp Cloud Central](https://services.cloud.netapp.com/). The client id and secret key will be provided on service account creation.
 * `aws_profile` - (Optional) This is the profile name of the aws credentials file in your home directory, for example,~/.aws/credentials. If not specified, profile named default is used.
 * `aws_profile_file_path` - (Optional) Path to the shared credentials file. Shortcuts like $HOME and ~ do not work.
+* `azure_auth_methods` - (Optional) List of Azure authentication methods to be used: `env` for environment variables, `cli` for az login.  The methods are tried in sequence.  Defaults to `['env, 'cli']`.
 
-## Config AWS Credentials
+## Configure AWS Credentials
 AWS looks for credentials in the following orders:
 
 Environment Variables
@@ -72,6 +74,12 @@ will default to environment variable "AWS_PROFILE" or "default" if
 environment variable is also not set.
 
 
+## Configure Azure Credentials
+Refer to:
+https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs
+
+By default, the provider will try to authenticate with Azure using environment variables and then the CLI (`az login`).   This can be configured with `azure_auth_methods`.
+(az login may set the env variables, so maybe this is redundant.)
 ## Required Privileges
 
 For additional information on roles and permissions, refer to [NetApp Cloud Manager documentation](https://docs.netapp.com/us-en/occm/).

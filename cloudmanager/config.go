@@ -6,7 +6,7 @@ import (
 )
 
 // Config is a struct for user input
-type configStuct struct {
+type configStruct struct {
 	RefreshToken       string
 	SaSecretKey        string
 	SaClientID         string
@@ -15,10 +15,11 @@ type configStuct struct {
 	Simulator          bool
 	AWSProfile         string
 	AWSProfileFilePath string
+	AzureAuthMethods   []string
 }
 
 // Client is the main function to connect to the APi
-func (c *configStuct) clientFun() (*Client, error) {
+func (c *configStruct) clientFun() (*Client, error) {
 	var client *Client
 	if c.Environment == "prod" {
 		log.Print("Prod Environment")
@@ -68,6 +69,7 @@ func (c *configStuct) clientFun() (*Client, error) {
 	}
 	client.AWSProfile = c.AWSProfile
 	client.AWSProfileFilePath = c.AWSProfileFilePath
+	client.AzureAuthMethods = c.AzureAuthMethods
 
 	return client, nil
 }

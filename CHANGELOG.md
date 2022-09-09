@@ -1,5 +1,14 @@
-## 22.8.3
+## 22.9.0
 
+NEW FEATURES:
+* add retries on the task status check for handling status 504 cases
+* azure: support ENV variables in addition to `az login`.  Added `azure_auth_methods` to define which methods to use.
+
+BUG FIXES:
+* resource/connector_gcp: update machine_type default value.
+* resource/connector for GCP: validate `zone` is not empty or a empty space.
+
+## 22.8.3
 NEW FEATURES:
 * resource/cvo_aws: add mediator_security_group_id option.
 

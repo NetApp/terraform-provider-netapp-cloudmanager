@@ -40,6 +40,16 @@ func resourceOCCMGCP() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
+					v := val.(string)
+					if strings.Compare(v, "") == 0 {
+						errs = append(errs, fmt.Errorf("%q must not be empty", key))
+					}
+					if strings.Contains(v, " ") {
+						errs = append(errs, fmt.Errorf("%q must not contain space", key))
+					}
+					return
+				},
 			},
 			"service_account_email": {
 				Type:     schema.TypeString,
@@ -64,7 +74,7 @@ func resourceOCCMGCP() *schema.Resource {
 			"machine_type": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Default:  "n1-standard-4",
+				Default:  "n2-standard-4",
 				ForceNew: true,
 			},
 			"subnet_id": {

@@ -46,7 +46,7 @@ The following arguments are supported:
 * `service_account_key` - (Optional, non-modifiable) A JSON string for the service account key for GCP authorization purposes. This service account is used to create the Connector in GCP. Conflicts with `service_account_path`. It does not need to be set when using the user application default credential authentication by running the command gcloud auth application-default login.
 * `subnet_id` - (Optional, non-modifiable) The name of the subnet for the virtual machine. The default value is "Default". Two formats are supported: either <subnetID> or projects/<projectID>/regions/<region>/subnetworks/<subnetID>. 
 * `network_project_id` - (Optional, non-modifiable) The project id in GCP associated with the Subnet. If not provided, it’s assumed that the Subnet is within the previously specified project id.
-* `machine_type` - (Optional, non-modifiable) The machine_type for the Connector VM. The default value is "n1-standard-4"
+* `machine_type` - (Optional, non-modifiable) The machine_type for the Connector VM. The default value is "n2-standard-4"
 * `firewall_tags` - (Optional, non-modifiable) Indicates whether to add firewall_tags to the connector VM (HTTP and HTTP). The default is "true". If true, "firewall-tag-bvsu", "http-server", "https-server" are set as tags, and they can't be managed using tag options.
 * `associate_public_ip` - (Optional, non-modifiable) Indicates whether to associate a public IP address to the virtual machine. The default is "true"
 * `proxy_url` - (Optional, non-modifiable) The proxy URL, if using a proxy to connect to the internet.
