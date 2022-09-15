@@ -1,5 +1,8 @@
-## 22.9.0
+## 22.9.1
+NEW ENHANCEMENTS:
+* resource/cvo_azure: add availability_zone parameter for single node deployment.
 
+## 22.9.0
 NEW FEATURES:
 * add retries on the task status check for handling status 504 cases
 * azure: support ENV variables in addition to `az login`.  Added `azure_auth_methods` to define which methods to use.

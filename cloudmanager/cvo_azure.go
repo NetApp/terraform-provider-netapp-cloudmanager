@@ -30,6 +30,7 @@ type createCVOAzureDetails struct {
 	Cidr                        string                    `structs:"cidr"`
 	CapacityTier                string                    `structs:"capacityTier,omitempty"`
 	TierLevel                   string                    `structs:"tierLevel,omitempty"`
+	AvailabilityZone            int                       `structs:"availabilityZone,omitempty"`
 	AzureEncryptionParameters   azureEncryptionParameters `structs:"azureEncryptionParameters,omitempty"`
 	NssAccount                  string                    `structs:"nssAccount,omitempty"`
 	WritingSpeedState           string                    `structs:"writingSpeedState,omitempty"`
