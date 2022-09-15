@@ -656,13 +656,50 @@ func (c *Client) getWorkingEnvironmentDetailForSnapMirror(d *schema.ResourceData
 
 	if a, ok := d.GetOk("source_working_environment_id"); ok {
 		WorkingEnvironmentID := a.(string)
-		sourceWorkingEnvDetail, err = c.findWorkingEnvironmentForID(WorkingEnvironmentID, clientID)
-		if err != nil {
-			return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by source_working_environment_id %s", WorkingEnvironmentID)
+		// fsx working environment starts with "fs-" prefix.
+		if strings.HasPrefix(WorkingEnvironmentID, "fs-") {
+			if b, ok := d.GetOk("tenant_id"); ok {
+				tenantID := b.(string)
+				_, err := c.getAWSFSX(WorkingEnvironmentID, tenantID)
+				if err != nil {
+					log.Print("Error getting AWS FSX")
+					return workingEnvironmentInfo{}, workingEnvironmentInfo{}, err
+				}
+				sourceWorkingEnvDetail.PublicID = WorkingEnvironmentID
+				svmName, err := c.getFSXSVM(WorkingEnvironmentID, clientID)
+				if err != nil {
+					return workingEnvironmentInfo{}, workingEnvironmentInfo{}, err
+				}
+				sourceWorkingEnvDetail.SvmName = svmName
+			} else {
+				return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("Cannot find FSX working environment by destination_working_environment_id %s, need tenant_id", WorkingEnvironmentID)
+			}
+		} else {
+			sourceWorkingEnvDetail, err = c.findWorkingEnvironmentForID(WorkingEnvironmentID, clientID)
+			if err != nil {
+				return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by source_working_environment_id %s", WorkingEnvironmentID)
+			}
 		}
 	} else if a, ok = d.GetOk("source_working_environment_name"); ok {
 		sourceWorkingEnvDetail, err = c.findWorkingEnvironmentByName(a.(string), clientID)
-		if err != nil {
+		if sourceWorkingEnvDetail.PublicID == "" {
+			if b, ok := d.GetOk("tenant_id"); ok {
+				workingEnvironmentName := a.(string)
+				tenantID := b.(string)
+				WorkingEnvironmentID, err := c.getAWSFSXByName(workingEnvironmentName, tenantID, clientID)
+				if err != nil {
+					log.Print("Error getting AWS FSX: ", err)
+					return workingEnvironmentInfo{}, workingEnvironmentInfo{}, err
+				}
+				sourceWorkingEnvDetail.PublicID = WorkingEnvironmentID
+				svmName, err := c.getFSXSVM(WorkingEnvironmentID, clientID)
+				if err != nil {
+					return workingEnvironmentInfo{}, workingEnvironmentInfo{}, err
+				}
+				sourceWorkingEnvDetail.SvmName = svmName
+			}
+		}
+		if err != nil && sourceWorkingEnvDetail.PublicID == "" {
 			return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by source_working_environment_name %s", a.(string))
 		}
 		log.Printf("Get environment id %v by %v", sourceWorkingEnvDetail.PublicID, a.(string))
@@ -698,26 +735,27 @@ func (c *Client) getWorkingEnvironmentDetailForSnapMirror(d *schema.ResourceData
 			log.Print("findWorkingEnvironmentForID", destWorkingEnvDetail)
 		}
 	} else if a, ok = d.GetOk("destination_working_environment_name"); ok {
-		if b, ok := d.GetOk("tenant_id"); ok {
-			workingEnvironmentName := a.(string)
-			tenantID := b.(string)
-			WorkingEnvironmentID, err := c.getAWSFSXByName(workingEnvironmentName, tenantID, clientID)
-			if err != nil {
-				log.Print("Error getting AWS FSX: ", err)
-				return workingEnvironmentInfo{}, workingEnvironmentInfo{}, err
+		destWorkingEnvDetail, err = c.findWorkingEnvironmentByName(a.(string), clientID)
+		log.Printf("Get environment id %v by %v", destWorkingEnvDetail.PublicID, a.(string))
+		if destWorkingEnvDetail.PublicID == "" {
+			if b, ok := d.GetOk("tenant_id"); ok {
+				workingEnvironmentName := a.(string)
+				tenantID := b.(string)
+				WorkingEnvironmentID, err := c.getAWSFSXByName(workingEnvironmentName, tenantID, clientID)
+				if err != nil {
+					log.Print("Error getting AWS FSX: ", err)
+					return workingEnvironmentInfo{}, workingEnvironmentInfo{}, err
+				}
+				destWorkingEnvDetail.PublicID = WorkingEnvironmentID
+				svmName, err := c.getFSXSVM(WorkingEnvironmentID, clientID)
+				if err != nil {
+					return workingEnvironmentInfo{}, workingEnvironmentInfo{}, err
+				}
+				destWorkingEnvDetail.SvmName = svmName
 			}
-			destWorkingEnvDetail.PublicID = WorkingEnvironmentID
-			svmName, err := c.getFSXSVM(WorkingEnvironmentID, clientID)
-			if err != nil {
-				return workingEnvironmentInfo{}, workingEnvironmentInfo{}, err
-			}
-			destWorkingEnvDetail.SvmName = svmName
-		} else {
-			destWorkingEnvDetail, err = c.findWorkingEnvironmentByName(a.(string), clientID)
-			if err != nil {
-				return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by destination_working_environment_name %s", a.(string))
-			}
-			log.Printf("Get environment id %v by %v", destWorkingEnvDetail.PublicID, a.(string))
+		}
+		if err != nil && destWorkingEnvDetail.PublicID == "" {
+			return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by destination_working_environment_name %s", a.(string))
 		}
 	} else {
 		return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by destination_working_environment_id or destination_working_environment_name")

@@ -1,4 +1,8 @@
 ## 22.9.1
+
+NEW FEATURES:
+* resource/connector_snapmirror: support fsx as a source for snapmirror relationship with fsx/onprem.
+
 NEW ENHANCEMENTS:
 * resource/cvo_azure: add availability_zone parameter for single node deployment.
 
