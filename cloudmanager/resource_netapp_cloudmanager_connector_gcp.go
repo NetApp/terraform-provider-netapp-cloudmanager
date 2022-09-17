@@ -111,9 +111,10 @@ func resourceOCCMGCP() *schema.Resource {
 				ForceNew: true,
 			},
 			"proxy_password": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
+				Type:      schema.TypeString,
+				Optional:  true,
+				Sensitive: true,
+				ForceNew:  true,
 			},
 			"proxy_certificates": {
 				Type:     schema.TypeList,

@@ -51,7 +51,7 @@ The following arguments are used to configure the netapp-cloudmanager provider:
 * `sa_secret_key` - (Optional) This is the service account client ID for NetApp Cloud Manager API operations. The service account can be created on [NetApp Cloud Central](https://services.cloud.netapp.com/). The client id and secret key will be provided on service account creation.
 * `aws_profile` - (Optional) This is the profile name of the aws credentials file in your home directory, for example,~/.aws/credentials. If not specified, profile named default is used.
 * `aws_profile_file_path` - (Optional) Path to the shared credentials file. Shortcuts like $HOME and ~ do not work.
-* `azure_auth_methods` - (Optional) List of Azure authentication methods to be used: `env` for environment variables, `cli` for az login.  The methods are tried in sequence.  Defaults to `['env, 'cli']`.
+* `azure_auth_methods` - (Optional) List of Azure authentication methods to be used: `env` for environment variables, `cli` for az login.  The methods are tried in sequence.  Defaults to `['cli, 'env']`.   Note that `env` can trigger a 404 BearerAuthorizer error if the credentials provided in the environment variables do not have the expected permissions.
 
 ## Configure AWS Credentials
 AWS looks for credentials in the following orders:

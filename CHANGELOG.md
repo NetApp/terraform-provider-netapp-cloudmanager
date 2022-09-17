@@ -5,6 +5,10 @@ NEW FEATURES:
 
 NEW ENHANCEMENTS:
 * resource/cvo_azure: add availability_zone parameter for single node deployment.
+* Use sensitive flag on the password of each resource.
+
+BUG FIXES:
+* azure: change default authentication to `['cli', 'env']` to give priority to `az login`.
 
 ## 22.9.0
 NEW FEATURES:

@@ -90,9 +90,10 @@ func resourceOCCMAzure() *schema.Resource {
 				ForceNew: true,
 			},
 			"proxy_password": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
+				Type:      schema.TypeString,
+				Optional:  true,
+				Sensitive: true,
+				ForceNew:  true,
 			},
 			"proxy_certificates": {
 				Type:     schema.TypeList,
@@ -172,7 +173,7 @@ func resourceOCCMAzureCreate(d *schema.ResourceData, meta interface{}) error {
 		if occmDetails.ProxyURL != "" {
 			occmDetails.ProxyUserName = o.(string)
 		} else {
-			return fmt.Errorf("Mission proxy_url")
+			return fmt.Errorf("Missing proxy_url")
 		}
 	}
 
@@ -180,7 +181,7 @@ func resourceOCCMAzureCreate(d *schema.ResourceData, meta interface{}) error {
 		if occmDetails.ProxyURL != "" {
 			occmDetails.ProxyPassword = o.(string)
 		} else {
-			return fmt.Errorf("Mission proxy_url")
+			return fmt.Errorf("Missing proxy_url")
 		}
 	}
 

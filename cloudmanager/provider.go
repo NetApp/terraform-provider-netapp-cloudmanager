@@ -2,6 +2,7 @@ package cloudmanager
 
 import (
 	"fmt"
+
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
 )
@@ -120,7 +121,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 			config.AzureAuthMethods[i] = value
 		}
 	} else {
-		config.AzureAuthMethods = []string{"env", "cli"}
+		config.AzureAuthMethods = []string{"cli", "env"}
 	}
 	return config.clientFun()
 }

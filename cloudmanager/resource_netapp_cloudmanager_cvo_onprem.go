@@ -30,9 +30,10 @@ func resourceCVOOnPrem() *schema.Resource {
 				ForceNew: true,
 			},
 			"cluster_password": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:      schema.TypeString,
+				Required:  true,
+				Sensitive: true,
+				ForceNew:  true,
 			},
 			"workspace_id": {
 				Type:     schema.TypeString,
