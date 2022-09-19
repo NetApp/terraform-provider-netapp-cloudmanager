@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/fatih/structs"
 )
@@ -101,6 +102,11 @@ func (c *Client) buildSnapMirrorCreate(snapMirror snapMirrorRequest, sourceWorki
 
 	var volumeSource []volumeResponse
 	volumeS := volumeRequest{}
+	if strings.HasPrefix(snapMirror.ReplicationRequest.SourceWorkingEnvironmentID, "fs-") {
+		volumeS.FileSystemID = snapMirror.ReplicationRequest.SourceWorkingEnvironmentID
+	} else {
+		volumeS.WorkingEnvironmentID = snapMirror.ReplicationRequest.SourceWorkingEnvironmentID
+	}
 	volumeS.WorkingEnvironmentID = snapMirror.ReplicationRequest.SourceWorkingEnvironmentID
 	volumeS.Name = snapMirror.ReplicationVolume.SourceVolumeName
 

@@ -129,7 +129,7 @@ func (c *Client) createOCCMAzure(occmDetails createOCCMDetails, proxyCertificate
 		return OCCMMResult{}, err
 	}
 	result.InstanceID = instanceID
-	log.Print("Sleep for 2 minutes")
+	log.Print("VM created - Sleep for 2 minutes")
 	time.Sleep(time.Duration(120) * time.Second)
 
 	retries := 26

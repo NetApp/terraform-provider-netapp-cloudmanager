@@ -21,6 +21,7 @@ resource "netapp-cloudmanager_cvo_azure" "cl-azure" {
   provider = netapp-cloudmanager
   name = "TerraformCVOAzure"
   location = "westus"
+  availability_zone = 2
   subscription_id = data.azurerm_subscription.primary.subscription_id
   subnet_id = "Subnet1"
   vnet_id = "Vnet1"
@@ -81,6 +82,7 @@ The following arguments are supported:
 
 * `name` - (Required) The name of the Cloud Volumes ONTAP working environment.
 * `location` - (Required) The location where the working environment will be created.
+* `availability_zone` - (Optional) The availability zone on the location configuration.
 * `subscription_id` - (Required) The ID of the Azure subscription.
 * `subnet_id` - (Required) The name of the subnet for the Cloud Volumes ONTAP system.
 * `vnet_id` - (Required) The name of the virtual network.

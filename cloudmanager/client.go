@@ -214,10 +214,10 @@ func (c *Client) AzureAuthorize() (autorest.Authorizer, error) {
 		switch method {
 		case "cli":
 			authorizer, err = auth.NewAuthorizerFromCLI()
-			log.Print("Authorizing azure from CLI ", err)
+			log.Print("Authorizing azure from CLI: ", err)
 		case "env":
 			authorizer, err = auth.NewAuthorizerFromEnvironment()
-			log.Print("Authorizing azure from environment ", err)
+			log.Print("Authorizing azure from environment: ", err)
 		// TODO
 		// case "file":
 		// 	authorizer, err = auth.NewAuthorizerFromFile('<file name>')

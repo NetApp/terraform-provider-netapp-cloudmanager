@@ -168,6 +168,7 @@ resource "netapp-cloudmanager_cvo_azure" "cvo-azure" {
   provider = netapp-cloudmanager
   name = "TerraformCVOAzure"
   location = "westus"
+  availability_zone = 1
   subscription_id = data.azurerm_subscription.primary.subscription_id
   subnet_id = "Subnet1"
   vnet_id = "Vnet1"

@@ -29,9 +29,10 @@ func resourceCVOCIFS() *schema.Resource {
 				ForceNew: true,
 			},
 			"password": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
+				Type:      schema.TypeString,
+				Optional:  true,
+				Sensitive: true,
+				ForceNew:  true,
 			},
 			"dns_domain": {
 				Type:     schema.TypeString,

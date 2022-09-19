@@ -2,9 +2,10 @@ package cloudmanager
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform/helper/validation"
 	"log"
 	"strings"
+
+	"github.com/hashicorp/terraform/helper/validation"
 
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -141,6 +142,11 @@ func resourceCVOAzure() *schema.Resource {
 				Default:      "normal",
 				ValidateFunc: validation.StringInSlice([]string{"normal", "cool"}, false),
 			},
+			"availability_zone": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
 			"nss_account": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -271,6 +277,9 @@ func resourceCVOAzureCreate(d *schema.ResourceData, meta interface{}) error {
 	if capacityTier == "Blob" {
 		cvoDetails.CapacityTier = capacityTier
 		cvoDetails.TierLevel = d.Get("tier_level").(string)
+	}
+	if c, ok := d.GetOk("availability_zone"); ok {
+		cvoDetails.AvailabilityZone = c.(int)
 	}
 	cvoDetails.OptimizedNetworkUtilization = true
 	if c, ok := d.GetOk("backup_volumes_to_cbs"); ok {
