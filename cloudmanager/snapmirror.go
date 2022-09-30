@@ -149,6 +149,9 @@ func (c *Client) buildSnapMirrorCreate(snapMirror snapMirrorRequest, sourceWorki
 
 	if destWorkingEnvironmentType != "ON_PREM" && snapMirror.ReplicationRequest.DestinationFsxID == "" {
 		quote := c.buildQuoteRequest(snapMirror, volDestQuote, snapMirror.ReplicationRequest.SourceWorkingEnvironmentID, sourceWorkingEnvironmentType, snapMirror.ReplicationVolume.DestinationVolumeName, snapMirror.ReplicationVolume.DestinationSvmName, snapMirror.ReplicationRequest.DestinationWorkingEnvironmentID, clientID)
+		if quote.ProviderVolumeType == "" {
+			return snapMirrorRequest{}, fmt.Errorf("provider_volume_type is required")
+		}
 		quoteResponse, err := c.quoteVolume(quote, clientID)
 		if err != nil {
 			log.Printf("Error quoting destination volume")
@@ -206,17 +209,26 @@ func (c *Client) buildQuoteRequest(snapMirror snapMirrorRequest, vol volumeRespo
 	quote.WorkingEnvironmentID = workingEnvironmentID
 	quote.SvmName = svm
 
-	aggregate, err := c.getAggregate(aggregateRequest{WorkingEnvironmentID: sourceWorkingEnvironmentID}, vol.AggregateName, sourceWorkingEnvironmentType, clientID)
-	if err != nil {
-		log.Printf("Error getting aggregate. aggregate name = %v", vol.AggregateName)
-	}
-	if len(aggregate.ProviderVolumes) != 0 {
-		// Iops and Throughput values are the same if the volumes under the same aggregate
-		if aggregate.ProviderVolumes[0].DiskType == "gp3" || aggregate.ProviderVolumes[0].DiskType == "io1" || aggregate.ProviderVolumes[0].DiskType == "io2" {
-			quote.Iops = aggregate.ProviderVolumes[0].Iops
+	if strings.HasPrefix(sourceWorkingEnvironmentID, "fs-") {
+		if snapMirror.ReplicationVolume.DestinationProviderVolumeType == "gp3" || snapMirror.ReplicationVolume.DestinationProviderVolumeType == "io1" || snapMirror.ReplicationVolume.DestinationProviderVolumeType == "io2" {
+			quote.Iops = snapMirror.ReplicationVolume.Iops
 		}
-		if aggregate.ProviderVolumes[0].DiskType == "gp3" {
-			quote.Throughput = aggregate.ProviderVolumes[0].Throughput
+		if snapMirror.ReplicationVolume.DestinationProviderVolumeType == "gp3" {
+			quote.Throughput = snapMirror.ReplicationVolume.Throughput
+		}
+	} else {
+		aggregate, err := c.getAggregate(aggregateRequest{WorkingEnvironmentID: sourceWorkingEnvironmentID}, vol.AggregateName, sourceWorkingEnvironmentType, clientID)
+		if err != nil {
+			log.Printf("Error getting aggregate. aggregate name = %v", vol.AggregateName)
+		}
+		if len(aggregate.ProviderVolumes) != 0 {
+			// Iops and Throughput values are the same if the volumes under the same aggregate
+			if aggregate.ProviderVolumes[0].DiskType == "gp3" || aggregate.ProviderVolumes[0].DiskType == "io1" || aggregate.ProviderVolumes[0].DiskType == "io2" {
+				quote.Iops = aggregate.ProviderVolumes[0].Iops
+			}
+			if aggregate.ProviderVolumes[0].DiskType == "gp3" {
+				quote.Throughput = aggregate.ProviderVolumes[0].Throughput
+			}
 		}
 	}
 

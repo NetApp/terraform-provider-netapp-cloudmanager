@@ -1,3 +1,8 @@
+## 22.9.2
+
+NEW FEATURES:
+* resource/connector_snapmirror: support fsx as a source for snapmirror relationship with cvo.
+
 ## 22.9.1
 
 NEW FEATURES:

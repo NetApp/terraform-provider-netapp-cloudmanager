@@ -144,6 +144,12 @@ func resourceCVOSnapMirrorCreate(d *schema.ResourceData, meta interface{}) error
 	if s, ok := d.GetOk("provider_volume_type"); ok {
 		snapMirror.ReplicationVolume.DestinationProviderVolumeType = s.(string)
 	}
+	if s, ok := d.GetOk("iops"); ok {
+		snapMirror.ReplicationVolume.Iops = s.(int)
+	}
+	if s, ok := d.GetOk("throughput"); ok {
+		snapMirror.ReplicationVolume.Throughput = s.(int)
+	}
 	if s, ok := d.GetOk("capacity_tier"); ok {
 		if s.(string) != "none" {
 			snapMirror.ReplicationVolume.DestinationCapacityTier = s.(string)
