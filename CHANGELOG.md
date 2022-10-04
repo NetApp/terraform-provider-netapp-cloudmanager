@@ -1,10 +1,11 @@
 ## 22.9.2
-
 NEW FEATURES:
 * resource/connector_snapmirror: support fsx as a source for snapmirror relationship with cvo.
 
-## 22.9.1
+NEW ENHANCEMENTS:
+* resource/connector_azure: display the depolyed virtual machine principal_id in state file on the connector azure creation.
 
+## 22.9.1
 NEW FEATURES:
 * resource/connector_snapmirror: support fsx as a source for snapmirror relationship with fsx/onprem.
 

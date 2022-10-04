@@ -160,7 +160,7 @@ resource "azurerm_role_assignment" "occm-role-assignment" {
   depends_on = [azurerm_role_definition.occm-role]
   scope              = data.azurerm_subscription.primary.id
   role_definition_id = azurerm_role_definition.occm-role.role_definition_resource_id 
-  principal_id       = data.azurerm_virtual_machine.occm-vm.identity.0.principal_id
+  principal_id       = netapp-cloudmanager_connector_azure.cm-azure.principal_id
 }
 
 resource "netapp-cloudmanager_cvo_azure" "cvo-azure" {

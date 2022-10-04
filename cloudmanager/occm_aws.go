@@ -84,9 +84,10 @@ type deleteOCCMDetails struct {
 
 // OCCMMResult the users input for creating a occm
 type OCCMMResult struct {
-	ClientID   string
-	AccountID  string
-	InstanceID string
+	ClientID    string
+	AccountID   string
+	InstanceID  string
+	PrincipalID string
 }
 
 // accesTokenRequest the input for requesting a token
