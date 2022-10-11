@@ -87,7 +87,7 @@ The following arguments are supported:
 * `data_encryption_type` - (Optional) The type of encryption to use for the working environment: ['AWS', 'NONE']. The default is 'AWS'.
 * `aws_encryption_kms_key_id` - (Optional) AWS encryption parameters. It is required if using aws encryption. Only one of KMS key id or KMS arn should be specified.
 * `aws_encryption_kms_key_arn` - (Optional) AWS encryption parameters. It is requried if using aws encryption. Only one of KMS key id or KMS arn should be specified.
-* `ebs_volume_size` - (Optional) EBS volume size for the first data aggregate. For GB, the unit can be: [100 or 500]. For TB, the unit can be: [1,2,4,8,16]. The default is '1' .
+* `ebs_volume_size` - (Optional) EBS volume size for the first data aggregate. For GB, the unit can be: [100 or 500]. For TB, the unit can be: [1,2,4,8,16]. The default is '1'.
 * `ebs_volume_size_unit` - (Optional) ['GB' or 'TB']. The default is 'TB'.
 * `ebs_volume_type` - (Optional) The EBS volume type for the first data aggregate ['gp3', 'gp2','io1','st1','sc1']. The default is 'gp2'.
 * `iops` - (Optional) Provisioned IOPS. Required only when 'ebs_volume_type' is 'io1' or 'gp3'.
@@ -127,6 +127,7 @@ The following arguments are supported:
 * `route_table_ids` - (Optional) For HA FloatingIP, the list of route table IDs that will be updated with the floating IPs.
 * `upgrade_ontap_version` - (Optional) Indicates whether to upgrade ontap image with `ontap_version`. To upgrade ontap image, `ontap_version` cannot be 'latest' and `use_latest_version` needs to be false.
 * `mediator_security_group_id` - (Optional) For HA only, mediator security group id.
+* `retries` - (Optional) The number of attempts to wait for the completion of creating the CVO with 60 seconds apart for each attempt. For HA, this value is incremented by 30. The default is '60'.
 
 The `aws_tag` block supports the following:
 * `tag_key` - (Required) The key of the tag.

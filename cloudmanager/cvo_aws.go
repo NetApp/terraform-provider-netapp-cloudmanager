@@ -281,14 +281,15 @@ func (c *Client) createCVOAWS(cvoDetails createCVOAWSDetails, clientID string) (
 	}
 
 	var baseURL string
-	var creationWaitTime int
+	var CreationRetries int
 
+	log.Print("retries ", c.Retries)
 	if cvoDetails.IsHA == false {
 		baseURL = "/occm/api/vsa/working-environments"
-		creationWaitTime = 60
+		CreationRetries = c.Retries
 	} else if cvoDetails.IsHA == true {
 		baseURL = "/occm/api/aws/ha/working-environments"
-		creationWaitTime = 90
+		CreationRetries = c.Retries + 30
 	}
 
 	hostType := "CloudManagerHost"
@@ -305,7 +306,7 @@ func (c *Client) createCVOAWS(cvoDetails createCVOAWSDetails, clientID string) (
 		return cvoResult{}, responseError
 	}
 
-	err = c.waitOnCompletion(onCloudRequestID, "CVO", "create", creationWaitTime, 60, clientID)
+	err = c.waitOnCompletion(onCloudRequestID, "CVO", "create", CreationRetries, 60, clientID)
 	if err != nil {
 		return cvoResult{}, err
 	}

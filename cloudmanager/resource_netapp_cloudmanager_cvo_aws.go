@@ -326,6 +326,12 @@ func resourceCVOAWS() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"retries": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+				Default:  60,
+			},
 		},
 	}
 }
@@ -335,6 +341,7 @@ func resourceCVOAWSCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*Client)
 	clientID := d.Get("client_id").(string)
+	client.Retries = d.Get("retries").(int)
 
 	cvoDetails := createCVOAWSDetails{}
 

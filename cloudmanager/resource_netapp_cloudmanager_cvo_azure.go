@@ -254,6 +254,12 @@ func resourceCVOAzure() *schema.Resource {
 				Optional: true,
 				Default:  false,
 			},
+			"retries": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+				Default:  60,
+			},
 		},
 	}
 }
@@ -262,6 +268,7 @@ func resourceCVOAzureCreate(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("Creating CVO Azure: %#v", d)
 
 	client := meta.(*Client)
+	client.Retries = d.Get("retries").(int)
 
 	cvoDetails := createCVOAzureDetails{}
 

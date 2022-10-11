@@ -1,6 +1,9 @@
 ## 22.9.2
 NEW FEATURES:
 * resource/connector_snapmirror: support fsx as a source for snapmirror relationship with cvo.
+* resource/cvo_aws: add `retries` parameter to increase wait time when creating CVO.
+* resource/cvo_azure: add `retries` parameter to increase wait time when creating CVO.
+* resource/cvo_gcp: add `retries` parameter to increase wait time when creating CVO.
 
 NEW ENHANCEMENTS:
 * resource/connector_azure: display the depolyed virtual machine principal_id in state file on the connector azure creation.

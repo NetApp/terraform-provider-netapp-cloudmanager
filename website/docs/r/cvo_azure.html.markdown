@@ -118,6 +118,7 @@ The following arguments are supported:
 * `platform_serial_number_node2` - (Optional) For HA BYOL, the serial number for the second node.
 * `ha_enable_https` - (Optional) For HA, enable the HTTPS connection from CVO to storage accounts. This can impact write performance. The default is false.
 * `upgrade_ontap_version` - (Optional) Indicates whether to upgrade ontap image with `ontap_version`. To upgrade ontap image, `ontap_version` cannot be 'latest' and `use_latest_version` needs to be false.
+* `retries` - (Optional) The number of attempts to wait for the completion of creating the CVO with 60 seconds apart for each attempt. For HA, this value is incremented by 30. The default is '60'.
 
 The `azure_tag` block supports:
 * `tag_key` - (Required) The key of the tag.

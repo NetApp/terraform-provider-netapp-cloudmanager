@@ -57,6 +57,7 @@ type Client struct {
 	GCPDeploymentTemplate   string
 	GCPServiceAccountKey    string
 	CVSHostName             string
+	Retries                 int
 
 	initOnce           sync.Once
 	instanceInput      *restapi.Client

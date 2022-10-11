@@ -296,6 +296,12 @@ func resourceCVOGCP() *schema.Resource {
 				Optional: true,
 				Default:  false,
 			},
+			"retries": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+				Default:  60,
+			},
 		},
 	}
 }
@@ -305,6 +311,7 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*Client)
 	clientID := d.Get("client_id").(string)
+	client.Retries = d.Get("retries").(int)
 
 	cvoDetails := createCVOGCPDetails{}
 
