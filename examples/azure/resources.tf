@@ -209,12 +209,15 @@ resource "netapp-cloudmanager_cvo_azure" "cvo-azure-ha" {
               tag_key = "xxx"
               tag_value = "YYY"
             }
-  storage_type = "Premium_LRS"
+  storage_type = "Premium_ZRS"
+  instance_type = "Standard_E8ds_v4"
   svm_password = "********"
   client_id = netapp-cloudmanager_connector_azure.cm-azure.client_id
   workspace_id = "workspace-xxxxxx"
   capacity_tier = "Blob"
   writing_speed_state = "NORMAL"
   is_ha = true
-  license_type = "azure-ha-cot-standard-paygo"
+  availability_zone_node1 = 1
+  availability_zone_node2 = 2
+  license_type = "ha-capacity-paygo"
 }

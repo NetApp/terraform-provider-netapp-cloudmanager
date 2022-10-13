@@ -54,7 +54,7 @@ func resourceCVOAzure() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Default:      "Premium_LRS",
-				ValidateFunc: validation.StringInSlice([]string{"Premium_LRS", "Standard_LRS", "StandardSSD_LRS"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"Premium_LRS", "Standard_LRS", "StandardSSD_LRS", "Premium_ZRS"}, false),
 			},
 			"disk_size": {
 				Type:     schema.TypeInt,
@@ -143,6 +143,16 @@ func resourceCVOAzure() *schema.Resource {
 				ValidateFunc: validation.StringInSlice([]string{"normal", "cool"}, false),
 			},
 			"availability_zone": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
+			"availability_zone_node1": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
+			"availability_zone_node2": {
 				Type:     schema.TypeInt,
 				Optional: true,
 				ForceNew: true,
@@ -372,6 +382,12 @@ func resourceCVOAzureCreate(d *schema.ResourceData, meta interface{}) error {
 			cvoDetails.HAParams.PlatformSerialNumberNode2 = c.(string)
 		}
 		cvoDetails.HAParams.EnableHTTPS = d.Get("ha_enable_https").(bool)
+		if c, ok := d.GetOk("availability_zone_node1"); ok {
+			cvoDetails.HAParams.AvailabilityZoneNode1 = c.(int)
+		}
+		if c, ok := d.GetOk("availability_zone_node2"); ok {
+			cvoDetails.HAParams.AvailabilityZoneNode2 = c.(int)
+		}
 	}
 
 	err := validateCVOAzureParams(cvoDetails)

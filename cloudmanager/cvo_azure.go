@@ -58,6 +58,8 @@ type azureEncryptionParameters struct {
 type haParamsAzure struct {
 	PlatformSerialNumberNode1 string `structs:"platformSerialNumberNode1,omitempty"`
 	PlatformSerialNumberNode2 string `structs:"platformSerialNumberNode2,omitempty"`
+	AvailabilityZoneNode1     int    `structs:"availabilityZoneNode1,omitempty"`
+	AvailabilityZoneNode2     int    `structs:"availabilityZoneNode2,omitempty"`
 	EnableHTTPS               bool   `structs:"enableHttps"`
 }
 
