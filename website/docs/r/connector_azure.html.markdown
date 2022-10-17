@@ -74,4 +74,4 @@ The following attributes are exported in addition to the arguments listed above:
 * `id` - The name of the virtual machine.
 * `client_id` - The unique client ID of the connector, can be used in other resources.
 * `account_id` - The NetApp tenancy account ID.
-
+* `principal_id` - The principal ID of the deployed virtual machine

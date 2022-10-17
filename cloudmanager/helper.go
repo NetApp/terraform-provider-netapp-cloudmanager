@@ -660,10 +660,15 @@ func (c *Client) getWorkingEnvironmentDetailForSnapMirror(d *schema.ResourceData
 		if strings.HasPrefix(WorkingEnvironmentID, "fs-") {
 			if b, ok := d.GetOk("tenant_id"); ok {
 				tenantID := b.(string)
-				_, err := c.getAWSFSX(WorkingEnvironmentID, tenantID)
+				id, err := c.getAWSFSX(WorkingEnvironmentID, tenantID)
 				if err != nil {
 					log.Print("Error getting AWS FSX")
 					return workingEnvironmentInfo{}, workingEnvironmentInfo{}, err
+				}
+
+				if id != WorkingEnvironmentID {
+					log.Print("Error getting AWS FSX")
+					return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("Could not find source working environment ID %v", WorkingEnvironmentID)
 				}
 				sourceWorkingEnvDetail.PublicID = WorkingEnvironmentID
 				svmName, err := c.getFSXSVM(WorkingEnvironmentID, clientID)
@@ -692,11 +697,13 @@ func (c *Client) getWorkingEnvironmentDetailForSnapMirror(d *schema.ResourceData
 					return workingEnvironmentInfo{}, workingEnvironmentInfo{}, err
 				}
 				sourceWorkingEnvDetail.PublicID = WorkingEnvironmentID
-				svmName, err := c.getFSXSVM(WorkingEnvironmentID, clientID)
-				if err != nil {
-					return workingEnvironmentInfo{}, workingEnvironmentInfo{}, err
+				if sourceWorkingEnvDetail.PublicID != "" {
+					svmName, err := c.getFSXSVM(WorkingEnvironmentID, clientID)
+					if err != nil {
+						return workingEnvironmentInfo{}, workingEnvironmentInfo{}, err
+					}
+					sourceWorkingEnvDetail.SvmName = svmName
 				}
-				sourceWorkingEnvDetail.SvmName = svmName
 			}
 		}
 		if err != nil && sourceWorkingEnvDetail.PublicID == "" {
@@ -713,10 +720,14 @@ func (c *Client) getWorkingEnvironmentDetailForSnapMirror(d *schema.ResourceData
 		if strings.HasPrefix(WorkingEnvironmentID, "fs-") {
 			if b, ok := d.GetOk("tenant_id"); ok {
 				tenantID := b.(string)
-				_, err := c.getAWSFSX(WorkingEnvironmentID, tenantID)
+				id, err := c.getAWSFSX(WorkingEnvironmentID, tenantID)
 				if err != nil {
 					log.Print("Error getting AWS FSX")
 					return workingEnvironmentInfo{}, workingEnvironmentInfo{}, err
+				}
+				if id != WorkingEnvironmentID {
+					log.Print("Error getting AWS FSX")
+					return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("Could not find destination working environment ID %v", WorkingEnvironmentID)
 				}
 				destWorkingEnvDetail.PublicID = WorkingEnvironmentID
 				svmName, err := c.getFSXSVM(WorkingEnvironmentID, clientID)
@@ -746,12 +757,14 @@ func (c *Client) getWorkingEnvironmentDetailForSnapMirror(d *schema.ResourceData
 					log.Print("Error getting AWS FSX: ", err)
 					return workingEnvironmentInfo{}, workingEnvironmentInfo{}, err
 				}
-				destWorkingEnvDetail.PublicID = WorkingEnvironmentID
-				svmName, err := c.getFSXSVM(WorkingEnvironmentID, clientID)
-				if err != nil {
-					return workingEnvironmentInfo{}, workingEnvironmentInfo{}, err
+				if destWorkingEnvDetail.PublicID != "" {
+					destWorkingEnvDetail.PublicID = WorkingEnvironmentID
+					svmName, err := c.getFSXSVM(WorkingEnvironmentID, clientID)
+					if err != nil {
+						return workingEnvironmentInfo{}, workingEnvironmentInfo{}, err
+					}
+					destWorkingEnvDetail.SvmName = svmName
 				}
-				destWorkingEnvDetail.SvmName = svmName
 			}
 		}
 		if err != nil && destWorkingEnvDetail.PublicID == "" {

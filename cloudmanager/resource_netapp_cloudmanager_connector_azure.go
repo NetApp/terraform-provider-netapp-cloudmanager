@@ -136,6 +136,12 @@ func resourceOCCMAzure() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"principal_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+				Optional: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -173,7 +179,7 @@ func resourceOCCMAzureCreate(d *schema.ResourceData, meta interface{}) error {
 		if occmDetails.ProxyURL != "" {
 			occmDetails.ProxyUserName = o.(string)
 		} else {
-			return fmt.Errorf("Missing proxy_url")
+			return fmt.Errorf("missing proxy_url")
 		}
 	}
 
@@ -181,7 +187,7 @@ func resourceOCCMAzureCreate(d *schema.ResourceData, meta interface{}) error {
 		if occmDetails.ProxyURL != "" {
 			occmDetails.ProxyPassword = o.(string)
 		} else {
-			return fmt.Errorf("Missing proxy_url")
+			return fmt.Errorf("missing proxy_url")
 		}
 	}
 
@@ -191,7 +197,7 @@ func resourceOCCMAzureCreate(d *schema.ResourceData, meta interface{}) error {
 			// read file
 			b, err := ioutil.ReadFile(cFile.(string))
 			if err != nil {
-				return fmt.Errorf("Cannot read certificate file: %s", err)
+				return fmt.Errorf("cannot read certificate file: %s", err)
 			}
 			// endcode certificate
 			encodedCertificate := base64.StdEncoding.EncodeToString(b)
@@ -225,12 +231,17 @@ func resourceOCCMAzureCreate(d *schema.ResourceData, meta interface{}) error {
 
 	d.SetId(occmDetails.Name)
 	log.Print("Set ID: ", occmDetails.Name)
+
+	if err := d.Set("principal_id", res.PrincipalID); err != nil {
+		return fmt.Errorf("error reading occm principal_id: %s", err)
+	}
+
 	if err := d.Set("client_id", res.ClientID); err != nil {
-		return fmt.Errorf("Error reading occm client_id: %s", err)
+		return fmt.Errorf("error reading occm client_id: %s", err)
 	}
 
 	if err := d.Set("account_id", res.AccountID); err != nil {
-		return fmt.Errorf("Error reading occm account_id: %s", err)
+		return fmt.Errorf("error reading occm account_id: %s", err)
 	}
 
 	log.Printf("Created occm: %v", res)
@@ -271,7 +282,7 @@ func resourceOCCMAzureRead(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	if resID != id {
-		return fmt.Errorf("Expected occm ID %v, Response could not find", id)
+		return fmt.Errorf("expected occm ID %v, response could not find", id)
 	}
 
 	return nil

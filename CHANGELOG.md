@@ -1,5 +1,16 @@
-## 22.9.1
+## 22.10.0
+NEW FEATURES:
+* resource/connector_snapmirror: support fsx as a source for snapmirror relationship with cvo.
+* resource/cvo_aws: add `retries` parameter to increase wait time when creating CVO.
+* resource/cvo_azure: add `retries` parameter to increase wait time when creating CVO.
+* resource/cvo_gcp: add `retries` parameter to increase wait time when creating CVO.
 
+NEW ENHANCEMENTS:
+* resource/connector_azure: display the deployed virtual machine principal_id in state file on the connector azure creation.
+* resource/cvo_azure: add availability_zone_node1 and availability_zone_node2 to support HA deployment.
+* resoruce/cvo_azure: add new support value "Premium_ZRS" in paramter storage_type.
+
+## 22.9.1
 NEW FEATURES:
 * resource/connector_snapmirror: support fsx as a source for snapmirror relationship with fsx/onprem.
 

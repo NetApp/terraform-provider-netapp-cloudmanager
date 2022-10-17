@@ -90,7 +90,7 @@ The following arguments are supported:
 * `workspace_id` - (Optional) The ID of the Cloud Manager workspace where you want to deploy Cloud Volumes ONTAP. If not provided, Cloud Manager uses the first workspace. You can find the ID from the Workspace tab on [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
 * `data_encryption_type` - (Optional) The type of encryption to use for the working environment: ['AZURE', 'NONE']. The default is 'AZURE'.
 * `azure_encryption_parameters` - (Optional) AZURE encryption parameters. It is required if using AZURE encryption.
-* `storage_type` - (Optional) The type of storage for the first data aggregate: ['Premium_LRS', 'Standard_LRS', 'StandardSSD_LRS']. The default is 'Premium_LRS'
+* `storage_type` - (Optional) The type of storage for the first data aggregate: ['Premium_LRS', 'Standard_LRS', 'StandardSSD_LRS', 'Premium_ZRS']. The default is 'Premium_LRS'
 * `svm_password` - (Required) The admin password for Cloud Volumes ONTAP.
 * `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
 * `resource_group` - (Optional) The resource_group where Cloud Volumes ONTAP will be created. If not provided, Cloud Manager creates the resource group (name of the working environment with suffix '-rg').
@@ -116,8 +116,11 @@ The following arguments are supported:
 * `is_ha` - (Optional) Indicate whether the working environment is an HA pair or not [true, false]. The default is false.
 * `platform_serial_number_node1` - (Optional) For HA BYOL, the serial number for the first node.
 * `platform_serial_number_node2` - (Optional) For HA BYOL, the serial number for the second node.
+* `availability_zone_node1` - (Optional) For HA, the availability zone for the first node.
+* `availability_zone_node2` - (Optional) For HA, the availability zone for the second node.
 * `ha_enable_https` - (Optional) For HA, enable the HTTPS connection from CVO to storage accounts. This can impact write performance. The default is false.
 * `upgrade_ontap_version` - (Optional) Indicates whether to upgrade ontap image with `ontap_version`. To upgrade ontap image, `ontap_version` cannot be 'latest' and `use_latest_version` needs to be false.
+* `retries` - (Optional) The number of attempts to wait for the completion of creating the CVO with 60 seconds apart for each attempt. For HA, this value is incremented by 30. The default is '60'.
 
 The `azure_tag` block supports:
 * `tag_key` - (Required) The key of the tag.

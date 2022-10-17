@@ -57,6 +57,7 @@ type Client struct {
 	GCPDeploymentTemplate   string
 	GCPServiceAccountKey    string
 	CVSHostName             string
+	Retries                 int
 
 	initOnce           sync.Once
 	instanceInput      *restapi.Client
@@ -345,13 +346,29 @@ func (c *Client) CallDeployAzureVM(occmDetails createOCCMDetails) (string, error
 	if err != nil {
 		return "", err
 	}
+
 	log.Print("Wait for completion...")
 	err = deploymentFuture.Future.WaitForCompletionRef(context.Background(), deploymentsClient.BaseClient.Client)
 	if err != nil {
 		return "", err
 	}
 
-	return "", nil
+	// get principal id
+	log.Print("Retrieve the vm...")
+	vmClient := compute.NewVirtualMachinesClient(occmDetails.SubscriptionID)
+	vmClient.Authorizer = authorizer
+	vmFuture, err := vmClient.Get(
+		context.Background(),
+		occmDetails.ResourceGroup,
+		occmDetails.Name,
+		"",
+	)
+	if err != nil {
+		return "", fmt.Errorf("cannot retrieve vm: %v", err)
+	}
+	principalID := *vmFuture.Identity.PrincipalID
+
+	return principalID, nil
 
 }
 

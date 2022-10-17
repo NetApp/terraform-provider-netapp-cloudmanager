@@ -124,12 +124,13 @@ func (c *Client) createOCCMAzure(occmDetails createOCCMDetails, proxyCertificate
 	result.ClientID = newClientID
 	result.AccountID = c.AccountID
 
-	instanceID, err := c.CallDeployAzureVM(occmDetails)
+	principalID, err := c.CallDeployAzureVM(occmDetails)
 	if err != nil {
 		return OCCMMResult{}, err
 	}
-	result.InstanceID = instanceID
-	log.Print("VM created - Sleep for 2 minutes")
+
+	result.PrincipalID = principalID
+	log.Print("Sleep for 2 minutes")
 	time.Sleep(time.Duration(120) * time.Second)
 
 	retries := 26
@@ -149,6 +150,7 @@ func (c *Client) createOCCMAzure(occmDetails createOCCMDetails, proxyCertificate
 			retries--
 		}
 	}
+
 	return result, nil
 }
 
