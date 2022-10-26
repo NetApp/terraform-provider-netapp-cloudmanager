@@ -11,11 +11,6 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
-type apiErrorResponse struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
-}
-
 // only list what is needed
 type workingEnvironmentInfo struct {
 	Name                   string `json:"name"`
@@ -24,6 +19,7 @@ type workingEnvironmentInfo struct {
 	IsHA                   bool   `json:"isHA"`
 	WorkingEnvironmentType string `json:"workingEnvironmentType"`
 	SvmName                string `json:"svmName"`
+	Svms                   []svm  `json:"svms"`
 }
 
 type workingEnvironmentResult struct {
@@ -46,7 +42,7 @@ type workingEnvironmentOntapClusterPropertiesResponse struct {
 	CronJobSchedules               interface{}            `json:"cronJobSchedules"` // aws
 	EncryptionProperties           interface{}            `json:"encryptionProperties"`
 	FpolicyProperties              interface{}            `json:"fpolicyProperties"`
-	HAProperties                   interface{}            `json:"haProperties"`
+	HAProperties                   haProperties           `json:"haProperties"`
 	InterClusterLifs               interface{}            `json:"interClusterLifs"` // aws
 	IsHA                           bool                   `json:"isHA"`
 	LicensesInformation            interface{}            `json:"licensesInformation"`
@@ -92,6 +88,14 @@ type ontapClusterProperties struct {
 	VscanFileOperationDefaultProfile string                `json:"vscanFileOperationDefaultProfile"`
 	WormEnabled                      bool                  `json:"wormEnabled"`
 	WritingSpeedState                string                `json:"writingSpeedState"`
+}
+
+type haProperties struct {
+	FailoverMode             interface{}   `json:"failoverMode"`
+	MediatorStatus           interface{}   `json:"mediatorStatus"`
+	MediatorVersionInfo      interface{}   `json:"mediatorVersionInfo"`
+	MediatorVersionsToUpdate []interface{} `json:"mediatorVersionsToUpdate"`
+	RouteTables              []string      `json:"routeTables"`
 }
 
 type broadcastDomainInfo struct {
@@ -156,6 +160,15 @@ type failureCauses struct {
 	NoCloudProviderConnection       bool `json:"noCloudProviderConnection"`
 }
 
+type svm struct {
+	Name              string   `structs:"name"`
+	State             string   `structs:"state"`
+	Language          string   `structs:"language"`
+	AllowedAggregates []string `structs:"allowAggregates"`
+	Ver3Enabled       bool     `structs:"ver3Enabled"`
+	Ver4Enabled       bool     `structs:"ver4Enabled"`
+}
+
 // userTags the input for requesting a CVO
 type userTags struct {
 	TagKey   string `structs:"tagKey"`
@@ -198,6 +211,12 @@ type upgradeOntapVersionRequest struct {
 type setFlagRequest struct {
 	Value     bool   `structs:"value"`
 	ValueType string `structs:"valueType"`
+}
+
+// svmNameModificationRequest
+type svmNameModificationRequest struct {
+	SvmNewName string `structs:"svmNewName"`
+	SvmName    string `structs:"svmName"`
 }
 
 // Check HTTP response code, return error if HTTP request is not successed.
@@ -269,11 +288,11 @@ func (c *Client) waitOnCompletion(id string, actionName string, task string, ret
 		if cvoStatus == 1 {
 			return nil
 		} else if cvoStatus == -1 {
-			return fmt.Errorf("Failed to %s %s, error: %s", task, actionName, failureErrorMessage)
+			return fmt.Errorf("failed to %s %s, error: %s", task, actionName, failureErrorMessage)
 		} else if cvoStatus == 0 {
 			if retries == 0 {
 				log.Print("Taking too long to ", task, actionName)
-				return fmt.Errorf("Taking too long for %s to %s or not properly setup", actionName, task)
+				return fmt.Errorf("taking too long for %s to %s or not properly setup", actionName, task)
 			}
 			log.Printf("Sleep for %d seconds", waitInterval)
 			time.Sleep(time.Duration(waitInterval) * time.Second)
@@ -338,7 +357,7 @@ func findWE(name string, weList []workingEnvironmentInfo) (workingEnvironmentInf
 			return weList[i], nil
 		}
 	}
-	return workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment %s in the list", name)
+	return workingEnvironmentInfo{}, fmt.Errorf("cannot find working environment %s in the list", name)
 }
 
 func findWEForID(id string, weList []workingEnvironmentInfo) (workingEnvironmentInfo, error) {
@@ -349,7 +368,7 @@ func findWEForID(id string, weList []workingEnvironmentInfo) (workingEnvironment
 			return weList[i], nil
 		}
 	}
-	return workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment %s in the list", id)
+	return workingEnvironmentInfo{}, fmt.Errorf("cannot find working environment %s in the list", id)
 }
 
 func (c *Client) findWorkingEnvironmentByName(name string, clientID string) (workingEnvironmentInfo, error) {
@@ -422,11 +441,11 @@ func (c *Client) findWorkingEnvironmentByID(id string, clientID string) (working
 
 	workingEnvInfo, err := c.getWorkingEnvironmentInfo(id, clientID)
 	if err != nil {
-		return workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by working_environment_id %s", id)
+		return workingEnvironmentInfo{}, fmt.Errorf("cannot find working environment by working_environment_id %s", id)
 	}
 	workingEnvDetail, err := c.findWorkingEnvironmentByName(workingEnvInfo.Name, clientID)
 	if err != nil {
-		return workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by working_environment_name %s", workingEnvInfo.Name)
+		return workingEnvironmentInfo{}, fmt.Errorf("cannot find working environment by working_environment_name %s", workingEnvInfo.Name)
 	}
 	return workingEnvDetail, nil
 }
@@ -527,13 +546,13 @@ func getAPIRootForWorkingEnvironment(isHA bool, workingEnvironmentID string) str
 	var baseURL string
 
 	if workingEnvironmentID == "" {
-		if isHA == true {
+		if isHA {
 			baseURL = "/occm/api/gcp/ha/working-environments"
 		} else {
 			baseURL = "/occm/api/gcp/vsa/working-environments"
 		}
 	} else {
-		if isHA == true {
+		if isHA {
 			baseURL = fmt.Sprintf("/occm/api/gcp/ha/working-environments/%s", workingEnvironmentID)
 		} else {
 			baseURL = fmt.Sprintf("/occm/api/gcp/vsa/working-environments/%s", workingEnvironmentID)
@@ -552,7 +571,7 @@ func (c *Client) getWorkingEnvironmentDetail(d *schema.ResourceData, clientID st
 	if a, ok := d.GetOk("file_system_id"); ok {
 		workingEnvDetail, err = c.getFSXWorkingEnvironmentInfo(d.Get("tenant_id").(string), a.(string), clientID)
 		if err != nil {
-			return workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by working_environment_id %s", a.(string))
+			return workingEnvironmentInfo{}, fmt.Errorf("cannot find working environment by working_environment_id %s", a.(string))
 		}
 		return workingEnvDetail, nil
 	}
@@ -561,16 +580,16 @@ func (c *Client) getWorkingEnvironmentDetail(d *schema.ResourceData, clientID st
 		WorkingEnvironmentID := a.(string)
 		workingEnvDetail, err = c.findWorkingEnvironmentByID(WorkingEnvironmentID, clientID)
 		if err != nil {
-			return workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by working_environment_id %s", WorkingEnvironmentID)
+			return workingEnvironmentInfo{}, fmt.Errorf("cannot find working environment by working_environment_id %s", WorkingEnvironmentID)
 		}
 	} else if a, ok = d.GetOk("working_environment_name"); ok {
 		workingEnvDetail, err = c.findWorkingEnvironmentByName(a.(string), clientID)
 		if err != nil {
-			return workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by working_environment_name %s", a.(string))
+			return workingEnvironmentInfo{}, fmt.Errorf("cannot find working environment by working_environment_name %s", a.(string))
 		}
 		log.Printf("Get environment id %v by %v", workingEnvDetail.PublicID, a.(string))
 	} else {
-		return workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by working_enviroment_id or working_environment_name")
+		return workingEnvironmentInfo{}, fmt.Errorf("cannot find working environment by working_enviroment_id or working_environment_name")
 	}
 	return workingEnvDetail, nil
 }
@@ -668,7 +687,7 @@ func (c *Client) getWorkingEnvironmentDetailForSnapMirror(d *schema.ResourceData
 
 				if id != WorkingEnvironmentID {
 					log.Print("Error getting AWS FSX")
-					return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("Could not find source working environment ID %v", WorkingEnvironmentID)
+					return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("could not find source working environment ID %v", WorkingEnvironmentID)
 				}
 				sourceWorkingEnvDetail.PublicID = WorkingEnvironmentID
 				svmName, err := c.getFSXSVM(WorkingEnvironmentID, clientID)
@@ -677,12 +696,12 @@ func (c *Client) getWorkingEnvironmentDetailForSnapMirror(d *schema.ResourceData
 				}
 				sourceWorkingEnvDetail.SvmName = svmName
 			} else {
-				return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("Cannot find FSX working environment by destination_working_environment_id %s, need tenant_id", WorkingEnvironmentID)
+				return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("cannot find FSX working environment by destination_working_environment_id %s, need tenant_id", WorkingEnvironmentID)
 			}
 		} else {
 			sourceWorkingEnvDetail, err = c.findWorkingEnvironmentForID(WorkingEnvironmentID, clientID)
 			if err != nil {
-				return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by source_working_environment_id %s", WorkingEnvironmentID)
+				return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("cannot find working environment by source_working_environment_id %s", WorkingEnvironmentID)
 			}
 		}
 	} else if a, ok = d.GetOk("source_working_environment_name"); ok {
@@ -707,11 +726,11 @@ func (c *Client) getWorkingEnvironmentDetailForSnapMirror(d *schema.ResourceData
 			}
 		}
 		if err != nil && sourceWorkingEnvDetail.PublicID == "" {
-			return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by source_working_environment_name %s", a.(string))
+			return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("cannot find working environment by source_working_environment_name %s", a.(string))
 		}
 		log.Printf("Get environment id %v by %v", sourceWorkingEnvDetail.PublicID, a.(string))
 	} else {
-		return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by source_working_environment_id or source_working_environment_name")
+		return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("cannot find working environment by source_working_environment_id or source_working_environment_name")
 	}
 
 	if a, ok := d.GetOk("destination_working_environment_id"); ok {
@@ -727,7 +746,7 @@ func (c *Client) getWorkingEnvironmentDetailForSnapMirror(d *schema.ResourceData
 				}
 				if id != WorkingEnvironmentID {
 					log.Print("Error getting AWS FSX")
-					return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("Could not find destination working environment ID %v", WorkingEnvironmentID)
+					return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("could not find destination working environment ID %v", WorkingEnvironmentID)
 				}
 				destWorkingEnvDetail.PublicID = WorkingEnvironmentID
 				svmName, err := c.getFSXSVM(WorkingEnvironmentID, clientID)
@@ -736,12 +755,12 @@ func (c *Client) getWorkingEnvironmentDetailForSnapMirror(d *schema.ResourceData
 				}
 				destWorkingEnvDetail.SvmName = svmName
 			} else {
-				return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("Cannot find FSX working environment by destination_working_environment_id %s, need tenant_id", WorkingEnvironmentID)
+				return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("cannot find FSX working environment by destination_working_environment_id %s, need tenant_id", WorkingEnvironmentID)
 			}
 		} else {
 			destWorkingEnvDetail, err = c.findWorkingEnvironmentForID(WorkingEnvironmentID, clientID)
 			if err != nil {
-				return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by destination_working_environment_id %s", WorkingEnvironmentID)
+				return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("cannot find working environment by destination_working_environment_id %s", WorkingEnvironmentID)
 			}
 			log.Print("findWorkingEnvironmentForID", destWorkingEnvDetail)
 		}
@@ -768,10 +787,10 @@ func (c *Client) getWorkingEnvironmentDetailForSnapMirror(d *schema.ResourceData
 			}
 		}
 		if err != nil && destWorkingEnvDetail.PublicID == "" {
-			return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by destination_working_environment_name %s", a.(string))
+			return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("cannot find working environment by destination_working_environment_name %s", a.(string))
 		}
 	} else {
-		return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("Cannot find working environment by destination_working_environment_id or destination_working_environment_name")
+		return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("cannot find working environment by destination_working_environment_id or destination_working_environment_name")
 	}
 	return sourceWorkingEnvDetail, destWorkingEnvDetail, nil
 }
@@ -915,6 +934,9 @@ func expandUserTags(set *schema.Set) []userTags {
 
 func (c *Client) callCMUpdateAPI(method string, request interface{}, baseURL string, id string, functionName string, clientID string) error {
 	apiRoot, _, err := c.getAPIRoot(id, clientID)
+	if err != nil {
+		return err
+	}
 	baseURL = apiRoot + baseURL
 
 	hostType := "CloudManagerHost"
@@ -940,6 +962,23 @@ func (c *Client) callCMUpdateAPI(method string, request interface{}, baseURL str
 	if responseError != nil {
 		return responseError
 	}
+	return nil
+}
+
+// modify CVO SVM name
+func (c *Client) updateCVOSVMName(d *schema.ResourceData, clientID string, svmName string, svmNewName string) error {
+	var request svmNameModificationRequest
+	// Update svm name
+	id := d.Id()
+	request.SvmName = svmName
+	request.SvmNewName = svmNewName
+	baseURL := fmt.Sprintf("/working-environments/%s/svm", id)
+	log.Printf("Modify %s SVM %s with %s", id, svmName, svmNewName)
+	updateErr := c.callCMUpdateAPI("PUT", request, baseURL, id, "updateCVOSVMName", clientID)
+	if updateErr != nil {
+		return updateErr
+	}
+	log.Printf("\tUpdated %s on svm_name", id)
 	return nil
 }
 
@@ -985,13 +1024,75 @@ func updateCVOSVMPassword(d *schema.ResourceData, meta interface{}, clientID str
 	return nil
 }
 
+// update SVMs on GCP CVO HA
+func (c *Client) updateCVOSVMs(d *schema.ResourceData, clientID string) error {
+	id := d.Id()
+	currentSVMs, expectSVMs := d.GetChange("svm")
+	cSVMs := expandGCPSVMs(currentSVMs.(*schema.Set))
+	eSVMs := expandGCPSVMs(expectSVMs.(*schema.Set))
+
+	// expectList will be used to keep the new SVMs which will be added later.
+	// currentList will be used to keep the SVMs which will be removed later.
+	// But rather than adding and deleting the SVMs, try to do rename/update them first.
+	expectList := make(map[string]bool)
+	currentList := make(map[int]string)
+
+	for _, svm := range eSVMs {
+		expectList[svm.SvmName] = true
+	}
+
+	i := 0
+	for _, svm := range cSVMs {
+		svmName := svm.SvmName
+		if _, ok := expectList[svmName]; !ok {
+			currentList[i] = svmName
+			i++
+		} else {
+			delete(expectList, svmName)
+		}
+	}
+	log.Printf("eList: %#v", expectList)
+	log.Printf("cList: %#v", currentList)
+
+	j := 0
+	for svmName := range expectList {
+		if len(currentList) > 0 {
+			// update SVM
+			respErr := c.updateCVOSVMName(d, clientID, currentList[j], svmName)
+			if respErr != nil {
+				return respErr
+			}
+			delete(currentList, j)
+			j++
+		} else {
+			// add SVM
+			respErr := c.addSVMtoCVO(id, clientID, svmName)
+			if respErr != nil {
+				log.Printf("Error adding SVM %v: %v", svmName, respErr)
+				return respErr
+			}
+		}
+	}
+	if len(currentList) > 0 {
+		for _, svmName := range currentList {
+			// delete SVM
+			respErr := c.deleteSVMfromCVO(id, clientID, svmName)
+			if respErr != nil {
+				log.Printf("Error deleting SVM %v: %v", svmName, respErr)
+				return respErr
+			}
+		}
+	}
+	return nil
+}
+
 func (c *Client) waitOnCompletionCVOUpdate(id string, retryCount int, waitInterval int, clientID string) error {
 	// check upgrade status
 	log.Print("Check CVO update status")
 	// check upgrade status
 	apiRoot, _, err := c.getAPIRoot(id, clientID)
 	if err != nil {
-		return fmt.Errorf("Cannot get root API")
+		return fmt.Errorf("cannot get root API")
 	}
 
 	for {
@@ -1005,12 +1106,24 @@ func (c *Client) waitOnCompletionCVOUpdate(id string, retryCount int, waitInterv
 		}
 		if retryCount <= 0 {
 			log.Print("Taking too long for status to be active")
-			return fmt.Errorf("Taking too long for CVO to be active or not properly setup")
+			return fmt.Errorf("taking too long for CVO to be active or not properly setup")
 		}
 		log.Printf("Update status %s...(%d)", cvoResp.Status.Status, retryCount)
 		time.Sleep(time.Duration(waitInterval) * time.Second)
 		retryCount--
 	}
+}
+
+func (c *Client) getCVOProperties(id string, clientID string) (workingEnvironmentOntapClusterPropertiesResponse, error) {
+	apiRoot, _, err := c.getAPIRoot(id, clientID)
+	if err != nil {
+		return workingEnvironmentOntapClusterPropertiesResponse{}, fmt.Errorf("cannot get root API")
+	}
+	cvoResp, err := c.getWorkingEnvironmentProperties(apiRoot, id, "*", clientID)
+	if err != nil {
+		return workingEnvironmentOntapClusterPropertiesResponse{}, err
+	}
+	return cvoResp, nil
 }
 
 // set the license_type and instance type of a specific cloud volumes ONTAP
@@ -1038,7 +1151,7 @@ func updateCVOLicenseInstanceType(d *schema.ResourceData, meta interface{}, clie
 	}
 	err := client.waitOnCompletionCVOUpdate(id, retryCount, 60, clientID)
 	if err != nil {
-		return fmt.Errorf("Update CVO failed %v", err)
+		return fmt.Errorf("update CVO failed %v", err)
 	}
 	log.Printf("Updated %s license and instance type: %v", id, request)
 	return nil
@@ -1084,7 +1197,7 @@ func updateCVOWritingSpeedState(d *schema.ResourceData, meta interface{}, client
 
 	err := client.waitOnCompletionCVOUpdate(id, retryCount, 60, clientID)
 	if err != nil {
-		return fmt.Errorf("Update CVO failed %v", err)
+		return fmt.Errorf("update CVO failed %v", err)
 	}
 	log.Printf("Updated %s writing_speed_state: %v", id, request)
 	return nil
@@ -1105,11 +1218,11 @@ func (c *Client) waitOnCompletionOntapImageUpgrade(apiRoot string, id string, ta
 				return nil
 			}
 			log.Printf("Update ontap image failed on checking version (%s, %s)", cvoResp.OntapClusterProperties.OntapVersion, targetVersion)
-			return fmt.Errorf("Update ontap version failed. Current version %s", cvoResp.OntapClusterProperties.OntapVersion)
+			return fmt.Errorf("update ontap version failed. Current version %s", cvoResp.OntapClusterProperties.OntapVersion)
 		}
 		if retryCount <= 0 {
 			log.Print("Taking too long for status to be active")
-			return fmt.Errorf("Taking too long for CVO to be active or not properly setup")
+			return fmt.Errorf("taking too long for CVO to be active or not properly setup")
 		}
 		log.Printf("Update %s status %s...(%d)", targetVersion, cvoResp.Status.Status, retryCount)
 		time.Sleep(time.Duration(waitInterval) * time.Second)
@@ -1138,9 +1251,9 @@ func (c *Client) upgradeOntapVersionAvailable(apiRoot string, id string, ontapVe
 				return version, nil
 			}
 		}
-		return "", fmt.Errorf("Working environment %s: ontap version %s is not in the upgrade versions list (%+v)", id, ontapVersion, upgradeOntapVersions)
+		return "", fmt.Errorf("working environment %s: ontap version %s is not in the upgrade versions list (%+v)", id, ontapVersion, upgradeOntapVersions)
 	}
-	return "", fmt.Errorf("Working environment %s: no upgrade version availble", id)
+	return "", fmt.Errorf("working environment %s: no upgrade version availble", id)
 }
 
 func (c *Client) setConfigFlag(request setFlagRequest, keyPath string, clientID string) error {
@@ -1199,7 +1312,7 @@ func (c *Client) upgradeCVOOntapImage(apiRoot string, id string, ontapVersion st
 	}
 	err := c.waitOnCompletionOntapImageUpgrade(apiRoot, id, ontapVersion, retryCount, 60, clientID)
 	if err != nil {
-		return fmt.Errorf("Upgrade ontap image %s failed %v", ontapVersion, err)
+		return fmt.Errorf("upgrade ontap image %s failed %v", ontapVersion, err)
 	}
 	log.Printf("Updated %s ontap_version: %v", id, request)
 	return nil
@@ -1210,7 +1323,7 @@ func (c *Client) doUpgradeCVOOntapVersion(id string, isHA bool, ontapVersion str
 	log.Print("Check CVO ontap image upgrade status ... ")
 	apiRoot, _, err := c.getAPIRoot(id, clientID)
 	if err != nil {
-		return fmt.Errorf("Cannot get root API")
+		return fmt.Errorf("cannot get root API")
 	}
 
 	upgradeVersion, err := c.upgradeOntapVersionAvailable(apiRoot, id, ontapVersion, clientID)

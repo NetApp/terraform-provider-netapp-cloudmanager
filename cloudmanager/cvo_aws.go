@@ -22,6 +22,7 @@ type createCVOAWSDetails struct {
 	Region                      string                  `structs:"region"`
 	VpcID                       string                  `structs:"vpcId,omitempty"`
 	SvmPassword                 string                  `structs:"svmPassword"`
+	SvmName                     string                  `structs:"svmName,omitempty"`
 	VsaMetadata                 vsaMetadata             `structs:"vsaMetadata"`
 	EbsVolumeSize               ebsVolumeSize           `structs:"ebsVolumeSize"`
 	EbsVolumeType               string                  `structs:"ebsVolumeType"`
@@ -143,45 +144,6 @@ func (c *Client) getTenant(clientID string) (string, error) {
 	}
 
 	return result[0].PublicID, nil
-}
-
-func (c *Client) getCVOAWSByID(id string, clientID string) (map[string]interface{}, error) {
-
-	log.Print("getCVOAWSByID")
-
-	baseURL, _, err := c.getAPIRoot(id, clientID)
-	if err != nil {
-		return nil, err
-	}
-
-	accessTokenResult, err := c.getAccessToken()
-	if err != nil {
-		log.Print("in getCVOAWSByID request, failed to get AccessToken")
-		return nil, err
-	}
-	c.Token = accessTokenResult.Token
-
-	baseURL = fmt.Sprintf("%s/working-environments/%s?fields=*", baseURL, id)
-
-	hostType := "CloudManagerHost"
-
-	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
-	if err != nil {
-		log.Print("getCVOAWSByID request failed ", statusCode)
-		return nil, err
-	}
-
-	responseError := apiResponseChecker(statusCode, response, "getCVOAWSByID")
-	if responseError != nil {
-		return nil, responseError
-	}
-	var result map[string]interface{}
-	if err := json.Unmarshal(response, &result); err != nil {
-		log.Print("Failed to unmarshall response from getCVOAWSByID ", err)
-		return nil, err
-	}
-
-	return result, nil
 }
 
 func (c *Client) getCVOAWS(id string, clientID string) (string, error) {

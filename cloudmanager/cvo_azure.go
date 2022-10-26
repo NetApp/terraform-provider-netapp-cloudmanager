@@ -23,6 +23,7 @@ type createCVOAzureDetails struct {
 	SubscriptionID              string                    `structs:"subscriptionId"`
 	VnetID                      string                    `structs:"vnetId,omitempty"`
 	SvmPassword                 string                    `structs:"svmPassword"`
+	SvmName                     string                    `structs:"svmName,omitempty"`
 	VsaMetadata                 vsaMetadata               `structs:"vsaMetadata"`
 	DiskSize                    diskSize                  `structs:"diskSize"`
 	StorageType                 string                    `structs:"storageType"`
@@ -120,35 +121,6 @@ func (c *Client) getNSS(clientID string) (string, error) {
 	}
 
 	return result.NssAccounts[0].PublicID, nil
-}
-
-func (c *Client) getCVOAzureByID(id string, clientID string) error {
-
-	log.Print("getCVOAzureByID")
-
-	accessTokenResult, err := c.getAccessToken()
-	if err != nil {
-		log.Print("in getCVOAzureByID request, failed to get AccessToken")
-		return err
-	}
-	c.Token = accessTokenResult.Token
-
-	baseURL := fmt.Sprintf("/occm/api/working-environments/%s", id)
-
-	hostType := "CloudManagerHost"
-
-	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
-	if err != nil {
-		log.Print("getCVOAzureByID request failed ", statusCode)
-		return err
-	}
-
-	responseError := apiResponseChecker(statusCode, response, "getCVOAzureByID")
-	if responseError != nil {
-		return responseError
-	}
-
-	return nil
 }
 
 func (c *Client) getCVOAzure(id string, clientID string) (string, error) {

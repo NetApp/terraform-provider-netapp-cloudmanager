@@ -92,6 +92,7 @@ The following arguments are supported:
 * `azure_encryption_parameters` - (Optional) AZURE encryption parameters. It is required if using AZURE encryption.
 * `storage_type` - (Optional) The type of storage for the first data aggregate: ['Premium_LRS', 'Standard_LRS', 'StandardSSD_LRS', 'Premium_ZRS']. The default is 'Premium_LRS'
 * `svm_password` - (Required) The admin password for Cloud Volumes ONTAP.
+* `svm_name` - (Optional) The name of the SVM.
 * `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
 * `resource_group` - (Optional) The resource_group where Cloud Volumes ONTAP will be created. If not provided, Cloud Manager creates the resource group (name of the working environment with suffix '-rg').
 * `allow_deploy_in_existing_rg` - (Optional) Indicates if to allow creation in existing resource group, Default is false.
@@ -131,4 +132,4 @@ The `azure_tag` block supports:
 The following attributes are exported in addition to the arguments listed above:
 
 * `id` - The unique identifier for the working environment.
-* `svm_name` - The name of the SVM.
+* `svm_name` - The default name of the SVM will be exported if it is not provided in the resource.

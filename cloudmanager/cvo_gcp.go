@@ -24,6 +24,7 @@ type createCVOGCPDetails struct {
 	GCPServiceAccount       string                  `structs:"gcpServiceAccount"`
 	VpcID                   string                  `structs:"vpcId"`
 	SvmPassword             string                  `structs:"svmPassword"`
+	SvmName                 string                  `structs:"svmName,omitempty"`
 	VsaMetadata             vsaMetadata             `structs:"vsaMetadata"`
 	GCPVolumeSize           diskSize                `structs:"gcpVolumeSize"`
 	GCPVolumeType           string                  `structs:"gcpVolumeType"`
@@ -48,6 +49,12 @@ type createCVOGCPDetails struct {
 type gcpLabels struct {
 	LabelKey   string `structs:"labelKey"`
 	LabelValue string `structs:"labelValue,omitempty"`
+}
+
+// gcpSVMs the input for adding SVMs to a CVO HA
+type gcpSVM struct {
+	SvmName string `structs:"svmName"`
+	// more parameters might be added in the future
 }
 
 // gcpEncryptionParameters the input for requesting a CVO
@@ -138,6 +145,7 @@ func (c *Client) createCVOGCP(cvoDetails createCVOGCPDetails, clientID string) (
 
 	var result cvoResult
 	if err := json.Unmarshal(response, &result); err != nil {
+		log.Printf("Response: %#v", response)
 		log.Print("Failed to unmarshall response from createCVO ", err)
 		return cvoResult{}, err
 	}
@@ -179,6 +187,73 @@ func (c *Client) deleteCVOGCP(id string, isHA bool, clientID string) error {
 	return nil
 }
 
+// This is used on GCP CVO HA only
+func (c *Client) addSVMtoCVO(id string, clientID string, svmName string) error {
+	log.Printf("addSVMtoCVO: id %s client %s svm %s", id, clientID, svmName)
+
+	accessTokenResult, err := c.getAccessToken()
+	if err != nil {
+		log.Print("In addSVMtoCVO request, failed to get AccessToken")
+		return err
+	}
+	c.Token = accessTokenResult.Token
+
+	// GCP CVO SVM add and deletion only support HA
+	baseURL := getAPIRootForWorkingEnvironment(true, id) + "/svm"
+	hostType := "CloudManagerHost"
+
+	var svm gcpSVM
+	svm.SvmName = svmName
+	params := structs.Map(svm)
+	log.Printf("\taddSVMtoCVO params: %#v", params)
+	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("POST", baseURL, params, c.Token, hostType, clientID)
+	if err != nil {
+		log.Print("addSVMtoCVO request failed ", statusCode)
+		return err
+	}
+
+	responseError := apiResponseChecker(statusCode, response, "addSVMtoCVO")
+	if responseError != nil {
+		return responseError
+	}
+
+	err = c.waitOnCompletion(onCloudRequestID, "CVO_SVM", "add", 60, 60, clientID)
+
+	return err
+}
+
+func (c *Client) deleteSVMfromCVO(id string, clientID string, svmName string) error {
+	log.Printf("deleteSVMfromCVO: id %s client %s svm %s", id, clientID, svmName)
+
+	accessTokenResult, err := c.getAccessToken()
+	if err != nil {
+		log.Print("In deleteSVMfromCVO request, failed to get AccessToken")
+		return err
+	}
+	c.Token = accessTokenResult.Token
+
+	// GCP CVO SVM add and deletion only support HA
+	baseURL := getAPIRootForWorkingEnvironment(true, id)
+	baseURL = fmt.Sprintf("%s/svm/%s", baseURL, svmName)
+	log.Print("\tDelete svm url: ", baseURL)
+	hostType := "CloudManagerHost"
+
+	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("DELETE", baseURL, nil, c.Token, hostType, clientID)
+	if err != nil {
+		log.Printf("deleteSVMfromCVO %s request failed %#v", id, statusCode)
+		return err
+	}
+
+	responseError := apiResponseChecker(statusCode, response, "deleteSVMfromCVO")
+	if responseError != nil {
+		return responseError
+	}
+
+	err = c.waitOnCompletion(onCloudRequestID, "CVO_SVM", "delete", 40, 60, clientID)
+
+	return err
+}
+
 // expandGCPLabels converts set to gcpLabels struct
 func expandGCPLabels(set *schema.Set) []gcpLabels {
 	labels := []gcpLabels{}
@@ -191,6 +266,19 @@ func expandGCPLabels(set *schema.Set) []gcpLabels {
 		labels = append(labels, gcpLabel)
 	}
 	return labels
+}
+
+// expandGCPLabels converts set to gcpLabels struct
+func expandGCPSVMs(set *schema.Set) []gcpSVM {
+	svms := []gcpSVM{}
+
+	for _, v := range set.List() {
+		svm := v.(map[string]interface{})
+		gcpSVM := gcpSVM{}
+		gcpSVM.SvmName = svm["svm_name"].(string)
+		svms = append(svms, gcpSVM)
+	}
+	return svms
 }
 
 // expandGCPLabelsToUseTags

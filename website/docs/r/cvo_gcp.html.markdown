@@ -27,7 +27,13 @@ resource "netapp-cloudmanager_cvo_gcp" "cl-cvo-gcp" {
   gcp_label {
         label_key = "abcd"
         label_value = "ABCD"
-      }
+  }
+  svm {
+    svm_name = "svm01"
+  }
+  svm {
+    svm_name = "svm03"
+  }
 }
 ```
 
@@ -40,6 +46,7 @@ The following arguments are supported:
 * `zone` - (Required) The zone of the region where the working environment will be created.
 * `gcp_service_account` - (Required) The gcp_service_account email in order to enable tiering of cold data to Google Cloud Storage.
 * `svm_password` - (Required) The admin password for Cloud Volumes ONTAP.
+* `svm_name` - (Optional) The name of the SVM.
 * `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
 * `workspace_id` - (Optional) The ID of the Cloud Manager workspace where you want to deploy Cloud Volumes ONTAP. If not provided, Cloud Manager uses the first workspace. You can find the ID from the Workspace tab on [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
 * `data_encryption_type` - (Optional) The type of data encryption to use for the working environment: ['GCP', 'NONE']. The default is 'GCP'.
@@ -88,9 +95,12 @@ The `gcp_label` block supports:
 * `label_key` - (Required) The key of the tag.
 * `label_value` - (Required) The tag value.
 
+The `svm` block supports:
+* `svm_name` - (Required) The extra SVM name for CVO HA.
+
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `id` - The unique identifier for the working environment.
-* `svm_name` - The name of the SVM.
+* `svm_name` - The default name of the SVM will be exported if it is not provided in the resource.

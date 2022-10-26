@@ -166,6 +166,9 @@ func resourceCVOAzure() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"NORMAL", "HIGH"}, true),
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return strings.EqualFold(old, new)
+				},
 			},
 			"capacity_tier": {
 				Type:         schema.TypeString,
@@ -257,7 +260,9 @@ func resourceCVOAzure() *schema.Resource {
 			"svm_name": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Computed: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return new == ""
+				},
 			},
 			"upgrade_ontap_version": {
 				Type:     schema.TypeBool,
@@ -290,6 +295,9 @@ func resourceCVOAzureCreate(d *schema.ResourceData, meta interface{}) error {
 	cvoDetails.WorkspaceID = d.Get("workspace_id").(string)
 	cvoDetails.StorageType = d.Get("storage_type").(string)
 	cvoDetails.SvmPassword = d.Get("svm_password").(string)
+	if c, ok := d.GetOk("svm_name"); ok {
+		cvoDetails.SvmName = c.(string)
+	}
 	capacityTier := d.Get("capacity_tier").(string)
 	if capacityTier == "Blob" {
 		cvoDetails.CapacityTier = capacityTier
@@ -369,7 +377,7 @@ func resourceCVOAzureCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	cvoDetails.IsHA = d.Get("is_ha").(bool)
-	if cvoDetails.IsHA == true {
+	if cvoDetails.IsHA {
 		if cvoDetails.VsaMetadata.LicenseType == "capacity-paygo" {
 			log.Print("Set licenseType as default value ha-capacity-paygo")
 			cvoDetails.VsaMetadata.LicenseType = "ha-capacity-paygo"
@@ -436,13 +444,18 @@ func resourceCVOAzureRead(d *schema.ResourceData, meta interface{}) error {
 
 	clientID := d.Get("client_id").(string)
 
-	_, err := client.getWorkingEnvironmentInfo(id, clientID)
+	resp, err := client.getCVOProperties(id, clientID)
 	if err != nil {
-		log.Print("Error getting cvo")
+		log.Print("Error reading cvo")
 		return err
 	}
+	d.Set("svm_name", resp.SvmName)
 	if c, ok := d.GetOk("writing_speed_state"); ok {
-		d.Set("writing_speed_state", c.(string))
+		if strings.EqualFold(c.(string), resp.OntapClusterProperties.WritingSpeedState) {
+			d.Set("writing_speed_state", c.(string))
+		} else {
+			d.Set("writing_speed_state", resp.OntapClusterProperties.WritingSpeedState)
+		}
 	}
 	return nil
 }
@@ -475,6 +488,20 @@ func resourceCVOAzureUpdate(d *schema.ResourceData, meta interface{}) error {
 		respErr := updateCVOSVMPassword(d, meta, clientID)
 		if respErr != nil {
 			return respErr
+		}
+	}
+
+	//  check if svm_name is changed
+	if d.HasChange("svm_name") {
+		svmName, svmNewName := d.GetChange("svm_name")
+		if svmNewName.(string) != "" {
+			respErr := client.updateCVOSVMName(d, clientID, svmName.(string), svmNewName.(string))
+			if respErr != nil {
+				return respErr
+			}
+		} else {
+			d.Set("svm_name", svmName.(string))
+			log.Print("svm_name is set empty. Keep current svm_name. No change.")
 		}
 	}
 
@@ -511,14 +538,11 @@ func resourceCVOAzureUpdate(d *schema.ResourceData, meta interface{}) error {
 			log.Print("writing_speed_state: default value is NORMAL. No change call is needed.")
 			return nil
 		}
-		if strings.EqualFold(currentWritingSpeedState.(string), expectWritingSpeedState.(string)) {
-			d.Set("writing_speed_state", expectWritingSpeedState.(string))
-		} else {
-			respErr := updateCVOWritingSpeedState(d, meta, clientID)
-			if respErr != nil {
-				return respErr
-			}
+		respErr := updateCVOWritingSpeedState(d, meta, clientID)
+		if respErr != nil {
+			return respErr
 		}
+
 		return nil
 	}
 
