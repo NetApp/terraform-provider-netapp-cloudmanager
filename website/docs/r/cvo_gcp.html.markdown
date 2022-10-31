@@ -63,7 +63,7 @@ The following arguments are supported:
 * `capacity_package_name` - (Optional) The capacity package name: ['Essential', 'Professional', 'Freemium']. Default is 'Essential'.
 * `instance_type` - (Optional) The type of instance to use, which depends on the license type you choose: Explore:['custom-4-16384'], Standard:['n1-standard-8'], Premium:['n1-standard-32'], BYOL: all instance types defined for PayGo. For more supported instance types, refer to Cloud Volumes ONTAP Release Notes. default is 'n1-standard-8' .
 * `serial_number` - (Optional) The serial number for the system. Required when using 'gcp-cot-premium-byol'.
-* `capacity_tier` - (Optional) Indicates the type of data tiering to use: ['cloudStorage', 'NONE']. The default is 'cloudStorage'.
+* `capacity_tier` - (Optional) Indicates the type of data tiering to use: ['cloudStorage']. The default is 'cloudStorage'.
 * `tier_level` - (Optional) In case capacity_tier is cloudStorage, this argument indicates the tiering level: ['standard', 'nearline', 'coldline']. The default is: 'standard'.
 * `nss_account` - (Optional) The NetApp Support Site account ID to use with this Cloud Volumes ONTAP system. If the license type is BYOL and an NSS account isn't provided, Cloud Manager tries to use the first existing NSS account.
 * `writing_speed_state` - (Optional) The write speed setting for Cloud Volumes ONTAP: ['NORMAL','HIGH']. The default is 'NORMAL'. This argument is not relevant for HA pairs.

@@ -31,8 +31,8 @@ type createCVOGCPDetails struct {
 	SubnetID                string                  `structs:"subnetId"`
 	SubnetPath              string                  `structs:"subnetPath"`
 	Project                 string                  `structs:"project"`
-	CapacityTier            string                  `structs:"capacityTier"`
-	TierLevel               string                  `structs:"tierLevel"`
+	CapacityTier            string                  `structs:"capacityTier,omitempty"`
+	TierLevel               string                  `structs:"tierLevel,omitempty"`
 	NssAccount              string                  `structs:"nssAccount,omitempty"`
 	WritingSpeedState       string                  `structs:"writingSpeedState,omitempty"`
 	SerialNumber            string                  `structs:"serialNumber,omitempty"`

@@ -145,7 +145,6 @@ func resourceCVOGCP() *schema.Resource {
 			"tier_level": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				Default:      "standard",
 				ValidateFunc: validation.StringInSlice([]string{"standard", "nearline", "coldline"}, false),
 			},
 			"nss_account": {
@@ -165,8 +164,7 @@ func resourceCVOGCP() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				Default:      "cloudStorage",
-				ValidateFunc: validation.StringInSlice([]string{"cloudStorage", "NONE"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"cloudStorage"}, false),
 			},
 			"gcp_label": {
 				Type:     schema.TypeSet,
@@ -343,10 +341,11 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 	if c, ok := d.GetOk("svm_name"); ok {
 		cvoDetails.SvmName = c.(string)
 	}
-	capacityTier := d.Get("capacity_tier").(string)
-	if capacityTier == "cloudStorage" {
-		cvoDetails.CapacityTier = capacityTier
-		cvoDetails.TierLevel = d.Get("tier_level").(string)
+	if c, ok := d.GetOk("capacity_tier"); ok {
+		cvoDetails.CapacityTier = c.(string)
+	}
+	if c, ok := d.GetOk("tier_level"); ok {
+		cvoDetails.TierLevel = c.(string)
 	}
 	cvoDetails.GCPVolumeSize.Size = d.Get("gcp_volume_size").(int)
 	cvoDetails.GCPVolumeSize.Unit = d.Get("gcp_volume_size_unit").(string)
@@ -630,7 +629,7 @@ func resourceCVOGCPUpdate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	// check if tier_level is changed
-	if d.HasChange("tier_level") && d.Get("capacity_tier").(string) == "cloudStorage" {
+	if d.HasChange("tier_level") {
 		respErr := updateCVOTierLevel(d, meta, clientID)
 		if respErr != nil {
 			return respErr

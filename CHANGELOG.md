@@ -2,6 +2,9 @@
 NEW FEATURES:
 * resource/cvo_gcp HA: support add, rename and delete SVMs.
 
+BUG FIXES:
+* resource/cvo_gcp: both capacity_tier and tierl_level should be optional.
+
 ## 22.10.0
 NEW FEATURES:
 * resource/connector_snapmirror: support fsx as a source for snapmirror relationship with cvo.
