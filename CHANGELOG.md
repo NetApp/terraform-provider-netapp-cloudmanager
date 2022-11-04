@@ -1,9 +1,11 @@
-## 22.10.1
+## 22.11.0
 NEW FEATURES:
 * resource/cvo_gcp HA: support add, rename and delete SVMs.
+* resource/connector_gcp: add `labels` option.
 
 BUG FIXES:
 * resource/cvo_gcp: both capacity_tier and tierl_level should be optional.
+
 
 ## 22.10.0
 NEW FEATURES:

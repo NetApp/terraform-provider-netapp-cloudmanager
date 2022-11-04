@@ -148,6 +148,13 @@ func resourceOCCMGCP() *schema.Resource {
 					Type: schema.TypeString,
 				},
 			},
+			"labels": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
 		},
 	}
 }
@@ -199,6 +206,14 @@ func resourceOCCMGCPCreate(d *schema.ResourceData, meta interface{}) error {
 		} else {
 			return fmt.Errorf("Missing proxy_url")
 		}
+	}
+
+	if o, ok := d.GetOk("labels"); ok {
+		labels := make(map[string]string)
+		for k, v := range o.(map[string]interface{}) {
+			labels[k] = v.(string)
+		}
+		occmDetails.Labels = labels
 	}
 
 	var proxyCertificates []string
@@ -258,8 +273,10 @@ func resourceOCCMGCPRead(d *schema.ResourceData, meta interface{}) error {
 	occmDetails.GCPCommonSuffixName = "-vm-boot-deployment"
 	occmDetails.Name = d.Get("name").(string)
 	occmDetails.GCPProject = d.Get("project_id").(string)
-	occmDetails.Region = d.Get("zone").(string)
 	occmDetails.SubnetID = d.Get("subnet_id").(string)
+
+	occmDetails.Zone = d.Get("zone").(string)
+	occmDetails.Region = string(occmDetails.Zone[0 : len(occmDetails.Zone)-2])
 	var err error
 	client.GCPServiceAccountKey, err = getGCPServiceAccountKey(d)
 	if err != nil {
@@ -299,6 +316,49 @@ func resourceOCCMGCPRead(d *schema.ResourceData, meta interface{}) error {
 			d.Set("tags", tags)
 		}
 	}
+
+	if _, ok := d.GetOk("labels"); ok {
+	}
+	disk, err := client.getDisk(occmDetails, clientID)
+	vmInstance, err := client.getVMInstance(occmDetails, clientID)
+	vmLabels := make(map[string]interface{})
+	diskLabels := make(map[string]interface{})
+	if val, ok := vmInstance["labels"]; ok {
+		vmLabels = val.(map[string]interface{})
+	}
+	if val, ok := disk["labels"]; ok {
+		diskLabels = val.(map[string]interface{})
+	}
+	labels := make(map[string]string)
+
+	// GCP Connector consists two parts: a vm instance and a disk. We use deployment manager to create connector, the labels are set during the creation.
+	// After creation, the GET call of deployment manager will no longer gets the up to date info of the vm and disk. We must use API of disk and vm directly.
+	// For disk and vm, each can set labels differently, but the label of the connector on the UI is indistinguish.
+	// If disk and vm differ in labels, d.Set("<key>", "<diskValue>,<labelValue>").
+
+	// Check vm labels first
+	for k, vmLabelValue := range vmLabels {
+		// if both disk and vm have the same key
+		if diskLabelValue, ok := diskLabels[k]; ok {
+			// If the values are not the same
+			if diskLabelValue.(string) != vmLabelValue.(string) {
+				labels[k] = fmt.Sprintf("%s,%s", vmLabelValue.(string), diskLabelValue.(string))
+			} else {
+				// If the values are the same, set either one.
+				labels[k] = diskLabelValue.(string)
+			}
+		} else {
+			// If disk does not have the key, but vm does, set to empty value.
+			labels[k] = ""
+		}
+	}
+	// check disk labels, and set the ones only exist in disk but not vm to empty value.
+	for k := range diskLabels {
+		if _, ok := vmLabels[k]; !ok {
+			labels[k] = ""
+		}
+	}
+	d.Set("labels", labels)
 
 	return nil
 }
@@ -376,8 +436,9 @@ func resourceOCCMGCPUpdate(d *schema.ResourceData, meta interface{}) error {
 	occmDetails.GCPCommonSuffixName = "-vm-boot-deployment"
 	occmDetails.Name = d.Get("name").(string)
 	occmDetails.GCPProject = d.Get("project_id").(string)
-	occmDetails.Region = d.Get("zone").(string)
 	occmDetails.SubnetID = d.Get("subnet_id").(string)
+	occmDetails.Zone = d.Get("zone").(string)
+	occmDetails.Region = string(occmDetails.Zone[0 : len(occmDetails.Zone)-2])
 	var err error
 	client.GCPServiceAccountKey, err = getGCPServiceAccountKey(d)
 	if err != nil {
@@ -386,8 +447,12 @@ func resourceOCCMGCPUpdate(d *schema.ResourceData, meta interface{}) error {
 	occmDetails.Company = d.Get("company").(string)
 	clientID := d.Get("client_id").(string)
 
+	instance, err := client.getVMInstance(occmDetails, clientID)
+	if err != nil {
+		return err
+	}
+
 	if d.HasChange("tags") {
-		instance, err := client.getVMInstance(occmDetails, clientID)
 		tagItems := instance["tags"].(map[string]interface{})
 		fingerprint := tagItems["fingerprint"].(string)
 		o := d.Get("tags").(*schema.Set)
@@ -404,6 +469,31 @@ func resourceOCCMGCPUpdate(d *schema.ResourceData, meta interface{}) error {
 			return err
 		}
 	}
+
+	if d.HasChange("labels") {
+		updateLabels := make(map[string]interface{})
+		updateLabels["labels"] = make(map[string]string)
+		labels := make(map[string]string)
+		for k, v := range d.Get("labels").(map[string]interface{}) {
+			labels[k] = v.(string)
+		}
+		updateLabels["labels"] = labels
+		updateLabels["labelFingerprint"] = instance["labelFingerprint"].(string)
+		err := client.setVMLabels(occmDetails, updateLabels, clientID)
+		if err != nil {
+			return err
+		}
+		disk, err := client.getDisk(occmDetails, clientID)
+		if err != nil {
+			return err
+		}
+		updateLabels["labelFingerprint"] = disk["labelFingerprint"].(string)
+		err = client.setDiskLabels(occmDetails, updateLabels, clientID)
+		if err != nil {
+			return err
+		}
+	}
+
 	return resourceOCCMGCPRead(d, meta)
 }
 

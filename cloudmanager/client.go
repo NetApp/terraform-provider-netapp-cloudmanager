@@ -52,6 +52,7 @@ type Client struct {
 	AWSAccount              string
 	AzureEnvironmentForOCCM string
 	GCPDeploymentManager    string
+	GCPCompute              string
 	GCPImageProject         string
 	GCPImageFamily          string
 	GCPDeploymentTemplate   string
@@ -809,6 +810,7 @@ func (c *Client) init() {
 		Audience:             c.Audience,
 		GCPDeploymentManager: c.GCPDeploymentManager,
 		CVSHostName:          c.CVSHostName,
+		GCPCompute:           c.GCPCompute,
 	}
 }
 

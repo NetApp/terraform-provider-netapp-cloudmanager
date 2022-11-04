@@ -67,6 +67,7 @@ type createOCCMDetails struct {
 	AwsTags                      []userTags
 	Tags                         []string
 	StorageAccount               string
+	Labels                       map[string]string
 }
 
 // deleteOCCMDetails the users input for deleting a occm
