@@ -3,6 +3,7 @@ package cloudmanager
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -62,15 +63,37 @@ func dataSourceCVOCIFS() *schema.Resource {
 			"server_name": {
 				Type:     schema.TypeString,
 				Optional: true,
+				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
+					v := val.(string)
+					if strings.TrimSpace(v) != "" {
+						errs = append(errs, fmt.Errorf("using workgroup configuration is deprecated. Create with AD instead"))
+					}
+					return
+				},
 			},
 			"workgroup_name": {
 				Type:     schema.TypeString,
 				Optional: true,
+				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
+					v := val.(string)
+					if strings.TrimSpace(v) != "" {
+						errs = append(errs, fmt.Errorf("using workgroup configuration is deprecated. Create with AD instead"))
+					}
+					return
+				},
 			},
 			"is_workgroup": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  false,
+				Type:       schema.TypeBool,
+				Optional:   true,
+				Default:    false,
+				Deprecated: "use AD instead",
+				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
+					v := val.(bool)
+					if v {
+						errs = append(errs, fmt.Errorf("using workgroup configuration is deprecated. Create with AD instead"))
+					}
+					return
+				},
 			},
 		},
 	}
@@ -88,22 +111,22 @@ func dataSourceCVOCIFSRead(d *schema.ResourceData, meta interface{}) error {
 		if err != nil {
 			return nil
 		}
-		cifs.WorkingEnvironmentType = weInfo.WorkingEnvironmentType
 		weInfo, err = client.findWorkingEnvironmentByName(weInfo.Name, clientID)
 		if err != nil {
 			return err
 		}
-		cifs.SvmName = weInfo.SvmName
 	} else if v, ok := d.GetOk("working_environment_name"); ok {
 		weInfo, err := client.findWorkingEnvironmentByName(v.(string), clientID)
 		if err != nil {
 			return nil
 		}
 		cifs.WorkingEnvironmentID = weInfo.PublicID
-		cifs.SvmName = weInfo.SvmName
-		cifs.WorkingEnvironmentType = weInfo.WorkingEnvironmentType
 	} else {
 		return fmt.Errorf("either working_environment_id or working_environment_name is required")
+	}
+
+	if v, ok := d.GetOk("svm_name"); ok {
+		cifs.SvmName = v.(string)
 	}
 	res, err := client.getCIFS(cifs, clientID)
 	if err != nil {
@@ -112,12 +135,12 @@ func dataSourceCVOCIFSRead(d *schema.ResourceData, meta interface{}) error {
 	}
 	for _, cifsConfig := range res {
 		d.SetId(cifs.WorkingEnvironmentID)
-		d.Set("domain", "cifsConfig.Domain")
+		d.Set("domain", cifsConfig.Domain)
 		d.Set("dns_domain", cifsConfig.DNSDomain)
 		d.Set("ip_addresses", cifsConfig.IPAddresses)
 		d.Set("netbios", cifsConfig.NetBIOS)
 		d.Set("organizational_unit", cifsConfig.OrganizationalUnit)
 		return nil
 	}
-	return fmt.Errorf("Error reading cifs: cifs doesn't exist")
+	return fmt.Errorf("error reading cifs: cifs doesn't exist")
 }

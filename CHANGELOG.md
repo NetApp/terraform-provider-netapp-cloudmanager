@@ -5,7 +5,7 @@ NEW FEATURES:
 
 BUG FIXES:
 * resource/cvo_gcp: both capacity_tier and tierl_level should be optional.
-
+* cifs_server on resource and data source: CIFS server with workgroup is depreciated. Since creating CIFS server with AD is the only way, updated the param attributes accordingly.
 
 ## 22.10.0
 NEW FEATURES:

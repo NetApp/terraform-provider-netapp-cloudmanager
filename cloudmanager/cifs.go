@@ -9,19 +9,15 @@ import (
 )
 
 type cifsRequest struct {
-	Domain                 string   `structs:"activeDirectoryDomain"`
-	Username               string   `structs:"activeDirectoryUsername"`
-	Password               string   `structs:"activeDirectoryPassword"`
-	DNSDomain              string   `structs:"dnsDomain"`
-	IPAddresses            []string `structs:"ipAddresses"`
-	NetBIOS                string   `structs:"netBIOS"`
-	OrganizationalUnit     string   `structs:"organizationalUnit"`
-	WorkingEnvironmentID   string   `structs:"workingEnvironmentId"`
-	WorkingEnvironmentType string   `structs:"workingEnvironmentType"`
-	SvmName                string   `structs:"svmName"`
-	ServerName             string   `structs:"serverName,omitempty"`
-	WorkgroupName          string   `structs:"workgroupName,omitempty"`
-	isWorkgroup            bool     `structs:"IsWorkgroup,omitempty"`
+	Domain               string   `structs:"activeDirectoryDomain"`
+	Username             string   `structs:"activeDirectoryUsername"`
+	Password             string   `structs:"activeDirectoryPassword"`
+	DNSDomain            string   `structs:"dnsDomain"`
+	IPAddresses          []string `structs:"ipAddresses"`
+	NetBIOS              string   `structs:"netBIOS"`
+	OrganizationalUnit   string   `structs:"organizationalUnit"`
+	WorkingEnvironmentID string   `structs:"workingEnvironmentId"`
+	SvmName              string   `structs:"svmName,omitempty"`
 }
 
 type cifsResponse struct {
@@ -34,18 +30,19 @@ type cifsResponse struct {
 	OrganizationalUnit string   `json:"organizationalUnit"`
 }
 
+type cifsDeleteRequest struct {
+	Username string `structs:"activeDirectoryUsername,omitempty"`
+	Password string `structs:"activeDirectoryPassword,omitempty"`
+	SvmName  string `structs:"svmName,omitempty"`
+}
+
 func (c *Client) createCIFS(cifs cifsRequest, clientID string) error {
 	baseURL, _, err := c.getAPIRoot(cifs.WorkingEnvironmentID, clientID)
 	hostType := "CloudManagerHost"
 	if err != nil {
 		return err
 	}
-	// cifs-workgroup
-	if cifs.isWorkgroup {
-		baseURL = fmt.Sprintf("%s/working-environments/%s/cifs-workgroup", baseURL, cifs.WorkingEnvironmentID)
-	} else {
-		baseURL = fmt.Sprintf("%s/working-environments/%s/cifs", baseURL, cifs.WorkingEnvironmentID)
-	}
+	baseURL = fmt.Sprintf("%s/working-environments/%s/cifs", baseURL, cifs.WorkingEnvironmentID)
 	param := structs.Map(cifs)
 	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("POST", baseURL, param, c.Token, hostType, clientID)
 	if err != nil {
@@ -70,11 +67,10 @@ func (c *Client) getCIFS(cifs cifsRequest, clientID string) ([]cifsResponse, err
 	if err != nil {
 		return result, err
 	}
-	if cifs.isWorkgroup {
-		return result, nil
-	}
 	baseURL = fmt.Sprintf("%s/working-environments/%s/cifs", baseURL, cifs.WorkingEnvironmentID)
-
+	if cifs.SvmName != "" {
+		baseURL += "?svm=" + cifs.SvmName
+	}
 	hostType := "CloudManagerHost"
 	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
@@ -92,13 +88,13 @@ func (c *Client) getCIFS(cifs cifsRequest, clientID string) ([]cifsResponse, err
 	return result, nil
 }
 
-func (c *Client) deleteCIFS(cifs cifsRequest, clientID string) error {
-	baseURL, _, err := c.getAPIRoot(cifs.WorkingEnvironmentID, clientID)
+func (c *Client) deleteCIFS(cifs cifsDeleteRequest, workingEnvironmentID, clientID string) error {
+	baseURL, _, err := c.getAPIRoot(workingEnvironmentID, clientID)
 	hostType := "CloudManagerHost"
 	if err != nil {
 		return err
 	}
-	baseURL = fmt.Sprintf("%s/working-environments/%s/delete-cifs", baseURL, cifs.WorkingEnvironmentID)
+	baseURL = fmt.Sprintf("%s/working-environments/%s/delete-cifs", baseURL, workingEnvironmentID)
 	param := structs.Map(cifs)
 	statusCode, response, _, err := c.CallAPIMethod("POST", baseURL, param, c.Token, hostType, clientID)
 	if err != nil {

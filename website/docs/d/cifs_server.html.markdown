@@ -30,12 +30,13 @@ The following arguments are supported:
 * `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
 * `working_environment_id` - (Optional) The public ID of the working environment where the CIFS server will be created. This argument is optional if working_environment_name is provided. You can find the ID from a previous create Cloud Volumes ONTAP action as shown in the example, or from the information page of the Cloud Volumes ONTAP working environment on [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
 * `working_environment_name` - (Optional) The working environment name where the CIFS server will be created. The argument will be ignored if working_environment_id is provided.
+* `svm_name` - (Optional) The name of the SVM. 
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `id` - The unique identifier of the working environment.
+* `id` - The name of the SVM.
 * `domain` - Active Directory domain name. For CIFS AD only.
 * `dns_domain` - DNS domain name. For CIFS AD only.
 * `ip_addresses` - DNS server IP addresses. For CIFS AD only.

@@ -60,20 +60,21 @@ The following arguments are supported:
 * `working_environment_id` - (Optional) The public ID of the working environment where the CIFS server will be created. This argument is optional if working_environment_name is provided. You can find the ID from a previous create Cloud Volumes ONTAP action as shown in the example, or from the information page of the Cloud Volumes ONTAP working environment on [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
 * `working_environment_name` - (Optional) The working environment name where the CIFS server will be created. The argument will be ignored if working_environment_id is provided.
 * `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
-* `domain` - (Optional) Active Directory domain name. For CIFS AD only.
-* `username` - (Optional) Active Directory admin user name. For CIFS AD only.
-* `password` - (Optional) Active Directory admin password. For CIFS AD only.
-* `dns_domain` - (Optional) DNS domain name. For CIFS AD only.
-* `ip_addresses` - (Optional) DNS server IP addresses. For CIFS AD only.
-* `netbios` - (Optional) CIFS server NetBIOS name. For CIFS AD only.
-* `organizational_unit` - (Optional) Organizational Unit in which to register the CIFS server. For CIFS AD only.
-* `is_workgroup` - (Optional) For CIFS workgroup operations, set to true.
-* `server_name` - (Optional) Server name. For CIFS workgroup only.
-* `workgroup_name` - (Optional) Workgroup name. For CIFS workgroup only.
+* `domain` - (Required) Active Directory domain name. For CIFS AD only.
+* `username` - (Required) Active Directory admin user name. For CIFS AD only.
+* `password` - (Required) Active Directory admin password. For CIFS AD only.
+* `dns_domain` - (Required) DNS domain name. For CIFS AD only.
+* `ip_addresses` - (Required) DNS server IP addresses. For CIFS AD only.
+* `netbios` - (Required) CIFS server NetBIOS name. For CIFS AD only.
+* `organizational_unit` - (Required) Organizational Unit in which to register the CIFS server. For CIFS AD only.
+* `svm_name` - (Optional) The name of the SVM. API will use the svmName from the CVO if it is not provided here.
+* `is_workgroup` - (Deprecated) For CIFS workgroup operations, set to true. Creating cifs server with workgroup is deprecated.
+* `server_name` - (Deprecated) Server name. For CIFS workgroup only. Creating cifs server with workgroup is deprecated.
+* `workgroup_name` - (Deprecated) Workgroup name. For CIFS workgroup only. Creating cifs server with workgroup is deprecated.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `id` - The unique identifier of the working environment.
+* `id` - The name of the SVM.
 
