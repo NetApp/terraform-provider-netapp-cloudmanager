@@ -152,7 +152,7 @@ func (c *Client) createVolume(vol volumeRequest, createAggregateIfNotFound bool,
 	if err != nil {
 		return err
 	}
-	if vol.FileSystemID != "" {
+	if vol.FileSystemID != "" || vol.WorkingEnvironmentType == "ON_PREM" {
 		baseURL = fmt.Sprintf("%s/volumes", baseURL)
 	} else {
 		baseURL = fmt.Sprintf("%s/volumes?createAggregateIfNotFound=%s", baseURL, strconv.FormatBool(createAggregateIfNotFound))
@@ -191,6 +191,10 @@ func (c *Client) deleteVolume(vol volumeRequest, clientID string) error {
 	hostType := "CloudManagerHost"
 
 	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("DELETE", baseURL, nil, c.Token, hostType, clientID)
+	if err != nil {
+		log.Print("deleteVolume request failed ", statusCode)
+		return err
+	}
 	responseError := apiResponseChecker(statusCode, response, "deleteVolume")
 	if responseError != nil {
 		return responseError
@@ -273,7 +277,7 @@ func (c *Client) getVolumeByID(request volumeRequest, clientID string) (volumeRe
 			return vol, nil
 		}
 	}
-	return volumeResponse{}, fmt.Errorf("Error fetching volume: volume doesn't exist")
+	return volumeResponse{}, fmt.Errorf("error fetching volume: volume doesn't exist")
 }
 
 func (c *Client) updateVolume(request volumeRequest, clientID string) error {
@@ -390,7 +394,12 @@ func (c *Client) getIgroups(request igroup, clientID string) ([]igroup, error) {
 	if err != nil {
 		return result, err
 	}
-	baseURL = fmt.Sprintf("%s/volumes/igroups/%s/%s", baseURL, request.WorkingEnvironmentID, request.SvmName)
+	if request.WorkingEnvironmentType == "ON_PREM" {
+		log.Print("get igroup onPrem")
+		baseURL = fmt.Sprintf("/occm/api/ontaps/working-environments/%s/volumes/%s/igroups", request.WorkingEnvironmentID, request.SvmName)
+	} else {
+		baseURL = fmt.Sprintf("%s/volumes/igroups/%s/%s", baseURL, request.WorkingEnvironmentID, request.SvmName)
+	}
 	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("getIgroups request failed ", statusCode)
@@ -407,20 +416,24 @@ func (c *Client) getIgroups(request igroup, clientID string) ([]igroup, error) {
 	return result, nil
 }
 
-func (c *Client) checkCifsExists(id string, svm string, clientID string) (bool, error) {
+func (c *Client) checkCifsExists(workingEnvironmentType string, id string, svm string, clientID string) (bool, error) {
 	hostType := "CloudManagerHost"
 	baseURL, _, err := c.getAPIRoot(id, clientID)
 	var result []map[string]interface{}
 	if err != nil {
 		return false, err
 	}
-	baseURL = fmt.Sprintf("%s/working-environments/%s/cifs?svm=%s", baseURL, id, svm)
+	if workingEnvironmentType == "ON_PREM" {
+		baseURL = fmt.Sprintf("%s/working-environments/%s/cifs?vserver=%s", baseURL, id, svm)
+	} else {
+		baseURL = fmt.Sprintf("%s/working-environments/%s/cifs?svm=%s", baseURL, id, svm)
+	}
 	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("chkeckCifsExists request failed ", statusCode)
 		return false, err
 	}
-	responseError := apiResponseChecker(statusCode, response, "getIgroups")
+	responseError := apiResponseChecker(statusCode, response, "checkCifsExists")
 	if responseError != nil {
 		return false, responseError
 	}
@@ -450,7 +463,7 @@ func convertSizeUnit(size float64, from string, to string) float64 {
 	return size
 }
 
-func (c *Client) setCommonAttributes(d *schema.ResourceData, volume *volumeRequest, clientID string) error {
+func (c *Client) setCommonAttributes(WorkingEnvironmentType string, d *schema.ResourceData, volume *volumeRequest, clientID string) error {
 	volume.Name = d.Get("name").(string)
 	volume.Size.Size = d.Get("size").(float64)
 	volume.Size.Unit = d.Get("unit").(string)
@@ -483,7 +496,7 @@ func (c *Client) setCommonAttributes(d *schema.ResourceData, volume *volumeReque
 	volumeProtocol := d.Get("volume_protocol").(string)
 	if volumeProtocol == "cifs" {
 
-		exist, err := c.checkCifsExists(weid, volume.SvmName, clientID)
+		exist, err := c.checkCifsExists(WorkingEnvironmentType, weid, volume.SvmName, clientID)
 		if err != nil {
 			return err
 		}

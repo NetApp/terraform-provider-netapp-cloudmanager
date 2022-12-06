@@ -353,7 +353,7 @@ func (c *Client) getDisk(occmDetails createOCCMDetails, clientID string) (map[st
 	baseURL := fmt.Sprintf("/compute/v1/projects/%s/zones/%s/disks/%s-vm-disk-boot", occmDetails.GCPProject, occmDetails.Zone, occmDetails.Name)
 	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, "", hostType, clientID)
 	if err != nil {
-		log.Print("getDisk request failed: %s", err.Error())
+		log.Printf("getDisk request failed: %s", err.Error())
 		return nil, err
 	}
 
@@ -380,7 +380,7 @@ func (c *Client) getVMInstance(occmDetails createOCCMDetails, clientID string) (
 	log.Print("GET")
 	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, "", hostType, clientID)
 	if err != nil {
-		log.Print("getVMInstance request failed: %s", err.Error())
+		log.Printf("getVMInstance request failed: %s", err.Error())
 		return nil, err
 	}
 

@@ -114,7 +114,7 @@ func resourceFSXVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 	weInfo, err := client.getWorkingEnvironmentDetail(d, clientID)
 	if err != nil {
 		log.Printf("Cannot find working environment: %#v", err)
-		return fmt.Errorf("Cannot find working environment: %#v", err)
+		return fmt.Errorf("cannot find working environment: %#v", err)
 	}
 	if svm == "" {
 		svm = weInfo.SvmName
@@ -126,7 +126,7 @@ func resourceFSXVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 	volume.EnableCompression = false
 	volume.EnableThinProvisioning = true
 	volume.EnableStorageEfficiency = d.Get("enable_storage_efficiency").(bool)
-	err = client.setCommonAttributes(d, &volume, clientID)
+	err = client.setCommonAttributes(weInfo.WorkingEnvironmentType, d, &volume, clientID)
 	if err != nil {
 		return err
 	}

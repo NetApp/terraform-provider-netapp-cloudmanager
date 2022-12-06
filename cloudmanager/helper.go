@@ -13,13 +13,14 @@ import (
 
 // only list what is needed
 type workingEnvironmentInfo struct {
-	Name                   string `json:"name"`
-	PublicID               string `json:"publicId"`
-	CloudProviderName      string `json:"cloudProviderName"`
-	IsHA                   bool   `json:"isHA"`
-	WorkingEnvironmentType string `json:"workingEnvironmentType"`
-	SvmName                string `json:"svmName"`
-	Svms                   []svm  `json:"svms"`
+	Name                   string      `json:"name"`
+	PublicID               string      `json:"publicId"`
+	CloudProviderName      string      `json:"cloudProviderName"`
+	ProviderName           string      `json:"providerName"`
+	IsHA                   bool        `json:"isHA"`
+	WorkingEnvironmentType string      `json:"workingEnvironmentType"`
+	SvmName                string      `json:"svmName"`
+	Svms                   interface{} `json:"svms"`
 }
 
 type workingEnvironmentResult struct {
@@ -303,9 +304,9 @@ func (c *Client) waitOnCompletion(id string, actionName string, task string, ret
 }
 
 // get working environment information by working environment id
-// response: publicId, name, isHA, cloudProvider, workingEnvironmentType
+// response: publicId, name, isHA, providerName, workingEnvironmentType, ...
 func (c *Client) getWorkingEnvironmentInfo(id string, clientID string) (workingEnvironmentInfo, error) {
-	baseURL := fmt.Sprintf("/occm/api/working-environments/%s", id)
+	baseURL := fmt.Sprintf("/occm/api/ontaps/working-environments/%s", id)
 	hostType := "CloudManagerHost"
 
 	if c.Token == "" {
@@ -319,6 +320,7 @@ func (c *Client) getWorkingEnvironmentInfo(id string, clientID string) (workingE
 	var response []byte
 	networkRetries := 3
 	for {
+		log.Print("Call API ", baseURL)
 		code, result, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
 		if err != nil {
 			if networkRetries > 0 {
@@ -346,6 +348,7 @@ func (c *Client) getWorkingEnvironmentInfo(id string, clientID string) (workingE
 		return workingEnvironmentInfo{}, err
 	}
 
+	result.CloudProviderName = result.ProviderName
 	return result, nil
 }
 
@@ -515,6 +518,10 @@ func (c *Client) getAPIRoot(workingEnvironmentID string, clientID string) (strin
 	// fsx working environment starts with "fs-" prefix.
 	if strings.HasPrefix(workingEnvironmentID, "fs-") {
 		return "/occm/api/fsx", "", nil
+	}
+	// onPrem working environment starts with "OnPrem" prefix.
+	if strings.HasPrefix(workingEnvironmentID, "OnPrem") {
+		return "/occm/api/onprem", "", nil
 	}
 	workingEnvDetail, err := c.getWorkingEnvironmentInfo(workingEnvironmentID, clientID)
 	if err != nil {

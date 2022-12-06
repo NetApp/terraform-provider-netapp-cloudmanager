@@ -1,3 +1,7 @@
+## 22.12.0
+NEW FEATURES:
+* resource/cvo_volume: support create and delete onPrem volume.
+
 ## 22.11.0
 NEW FEATURES:
 * resource/cvo_gcp HA: support add, rename and delete SVMs.
