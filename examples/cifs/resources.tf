@@ -9,13 +9,4 @@ resource "netapp-cloudmanager_cifs_server" "cl-cifs" {
    organizational_unit = "CN=Computers"
    client_id = "Nw4Q2O1kdnLtvhwegGalFnodEHUfPJWh"
    working_environment_name = "justincluster"
-   is_workgroup = false
-}
-resource "netapp-cloudmanager_cifs_server" "cl-cifs-workgroup" {
-   provider = netapp-cloudmanager
-   server_name = "server"
-   workgroup_name  = "workgroup"
-   client_id = "Nw4Q2O1kdnLtvhwegGalFnodEHUfPJWh"
-   working_environment_name = "justincluster"
-   is_workgroup = true
 }

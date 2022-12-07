@@ -164,6 +164,33 @@ func resourceCVOVolume() *schema.Resource {
 					},
 				},
 			},
+			"snapshot_policy": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"schedule": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"schedule_type": {
+										Type:         schema.TypeString,
+										ValidateFunc: validation.StringInSlice([]string{"5min", "8hour", "hourly", "daily", "weekly", "monthly"}, true),
+										Required:     true,
+										ForceNew:     true,
+									},
+									"retention": {
+										Type:     schema.TypeInt,
+										Required: true,
+										ForceNew: true,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -206,6 +233,7 @@ func resourceCVOVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 	if v, ok := d.GetOk("aggregate_name"); ok {
 		quote.AggregateName = v.(string)
+		volume.AggregateName = v.(string)
 		createAggregateifNotExists = false
 	} else {
 		createAggregateifNotExists = true
@@ -216,46 +244,71 @@ func resourceCVOVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 
 	weInfo, err := client.getWorkingEnvironmentDetail(d, clientID)
 	if err != nil {
-		return fmt.Errorf("Cannot find working environment")
+		return fmt.Errorf("cannot find working environment")
 	}
 	volume.WorkingEnvironmentID = weInfo.PublicID
-	quote.WorkingEnvironmentID = weInfo.PublicID
 	volume.WorkingEnvironmentType = weInfo.WorkingEnvironmentType
 	if svm == "" {
-		svm = weInfo.SvmName
+		if weInfo.SvmName != "" {
+			svm = weInfo.SvmName
+		} else {
+			svm = "svm_" + weInfo.Name
+		}
 	}
 	volume.SvmName = svm
-	quote.SvmName = svm
 	workingEnvironmentType = weInfo.WorkingEnvironmentType
-	cloudProvider = strings.ToLower(weInfo.CloudProviderName)
-	quote.WorkingEnvironmentType = workingEnvironmentType
 	volume.WorkingEnvironmentType = workingEnvironmentType
-	if v, ok := d.GetOk("capacity_tier"); ok {
-		if v.(string) != "none" {
-			quote.CapacityTier = v.(string)
-			if v, ok = d.GetOk("tiering_policy"); ok {
-				if v.(string) != "none" {
-					quote.TieringPolicy = v.(string)
+
+	if workingEnvironmentType != "ON_PREM" {
+		// Check if snapshot_nolicy_name exists
+		if !client.findSnapshotPolicy(weInfo.PublicID, quote.SnapshotPolicyName, clientID) {
+			// If snapshot_policy_name does not exist, create the snapshot policy
+			if v, ok := d.GetOk("snapshot_policy"); ok {
+				policy := v.(*schema.Set)
+				if policy.Len() > 0 {
+					err := client.createSnapshotPolicy(weInfo.PublicID, quote.SnapshotPolicyName, policy, clientID)
+					if err != nil {
+						return err
+					}
 				}
 			}
 		}
-	} else {
-		if cloudProvider == "aws" {
-			quote.CapacityTier = "S3"
-		} else if cloudProvider == "azure" {
-			quote.CapacityTier = "Blob"
-		} else if cloudProvider == "gcp" {
-			quote.CapacityTier = "cloudStorage"
+		quote.WorkingEnvironmentType = workingEnvironmentType
+		quote.WorkingEnvironmentID = weInfo.PublicID
+		quote.SvmName = svm
+		if v, ok := d.GetOk("capacity_tier"); ok {
+			if v.(string) != "none" {
+				quote.CapacityTier = v.(string)
+				volume.CapacityTier = v.(string)
+				if v, ok = d.GetOk("tiering_policy"); ok {
+					if v.(string) != "none" {
+						quote.TieringPolicy = v.(string)
+					}
+				}
+			}
+		} else {
+			cloudProvider = strings.ToLower(weInfo.CloudProviderName)
+			if cloudProvider == "aws" {
+				quote.CapacityTier = "S3"
+				volume.CapacityTier = "S3"
+			} else if cloudProvider == "azure" {
+				quote.CapacityTier = "Blob"
+				volume.CapacityTier = "Blob"
+			} else if cloudProvider == "gcp" {
+				quote.CapacityTier = "cloudStorage"
+				volume.CapacityTier = "cloudStorage"
+			}
 		}
+		response, err := client.quoteVolume(quote, clientID)
+		if err != nil {
+			log.Printf("Error quoting volume")
+			return err
+		}
+		volume.NewAggregate = response["newAggregate"].(bool)
+		volume.AggregateName = response["aggregateName"].(string)
+		volume.NumOfDisks = response["numOfDisks"].(float64)
 	}
-	response, err := client.quoteVolume(quote, clientID)
-	if err != nil {
-		log.Printf("Error quoting volume")
-		return err
-	}
-	volume.NewAggregate = response["newAggregate"].(bool)
-	volume.AggregateName = response["aggregateName"].(string)
-	volume.NumOfDisks = response["numOfDisks"].(float64)
+
 	volume.ProviderVolumeType = d.Get("provider_volume_type").(string)
 	volume.Name = d.Get("name").(string)
 	volume.SnapshotPolicyName = d.Get("snapshot_policy_name").(string)
@@ -282,19 +335,6 @@ func resourceCVOVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 		}
 		volume.ExportPolicyInfo.NfsVersion = nfs
 	}
-	if v, ok := d.GetOk("capacity_tier"); ok {
-		if v.(string) != "none" {
-			volume.CapacityTier = v.(string)
-		}
-	} else {
-		if cloudProvider == "aws" {
-			volume.CapacityTier = "S3"
-		} else if cloudProvider == "azure" {
-			volume.CapacityTier = "Blob"
-		} else if cloudProvider == "gcp" {
-			volume.CapacityTier = "cloudStorage"
-		}
-	}
 	if v, ok := d.GetOk("iops"); ok {
 		volume.Iops = v.(int)
 	}
@@ -302,7 +342,7 @@ func resourceCVOVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 		volume.Throughput = v.(int)
 	}
 	if volumeProtocol == "cifs" {
-		exist, err := client.checkCifsExists(volume.WorkingEnvironmentID, volume.SvmName, clientID)
+		exist, err := client.checkCifsExists(workingEnvironmentType, volume.WorkingEnvironmentID, volume.SvmName, clientID)
 		if err != nil {
 			return err
 		}
@@ -331,6 +371,7 @@ func resourceCVOVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 			volume.IscsiInfo.OsName = v.(string)
 		}
 		if isNewIgroup {
+			log.Print("Need to create igroup")
 			igroups := d.Get("igroups").(*schema.Set)
 			if igroups.Len() > 1 {
 				return fmt.Errorf("can not create more than one new igroup")
@@ -393,12 +434,16 @@ func resourceCVOVolumeRead(d *schema.ResourceData, meta interface{}) error {
 
 	weInfo, err := client.getWorkingEnvironmentDetail(d, clientID)
 	if err != nil {
-		return fmt.Errorf("Cannot find working environment")
+		return fmt.Errorf("cannot find working environment")
 	}
 	volume.WorkingEnvironmentID = weInfo.PublicID
 	volume.WorkingEnvironmentType = weInfo.WorkingEnvironmentType
 	if svm == "" {
-		svm = weInfo.SvmName
+		if weInfo.SvmName != "" {
+			svm = weInfo.SvmName
+		} else {
+			svm = "svm_" + weInfo.Name
+		}
 	}
 	volume.SvmName = svm
 
@@ -433,8 +478,8 @@ func resourceCVOVolumeRead(d *schema.ResourceData, meta interface{}) error {
 			if _, ok := d.GetOk("export_policy_type"); ok {
 				d.Set("export_policy_type", volume.ExportPolicyInfo.PolicyType)
 			}
-			if _, ok := d.GetOk("provider_volume_type"); ok {
-				d.Set("provider_volume_type", volume.ProviderVolumeType)
+			if v, ok := d.GetOk("provider_volume_type"); ok {
+				d.Set("provider_volume_type", v.(string))
 			}
 			if v, ok := d.GetOk("capacity_tier"); ok {
 				if v.(string) != "none" {
@@ -481,7 +526,7 @@ func resourceCVOVolumeRead(d *schema.ResourceData, meta interface{}) error {
 		}
 	}
 
-	return fmt.Errorf("Error reading volume: volume doesn't exist")
+	return fmt.Errorf("error reading volume: volume doesn't exist")
 }
 
 func resourceCVOVolumeDelete(d *schema.ResourceData, meta interface{}) error {
@@ -496,12 +541,16 @@ func resourceCVOVolumeDelete(d *schema.ResourceData, meta interface{}) error {
 
 	weInfo, err := client.getWorkingEnvironmentDetail(d, clientID)
 	if err != nil {
-		return fmt.Errorf("Cannot find working environment")
+		return fmt.Errorf("cannot find working environment")
 	}
 	volume.WorkingEnvironmentID = weInfo.PublicID
 	volume.WorkingEnvironmentType = weInfo.WorkingEnvironmentType
 	if svm == "" {
-		svm = weInfo.SvmName
+		if weInfo.SvmName != "" {
+			svm = weInfo.SvmName
+		} else {
+			svm = "svm_" + weInfo.Name
+		}
 	}
 	volume.SvmName = svm
 
@@ -525,7 +574,7 @@ func resourceCVOVolumeExists(d *schema.ResourceData, meta interface{}) (bool, er
 
 	weInfo, err := client.getWorkingEnvironmentDetail(d, clientID)
 	if err != nil {
-		return false, fmt.Errorf("Cannot find working environment")
+		return false, fmt.Errorf("cannot find working environment")
 	}
 	volume.WorkingEnvironmentID = weInfo.PublicID
 	volume.WorkingEnvironmentType = weInfo.WorkingEnvironmentType
@@ -561,7 +610,7 @@ func resourceCVOVolumeUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	weInfo, err := client.getWorkingEnvironmentDetail(d, clientID)
 	if err != nil {
-		return fmt.Errorf("Cannot find working environment")
+		return fmt.Errorf("cannot find working environment")
 	}
 	volume.WorkingEnvironmentID = weInfo.PublicID
 	volume.WorkingEnvironmentType = weInfo.WorkingEnvironmentType
@@ -619,8 +668,8 @@ func resourceVolumeCustomizeDiff(diff *schema.ResourceDiff, v interface{}) error
 					break
 				}
 			}
-			if found == false {
-				return fmt.Errorf("Change %s is not allowed", key)
+			if !found {
+				return fmt.Errorf("change %s is not allowed", key)
 			}
 		}
 	}
@@ -690,13 +739,17 @@ func createIscsiVolumeHelper(d *schema.ResourceData, meta interface{}) (bool, bo
 
 	workingEnvDetail, err := client.getWorkingEnvironmentDetail(d, clientID)
 	if err != nil {
-		return false, false, fmt.Errorf("Cannot find working environment")
+		return false, false, fmt.Errorf("cannot find working environment")
 	}
 	igroup.WorkingEnvironmentID = workingEnvDetail.PublicID
 	workingEnvironmentID = workingEnvDetail.PublicID
 	workingEnvironmentType = workingEnvDetail.WorkingEnvironmentType
 	if svm == "" {
-		svm = workingEnvDetail.SvmName
+		if workingEnvDetail.SvmName != "" {
+			svm = workingEnvDetail.SvmName
+		} else {
+			svm = "svm_" + workingEnvDetail.Name
+		}
 	}
 	igroup.SvmName = svm
 
@@ -721,7 +774,7 @@ func createIscsiVolumeHelper(d *schema.ResourceData, meta interface{}) (bool, bo
 			isNewIgroup = true
 		}
 	}
-	if isNewIgroup {
+	if isNewIgroup && workingEnvironmentType != "ON_PREM" {
 		var initiators []initiator
 		if v, ok := d.GetOk("initiator"); ok {
 			initiators = expandInitiator(v.(*schema.Set))

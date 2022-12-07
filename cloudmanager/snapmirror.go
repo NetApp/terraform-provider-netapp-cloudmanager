@@ -119,7 +119,7 @@ func (c *Client) buildSnapMirrorCreate(snapMirror snapMirrorRequest, sourceWorki
 	} else {
 		volumeSource, err = c.getVolumeForOnPrem(volumeS, clientID)
 		if err != nil {
-			log.Print("Error reading source volume")
+			log.Print("Error reading source onPrem volume")
 			return snapMirrorRequest{}, err
 		}
 	}

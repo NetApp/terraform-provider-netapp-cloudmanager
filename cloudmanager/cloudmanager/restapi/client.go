@@ -19,6 +19,7 @@ type Client struct {
 	Audience             string
 	GCPDeploymentManager string
 	CVSHostName          string
+	GCPCompute           string
 
 	httpClient http.Client
 }
@@ -46,13 +47,15 @@ func (c *Client) Do(baseURL string, hostType string, token string, paramsNil boo
 		gcpType = true
 	} else if hostType == "CVSHost" {
 		host = c.CVSHostName
+	} else if hostType == "GCPCompute" {
+		host = c.GCPCompute
+		gcpType = true
 	}
 
 	httpReq, err := req.BuildHTTPReq(host, token, c.Audience, baseURL, paramsNil, accountID, clientID, gcpType, simulator)
 	if err != nil {
 		return statusCode, res, onCloudRequestID, err
 	}
-
 	httpRes, err := c.httpClient.Do(httpReq)
 	if err != nil {
 		log.Print("HTTP req failed")

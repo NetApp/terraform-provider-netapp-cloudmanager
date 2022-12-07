@@ -130,10 +130,21 @@ func resourceCVOGCP() *schema.Resource {
 				Required:  true,
 				Sensitive: true,
 			},
+			"svm": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"svm_name": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+					},
+				},
+			},
 			"tier_level": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				Default:      "standard",
 				ValidateFunc: validation.StringInSlice([]string{"standard", "nearline", "coldline"}, false),
 			},
 			"nss_account": {
@@ -145,13 +156,15 @@ func resourceCVOGCP() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"NORMAL", "HIGH"}, true),
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return strings.EqualFold(old, new)
+				},
 			},
 			"capacity_tier": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				Default:      "cloudStorage",
-				ValidateFunc: validation.StringInSlice([]string{"cloudStorage", "NONE"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"cloudStorage"}, false),
 			},
 			"gcp_label": {
 				Type:     schema.TypeSet,
@@ -289,7 +302,9 @@ func resourceCVOGCP() *schema.Resource {
 			"svm_name": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Computed: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return new == ""
+				},
 			},
 			"upgrade_ontap_version": {
 				Type:     schema.TypeBool,
@@ -323,10 +338,14 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 	cvoDetails.WorkspaceID = d.Get("workspace_id").(string)
 	cvoDetails.GCPVolumeType = d.Get("gcp_volume_type").(string)
 	cvoDetails.SvmPassword = d.Get("svm_password").(string)
-	capacityTier := d.Get("capacity_tier").(string)
-	if capacityTier == "cloudStorage" {
-		cvoDetails.CapacityTier = capacityTier
-		cvoDetails.TierLevel = d.Get("tier_level").(string)
+	if c, ok := d.GetOk("svm_name"); ok {
+		cvoDetails.SvmName = c.(string)
+	}
+	if c, ok := d.GetOk("capacity_tier"); ok {
+		cvoDetails.CapacityTier = c.(string)
+	}
+	if c, ok := d.GetOk("tier_level"); ok {
+		cvoDetails.TierLevel = c.(string)
 	}
 	cvoDetails.GCPVolumeSize.Size = d.Get("gcp_volume_size").(int)
 	cvoDetails.GCPVolumeSize.Unit = d.Get("gcp_volume_size_unit").(string)
@@ -370,7 +389,7 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	hasSelfLink := strings.HasPrefix(subnetID, "https://www.googleapis.com/compute/") || strings.HasPrefix(subnetID, "projects/")
-	if hasSelfLink != true {
+	if !hasSelfLink {
 		cvoDetails.SubnetID = fmt.Sprintf("projects/%s/regions/%s/subnetworks/%s", networkProjectID, cvoDetails.Region[0:len(cvoDetails.Region)-2], subnetID)
 	} else {
 		cvoDetails.SubnetID = subnetID
@@ -403,7 +422,10 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 
 	cvoDetails.IsHA = d.Get("is_ha").(bool)
 
-	if cvoDetails.IsHA == true {
+	// initialize the svmList for GCP CVO HA SVMs adding
+	svmList := []gcpSVM{}
+
+	if cvoDetails.IsHA {
 		if cvoDetails.VsaMetadata.LicenseType == "capacity-paygo" {
 			log.Print("Set licenseType as default value ha-capacity-paygo")
 			cvoDetails.VsaMetadata.LicenseType = "ha-capacity-paygo"
@@ -425,56 +447,56 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 		}
 		if c, ok := d.GetOk("vpc0_node_and_data_connectivity"); ok {
 			hasSelfLink := strings.HasPrefix(c.(string), "https://www.googleapis.com/compute/") || strings.HasPrefix(c.(string), "projects/")
-			if hasSelfLink != true {
+			if !hasSelfLink {
 				c = fmt.Sprintf("projects/%s/global/networks/%s", networkProjectID, c.(string))
 			}
 			cvoDetails.HAParams.VPC0NodeAndDataConnectivity = c.(string)
 		}
 		if c, ok := d.GetOk("vpc1_cluster_connectivity"); ok {
 			hasSelfLink := strings.HasPrefix(c.(string), "https://www.googleapis.com/compute/") || strings.HasPrefix(c.(string), "projects/")
-			if hasSelfLink != true {
+			if !hasSelfLink {
 				c = fmt.Sprintf("projects/%s/global/networks/%s", networkProjectID, c.(string))
 			}
 			cvoDetails.HAParams.VPC1ClusterConnectivity = c.(string)
 		}
 		if c, ok := d.GetOk("vpc2_ha_connectivity"); ok {
 			hasSelfLink := strings.HasPrefix(c.(string), "https://www.googleapis.com/compute/") || strings.HasPrefix(c.(string), "projects/")
-			if hasSelfLink != true {
+			if !hasSelfLink {
 				c = fmt.Sprintf("projects/%s/global/networks/%s", networkProjectID, c.(string))
 			}
 			cvoDetails.HAParams.VPC2HAConnectivity = c.(string)
 		}
 		if c, ok := d.GetOk("vpc3_data_replication"); ok {
 			hasSelfLink := strings.HasPrefix(c.(string), "https://www.googleapis.com/compute/") || strings.HasPrefix(c.(string), "projects/")
-			if hasSelfLink != true {
+			if !hasSelfLink {
 				c = fmt.Sprintf("projects/%s/global/networks/%s", networkProjectID, c.(string))
 			}
 			cvoDetails.HAParams.VPC3DataReplication = c.(string)
 		}
 		if c, ok := d.GetOk("subnet0_node_and_data_connectivity"); ok {
 			hasSelfLink := strings.HasPrefix(c.(string), "https://www.googleapis.com/compute/") || strings.HasPrefix(c.(string), "projects/")
-			if hasSelfLink != true {
+			if !hasSelfLink {
 				c = fmt.Sprintf("projects/%s/regions/%s/subnetworks/%s", networkProjectID, cvoDetails.Region[0:len(cvoDetails.Region)-2], c.(string))
 			}
 			cvoDetails.HAParams.Subnet0NodeAndDataConnectivity = c.(string)
 		}
 		if c, ok := d.GetOk("subnet1_cluster_connectivity"); ok {
 			hasSelfLink := strings.HasPrefix(c.(string), "https://www.googleapis.com/compute/") || strings.HasPrefix(c.(string), "projects/")
-			if hasSelfLink != true {
+			if !hasSelfLink {
 				c = fmt.Sprintf("projects/%s/regions/%s/subnetworks/%s", networkProjectID, cvoDetails.Region[0:len(cvoDetails.Region)-2], c.(string))
 			}
 			cvoDetails.HAParams.Subnet1ClusterConnectivity = c.(string)
 		}
 		if c, ok := d.GetOk("subnet2_ha_connectivity"); ok {
 			hasSelfLink := strings.HasPrefix(c.(string), "https://www.googleapis.com/compute/") || strings.HasPrefix(c.(string), "projects/")
-			if hasSelfLink != true {
+			if !hasSelfLink {
 				c = fmt.Sprintf("projects/%s/regions/%s/subnetworks/%s", networkProjectID, cvoDetails.Region[0:len(cvoDetails.Region)-2], c.(string))
 			}
 			cvoDetails.HAParams.Subnet2HAConnectivity = c.(string)
 		}
 		if c, ok := d.GetOk("subnet3_data_replication"); ok {
 			hasSelfLink := strings.HasPrefix(c.(string), "https://www.googleapis.com/compute/") || strings.HasPrefix(c.(string), "projects/")
-			if hasSelfLink != true {
+			if !hasSelfLink {
 				c = fmt.Sprintf("projects/%s/regions/%s/subnetworks/%s", networkProjectID, cvoDetails.Region[0:len(cvoDetails.Region)-2], c.(string))
 			}
 			cvoDetails.HAParams.Subnet3DataReplication = c.(string)
@@ -490,6 +512,10 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 		}
 		if c, ok := d.GetOk("vpc3_firewall_rule_name"); ok {
 			cvoDetails.HAParams.VPC3FirewallRuleName = c.(string)
+		}
+		if c, ok := d.GetOk("svm"); ok {
+			svms := c.(*schema.Set)
+			svmList = expandGCPSVMs(svms)
 		}
 	}
 
@@ -507,8 +533,16 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("createCVOGCP %s result %#v  client_id %s", cvoDetails.Name, res, clientID)
 	d.SetId(res.PublicID)
 	d.Set("svm_name", res.SvmName)
-
 	log.Printf("Created cvo: %v", res)
+
+	// Add SVMs on GCP CVO HA
+	for _, svm := range svmList {
+		err := client.addSVMtoCVO(res.PublicID, clientID, svm.SvmName)
+		if err != nil {
+			log.Printf("Error adding SVM %v: %v", svm.SvmName, err)
+			return err
+		}
+	}
 
 	return resourceCVOGCPRead(d, meta)
 }
@@ -521,13 +555,18 @@ func resourceCVOGCPRead(d *schema.ResourceData, meta interface{}) error {
 
 	clientID := d.Get("client_id").(string)
 
-	_, err := client.getWorkingEnvironmentInfo(id, clientID)
+	resp, err := client.getCVOProperties(id, clientID)
 	if err != nil {
-		log.Print("Error getting cvo")
+		log.Print("Error reading cvo")
 		return err
 	}
+	d.Set("svm_name", resp.SvmName)
 	if c, ok := d.GetOk("writing_speed_state"); ok {
-		d.Set("writing_speed_state", c.(string))
+		if strings.EqualFold(c.(string), resp.OntapClusterProperties.WritingSpeedState) {
+			d.Set("writing_speed_state", c.(string))
+		} else {
+			d.Set("writing_speed_state", resp.OntapClusterProperties.WritingSpeedState)
+		}
 	}
 	return nil
 }
@@ -564,6 +603,23 @@ func resourceCVOGCPUpdate(d *schema.ResourceData, meta interface{}) error {
 		}
 	}
 
+	//  check if svm_name is changed
+	if d.HasChange("svm_name") {
+		svmName, svmNewName := d.GetChange("svm_name")
+		respErr := client.updateCVOSVMName(d, clientID, svmName.(string), svmNewName.(string))
+		if respErr != nil {
+			return respErr
+		}
+	}
+
+	// check if svm list changes
+	if d.Get("is_ha").(bool) && d.HasChange("svm") {
+		respErr := client.updateCVOSVMs(d, clientID)
+		if respErr != nil {
+			return respErr
+		}
+	}
+
 	// check if license_type and instance type are changed
 	if d.HasChange("instance_type") || d.HasChange("license_type") {
 		respErr := updateCVOLicenseInstanceType(d, meta, clientID)
@@ -573,7 +629,7 @@ func resourceCVOGCPUpdate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	// check if tier_level is changed
-	if d.HasChange("tier_level") && d.Get("capacity_tier").(string) == "cloudStorage" {
+	if d.HasChange("tier_level") {
 		respErr := updateCVOTierLevel(d, meta, clientID)
 		if respErr != nil {
 			return respErr
@@ -588,14 +644,11 @@ func resourceCVOGCPUpdate(d *schema.ResourceData, meta interface{}) error {
 			log.Print("writing_speed_state: default value is NORMAL. No change call is needed.")
 			return nil
 		}
-		if strings.EqualFold(currentWritingSpeedState.(string), expectWritingSpeedState.(string)) {
-			d.Set("writing_speed_state", expectWritingSpeedState.(string))
-		} else {
-			respErr := updateCVOWritingSpeedState(d, meta, clientID)
-			if respErr != nil {
-				return respErr
-			}
+		respErr := updateCVOWritingSpeedState(d, meta, clientID)
+		if respErr != nil {
+			return respErr
 		}
+
 		return nil
 	}
 

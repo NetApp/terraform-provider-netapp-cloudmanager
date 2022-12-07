@@ -173,7 +173,7 @@ func dataSourceCVOVolumeRead(d *schema.ResourceData, meta interface{}) error {
 	volume := volumeRequest{}
 	weInfo, err := client.getWorkingEnvironmentDetail(d, clientID)
 	if err != nil {
-		return fmt.Errorf("Cannot find working environment")
+		return fmt.Errorf("cannot find working environment")
 	}
 	volume.WorkingEnvironmentID = weInfo.PublicID
 	volume.WorkingEnvironmentType = weInfo.WorkingEnvironmentType
@@ -190,98 +190,98 @@ func dataSourceCVOVolumeRead(d *schema.ResourceData, meta interface{}) error {
 			d.SetId(volume.ID)
 			err = d.Set("aggregate_name", volume.AggregateName)
 			if err != nil {
-				return fmt.Errorf("Error setting aggregate_name: %s", err.Error())
+				return fmt.Errorf("error setting aggregate_name: %s", err.Error())
 			}
 			err = d.Set("snapshot_policy_name", volume.SnapshotPolicyName)
 			if err != nil {
-				return fmt.Errorf("Error setting snapshot_policy_name: %s", err.Error())
+				return fmt.Errorf("error setting snapshot_policy_name: %s", err.Error())
 			}
 			err = d.Set("enable_thin_provisioning", volume.EnableThinProvisioning)
 			if err != nil {
-				return fmt.Errorf("Error setting enable_thin_provisioning: %s", err.Error())
+				return fmt.Errorf("error setting enable_thin_provisioning: %s", err.Error())
 			}
 			err = d.Set("enable_deduplication", volume.EnableDeduplication)
 			if err != nil {
-				return fmt.Errorf("Error setting enable_deduplication: %s", err.Error())
+				return fmt.Errorf("error setting enable_deduplication: %s", err.Error())
 			}
 			err = d.Set("enable_compression", volume.EnableCompression)
 			if err != nil {
-				return fmt.Errorf("Error setting enable_compression: %s", err.Error())
+				return fmt.Errorf("error setting enable_compression: %s", err.Error())
 			}
 			err = d.Set("provider_volume_type", volume.ProviderVolumeType)
 			if err != nil {
-				return fmt.Errorf("Error setting provider_volume_type: %s", err.Error())
+				return fmt.Errorf("error setting provider_volume_type: %s", err.Error())
 			}
 			err = d.Set("capacity_tier", volume.CapacityTier)
 			if err != nil {
-				return fmt.Errorf("Error setting capacity_tier: %s", err.Error())
+				return fmt.Errorf("error setting capacity_tier: %s", err.Error())
 			}
 			err = d.Set("tiering_policy", volume.TieringPolicy)
 			if err != nil {
-				return fmt.Errorf("Error setting tiering_policy: %s", err.Error())
+				return fmt.Errorf("error setting tiering_policy: %s", err.Error())
 			}
 			err = d.Set("size", convertSizeUnit(volume.Size.Size, volume.Size.Unit, "GB"))
 			if err != nil {
-				return fmt.Errorf("Error setting size: %s", err.Error())
+				return fmt.Errorf("error setting size: %s", err.Error())
 			}
 			err = d.Set("unit", volume.Size.Unit)
 			if err != nil {
-				return fmt.Errorf("Error setting unit: %s", err.Error())
+				return fmt.Errorf("error setting unit: %s", err.Error())
 			}
 			if len(volume.ShareInfo) > 0 {
 				err = d.Set("share_name", volume.ShareInfo[0].ShareName)
 				if err != nil {
-					return fmt.Errorf("Error setting share_name: %s", err.Error())
+					return fmt.Errorf("error setting share_name: %s", err.Error())
 				}
 				if len(volume.ShareInfo[0].AccessControlList) > 0 {
 					err = d.Set("permission", volume.ShareInfo[0].AccessControlList[0].Permission)
 					if err != nil {
-						return fmt.Errorf("Error setting permission: %s", err.Error())
+						return fmt.Errorf("error setting permission: %s", err.Error())
 					}
 				}
 				if len(volume.ShareInfo[0].AccessControlList) > 0 {
 					err = d.Set("users", volume.ShareInfo[0].AccessControlList[0].Users)
 					if err != nil {
-						return fmt.Errorf("Error setting users: %s", err.Error())
+						return fmt.Errorf("error setting users: %s", err.Error())
 					}
 				}
 				err = d.Set("volume_protocol", "cifs")
 				if err != nil {
-					return fmt.Errorf("Error setting volume_protocol: %s", err.Error())
+					return fmt.Errorf("error setting volume_protocol: %s", err.Error())
 				}
-			} else if volume.IscsiEnabled == true {
+			} else if volume.IscsiEnabled {
 				err = d.Set("volume_protocol", "iscsi")
 				if err != nil {
-					return fmt.Errorf("Error setting volume_protocol: %s", err.Error())
+					return fmt.Errorf("error setting volume_protocol: %s", err.Error())
 				}
 			} else {
 				err = d.Set("volume_protocol", "nfs")
 				if err != nil {
-					return fmt.Errorf("Error setting volume_protocol: %s", err.Error())
+					return fmt.Errorf("error setting volume_protocol: %s", err.Error())
 				}
 				err = d.Set("export_policy_name", volume.ExportPolicyInfo.Name)
 				if err != nil {
-					return fmt.Errorf("Error setting export_policy_name: %s", err.Error())
+					return fmt.Errorf("error setting export_policy_name: %s", err.Error())
 				}
 				err = d.Set("export_policy_ip", volume.ExportPolicyInfo.Ips)
 				if err != nil {
-					return fmt.Errorf("Error setting export_policy_ip: %s", err.Error())
+					return fmt.Errorf("error setting export_policy_ip: %s", err.Error())
 				}
 				err = d.Set("export_policy_nfs_version", volume.ExportPolicyInfo.NfsVersion)
 				if err != nil {
-					return fmt.Errorf("Error setting export_policy_nfs_version: %s", err.Error())
+					return fmt.Errorf("error setting export_policy_nfs_version: %s", err.Error())
 				}
 				err = d.Set("export_policy_type", volume.ExportPolicyInfo.PolicyType)
 				if err != nil {
-					return fmt.Errorf("Error setting export_policy_type: %s", err.Error())
+					return fmt.Errorf("error setting export_policy_type: %s", err.Error())
 				}
 				err = d.Set("mount_point", volume.MountPoint)
 				if err != nil {
-					return fmt.Errorf("Error setting mount_point: %s", err.Error())
+					return fmt.Errorf("error setting mount_point: %s", err.Error())
 				}
 			}
 			return nil
 		}
 	}
-	return fmt.Errorf("Error reading volume: volume doesn't exist")
+	return fmt.Errorf("error reading volume: volume doesn't exist")
 }

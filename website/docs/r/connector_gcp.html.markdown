@@ -55,6 +55,7 @@ The following arguments are supported:
 * `proxy_certificates` - (Optional, non-modifiable) The proxy certificates. A list of certificate file names.
 * `account_id` - (Optional, non-modifiable) The NetApp account ID that the Connector will be associated with. If not provided, Cloud Manager uses the first account. If no account exists, Cloud Manager creates a new account. You can find the account ID in the account tab of Cloud Manager at [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
 * `tags` - (Optional) The list of network tags.
+* `labels` - (Optional) The map of labels.
 
 ## Attributes Reference
 

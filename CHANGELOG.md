@@ -1,9 +1,24 @@
+## 22.12.0
+NEW FEATURES:
+* resource/cvo_volume: support create and delete onPrem volume.
+* resource/cvo_volume: support create snapshot policy for AWS, AZURE and GCP if the snapshot policy is not available.
+
+## 22.11.0
+NEW FEATURES:
+* resource/cvo_gcp HA: support add, rename and delete SVMs.
+* resource/connector_gcp: add `labels` option.
+
+BUG FIXES:
+* resource/cvo_gcp: both capacity_tier and tierl_level should be optional.
+* cifs_server on resource and data source: CIFS server with workgroup is depreciated. Since creating CIFS server with AD is the only way, updated the param attributes accordingly.
+
 ## 22.10.0
 NEW FEATURES:
 * resource/connector_snapmirror: support fsx as a source for snapmirror relationship with cvo.
 * resource/cvo_aws: add `retries` parameter to increase wait time when creating CVO.
 * resource/cvo_azure: add `retries` parameter to increase wait time when creating CVO.
 * resource/cvo_gcp: add `retries` parameter to increase wait time when creating CVO.
+* resoruce/cvs for AWS, AZURE and GCP: add `svm_name` an optional parameter. The modification is supported.
 
 NEW ENHANCEMENTS:
 * resource/connector_azure: display the deployed virtual machine principal_id in state file on the connector azure creation.

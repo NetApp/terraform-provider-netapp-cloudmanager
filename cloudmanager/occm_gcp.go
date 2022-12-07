@@ -23,10 +23,11 @@ type tcontent struct {
 }
 
 type tresource struct {
-	Name       string     `yaml:"name"`
-	Properties properties `yaml:"properties"`
-	Type       string     `yaml:"type"`
-	Metadata   metaData   `yaml:"metadata,omitempty"`
+	Name       string            `yaml:"name"`
+	Properties properties        `yaml:"properties"`
+	Type       string            `yaml:"type"`
+	Metadata   metaData          `yaml:"metadata,omitempty"`
+	Labels     map[string]string `yaml:"labels,omitempty"`
 }
 
 type properties struct {
@@ -41,6 +42,12 @@ type properties struct {
 	Metadata          pmetadata          `yaml:"metadata,omitempty"`
 	NetworkInterfaces []networkInterface `yaml:"networkInterfaces,omitempty"`
 	ServiceAccounts   []serviceAccount   `yaml:"serviceAccounts,omitempty"`
+	Labels            map[string]string  `yaml:"labels,omitempty"`
+}
+
+type label struct {
+	Key   string `yaml:"key,omitempty"`
+	Value string `yaml:"value,omitempty"`
 }
 
 type metaData struct {
@@ -249,6 +256,11 @@ func (c *Client) deployGCPVM(occmDetails createOCCMDetails, proxyCertificates []
 	td.Properties.Zone = occmDetails.Zone
 	td.Type = "compute.v1.disks"
 
+	if occmDetails.Labels != nil {
+		t.Properties.Labels = occmDetails.Labels
+		td.Properties.Labels = occmDetails.Labels
+	}
+
 	content.Resources = []tresource{t, td}
 	data, err := yaml.Marshal(&content)
 	if err != nil {
@@ -336,17 +348,39 @@ func (c *Client) getdeployGCPVM(occmDetails createOCCMDetails, id string, client
 	return "", nil
 }
 
+func (c *Client) getDisk(occmDetails createOCCMDetails, clientID string) (map[string]interface{}, error) {
+	hostType := "GCPCompute"
+	baseURL := fmt.Sprintf("/compute/v1/projects/%s/zones/%s/disks/%s-vm-disk-boot", occmDetails.GCPProject, occmDetails.Zone, occmDetails.Name)
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, "", hostType, clientID)
+	if err != nil {
+		log.Printf("getDisk request failed: %s", err.Error())
+		return nil, err
+	}
+
+	responseError := apiResponseChecker(statusCode, response, "getDisk")
+	if responseError != nil {
+		return nil, responseError
+	}
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(response, &result); err != nil {
+		log.Print("Failed to unmarshall response from getDisk")
+		return nil, err
+	}
+	return result, nil
+}
+
 func (c *Client) getVMInstance(occmDetails createOCCMDetails, clientID string) (map[string]interface{}, error) {
 
 	log.Print("getVMInstance")
 
-	baseURL := fmt.Sprintf("/compute/v1/projects/%s/zones/%s/instances/%s-vm", occmDetails.GCPProject, occmDetails.Region, occmDetails.Name)
-	hostType := "GCPDeploymentManager"
+	baseURL := fmt.Sprintf("/compute/v1/projects/%s/zones/%s/instances/%s-vm", occmDetails.GCPProject, occmDetails.Zone, occmDetails.Name)
+	hostType := "GCPCompute"
 
 	log.Print("GET")
 	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, "", hostType, clientID)
 	if err != nil {
-		log.Print("getVMInstance request failed")
+		log.Printf("getVMInstance request failed: %s", err.Error())
 		return nil, err
 	}
 
@@ -362,6 +396,61 @@ func (c *Client) getVMInstance(occmDetails createOCCMDetails, clientID string) (
 	}
 
 	return result, nil
+}
+
+// This function is not used because can't get the update instance API from GCP working. Receive the following error: Boot disk must be the first disk attached to the instance.
+// Although there is only one disk exists all the time, I can't figure it out to make it work.
+func (c *Client) updateVMInstance(occmDetails createOCCMDetails, clientID string, updatePropertities map[string]interface{}) error {
+	baseURL := fmt.Sprintf("/compute/v1/projects/%s/zones/%s/instances/%s-vm", occmDetails.GCPProject, occmDetails.Zone, occmDetails.Name)
+	hostType := "GCPCompute"
+	statusCode, response, _, err := c.CallAPIMethod("PUT", baseURL, updatePropertities, "", hostType, clientID)
+
+	if err != nil {
+		log.Print("updateVMInstance request failed")
+		return err
+	}
+
+	responseError := apiResponseChecker(statusCode, response, "getVMInstance")
+	if responseError != nil {
+		return responseError
+	}
+
+	return nil
+
+}
+
+func (c *Client) setVMLabels(occmDetails createOCCMDetails, labels map[string]interface{}, clientID string) error {
+	log.Print("setVMLabels")
+
+	baseURL := fmt.Sprintf("/compute/v1/projects/%s/zones/%s/instances/%s-vm/setLabels", occmDetails.GCPProject, occmDetails.Zone, occmDetails.Name)
+	hostType := "GCPCompute"
+	statusCode, response, _, err := c.CallAPIMethod("POST", baseURL, labels, "", hostType, clientID)
+	if err != nil {
+		log.Printf("setVMLabels request failed: %s", err.Error())
+		return err
+	}
+	responseError := apiResponseChecker(statusCode, response, "setVMLabels")
+	if responseError != nil {
+		return responseError
+	}
+	return nil
+}
+
+func (c *Client) setDiskLabels(occmDetails createOCCMDetails, labels map[string]interface{}, clientID string) error {
+	log.Print("setDiskLabels")
+
+	baseURL := fmt.Sprintf("/compute/v1/projects/%s/zones/%s/disks/%s-vm-disk-boot/setLabels", occmDetails.GCPProject, occmDetails.Zone, occmDetails.Name)
+	hostType := "GCPCompute"
+	statusCode, response, _, err := c.CallAPIMethod("POST", baseURL, labels, "", hostType, clientID)
+	if err != nil {
+		log.Printf("setDiskLabels request failed: %s", err.Error())
+		return err
+	}
+	responseError := apiResponseChecker(statusCode, response, "setDiskLabels")
+	if responseError != nil {
+		return responseError
+	}
+	return nil
 }
 
 func (c *Client) setVMInstaceTags(occmDetails createOCCMDetails, fingerprint string, clientID string) error {

@@ -28,6 +28,17 @@ resource "netapp-cloudmanager_volume" "cvo-volume-nfs" {
   export_policy_type = "custom"
   export_policy_ip = ["0.0.0.0/0"]
   export_policy_nfs_version = ["nfs4"]
+  snapshot_policy_name = "sp1"
+  snapshot_policy {
+     schedule {
+       schedule_type = "5min"
+       retention = 10
+    }
+    schedule {
+       schedule_type = "hourly"
+       retention = 5
+    }
+  }
   working_environment_id = netapp-cloudmanager_cvo_gcp.cvo-gcp.id
   client_id = netapp-cloudmanager_connector_gcp.cm-gcp.client_id
 }
@@ -81,7 +92,7 @@ The following arguments are supported:
 * `svm_name` - (Optional) The name of the SVM. The default SVM name is used, if a name isn't provided.
 * `size` - (Required) The volume size, supported with decimal numbers.
 * `size_unit` - (Required) ['Byte' or 'KB' or 'MB' or 'GB' or 'TB'].
-* `provider_volume_type` - (Required) The underlying cloud provider volume type. For AWS: ['gp3', 'gp2', 'io1', 'st1', 'sc1']. For Azure: ['Premium_LRS','Standard_LRS','StandardSSD_LRS']. For GCP: ['pd-balanced', 'pd-ssd','pd-standard']
+* `provider_volume_type` - (Required) The underlying cloud provider volume type. For AWS: ['gp3', 'gp2', 'io1', 'st1', 'sc1']. For Azure: ['Premium_LRS','Standard_LRS','StandardSSD_LRS']. For GCP: ['pd-balanced', 'pd-ssd','pd-standard']. For onPrem: 'onprem'.
 * `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
 * `enable_thin_provisioning` - (Optional) Enable thin provisioning.
 * `enable_compression` - (Optional) Enable compression.
@@ -108,6 +119,13 @@ The following arguments are supported:
 The `initiator` block supports:
 * `alias` (Required) Initiator alias. (iSCSI protocol parameters)
 *  `iqn` (Required) Initiator IQN. (iSCSI protocol parameters)
+
+The `snapshot_policy` block supports:
+* `schedule` - (Required) The schedule configuration for creating snapshot policy. When `snapshot_policy_name` does not exist, the snapshot policy will be created with `schedule`(s) and named as `snapshot_policy_name`. It supports the volume creation based on the AWS, AZURE and GCP CVO.
+
+The `schedule` block supports:
+* `schedule_type` - (Required) snapshot policy schedule type. Must be one of '5min', '8hour', 'hourly', 'daily', 'weekly', 'monthly'.
+* `retention` - (Required) snapshot policy retention.
 
 ## Attributes Reference
 

@@ -29,7 +29,6 @@ resource "netapp-cloudmanager_cvo_gcp" "cvo-gcp" {
   gcp_service_account = "fabric-pool@project-id.iam.gserviceaccount.com"
   svm_password = "********"
   client_id = netapp-cloudmanager_connector_gcp.cm-gcp.client_id 
-  workspace_id = "workspace-xxxxxx"
 }
 
 resource "netapp-cloudmanager_aggregate" "cvo-gcp-aggregate" {
@@ -68,7 +67,6 @@ resource "netapp-cloudmanager_volume" "cvo-volume" {
   tiering_policy = "auto"
 }
 
-
 resource "netapp-cloudmanager_volume" "cifs-volume-1" {
   depends_on = [netapp-cloudmanager_cifs_server.cvo-cifs-workgroup]
   provider = netapp-cloudmanager
@@ -81,5 +79,44 @@ resource "netapp-cloudmanager_volume" "cifs-volume-1" {
   permission = "full_control"
   users = ["Everyone"]
   working_environment_id = netapp-cloudmanager_cvo_gcp.cvo-gcp.id
+  client_id = netapp-cloudmanager_connector_gcp.cm-gcp.client_id
+}
+
+resource "netapp-cloudmanager_cvo_gcp" "cvo-gcp_ha" {
+  provider = netapp-cloudmanager
+  name = "terraformcvogcpHA"
+  project_id = "default-project"
+  zone = "us-east1-b"
+  subnet_id = "default"
+  vpc_id = "default"
+  gcp_service_account = "gcpservice@project-id.iam.gserviceaccount.com"
+  gcp_label {
+        label_key = "abcdefg"
+        label_value = "0222"
+  }
+  is_ha = true
+  svm_password = "********"
+  svm {
+        svm_name = "svmx"
+  }
+  svm {
+        svm_name = "svmy"
+  }
+  use_latest_version = true
+  ontap_version = "latest"
+  gcp_volume_type = "pd-ssd"
+  instance_type = "n2-standard-4"
+  mediator_zone = "us-east1-d"
+  node1_zone = "us-east1-b"
+  node2_zone =  "us-east1-c"
+  subnet0_node_and_data_connectivity = "projects/default-project/regions/us-east1/subnetworks/default"
+  subnet1_cluster_connectivity = "projects/default-project/regions/us-east1/subnetworks/subnet2"
+  subnet2_ha_connectivity = "projects/default-project/regions/us-east1/subnetworks/subnet3"
+  subnet3_data_replication = "projects/default-project/regions/us-east1/subnetworks/occm-us-east1-subnet-1"
+  vpc0_node_and_data_connectivity = "projects/default-project/global/networks/default"
+  vpc1_cluster_connectivity = "projects/default-project/global/networks/vpc2"
+  vpc2_ha_connectivity = "projects/default-project/global/networks/vpc3"
+  vpc3_data_replication = "projects/default-project/global/networks/occm-network-1"
+  nss_account = "c3c3d4e5-123d-4012-83b3-1e4abcdefg"
   client_id = netapp-cloudmanager_connector_gcp.cm-gcp.client_id
 }

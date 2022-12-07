@@ -27,7 +27,13 @@ resource "netapp-cloudmanager_cvo_gcp" "cl-cvo-gcp" {
   gcp_label {
         label_key = "abcd"
         label_value = "ABCD"
-      }
+  }
+  svm {
+    svm_name = "svm01"
+  }
+  svm {
+    svm_name = "svm03"
+  }
 }
 ```
 
@@ -40,6 +46,7 @@ The following arguments are supported:
 * `zone` - (Required) The zone of the region where the working environment will be created.
 * `gcp_service_account` - (Required) The gcp_service_account email in order to enable tiering of cold data to Google Cloud Storage.
 * `svm_password` - (Required) The admin password for Cloud Volumes ONTAP.
+* `svm_name` - (Optional) The name of the SVM.
 * `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
 * `workspace_id` - (Optional) The ID of the Cloud Manager workspace where you want to deploy Cloud Volumes ONTAP. If not provided, Cloud Manager uses the first workspace. You can find the ID from the Workspace tab on [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
 * `data_encryption_type` - (Optional) The type of data encryption to use for the working environment: ['GCP', 'NONE']. The default is 'GCP'.
@@ -56,7 +63,7 @@ The following arguments are supported:
 * `capacity_package_name` - (Optional) The capacity package name: ['Essential', 'Professional', 'Freemium']. Default is 'Essential'.
 * `instance_type` - (Optional) The type of instance to use, which depends on the license type you choose: Explore:['custom-4-16384'], Standard:['n1-standard-8'], Premium:['n1-standard-32'], BYOL: all instance types defined for PayGo. For more supported instance types, refer to Cloud Volumes ONTAP Release Notes. default is 'n1-standard-8' .
 * `serial_number` - (Optional) The serial number for the system. Required when using 'gcp-cot-premium-byol'.
-* `capacity_tier` - (Optional) Indicates the type of data tiering to use: ['cloudStorage', 'NONE']. The default is 'cloudStorage'.
+* `capacity_tier` - (Optional) Indicates the type of data tiering to use: ['cloudStorage']. The default is 'cloudStorage'.
 * `tier_level` - (Optional) In case capacity_tier is cloudStorage, this argument indicates the tiering level: ['standard', 'nearline', 'coldline']. The default is: 'standard'.
 * `nss_account` - (Optional) The NetApp Support Site account ID to use with this Cloud Volumes ONTAP system. If the license type is BYOL and an NSS account isn't provided, Cloud Manager tries to use the first existing NSS account.
 * `writing_speed_state` - (Optional) The write speed setting for Cloud Volumes ONTAP: ['NORMAL','HIGH']. The default is 'NORMAL'. This argument is not relevant for HA pairs.
@@ -88,9 +95,12 @@ The `gcp_label` block supports:
 * `label_key` - (Required) The key of the tag.
 * `label_value` - (Required) The tag value.
 
+The `svm` block supports:
+* `svm_name` - (Required) The extra SVM name for CVO HA.
+
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `id` - The unique identifier for the working environment.
-* `svm_name` - The name of the SVM.
+* `svm_name` - The default name of the SVM will be exported if it is not provided in the resource.

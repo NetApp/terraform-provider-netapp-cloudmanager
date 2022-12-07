@@ -81,6 +81,7 @@ The following arguments are supported:
 * `region` - (Required) The region where the working environment will be created.
 * `subnet_id` - (Optional) The subnet id where the working environment will be created. Required when single mode only.
 * `svm_password` - (Required) The admin password for Cloud Volumes ONTAP.
+* `svm_name` - (Optional) The name of the SVM.
 * `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
 * `vpc_id` - (Optional) The VPC ID where the working environment will be created. If this argument isn't provided, the VPC will be calculated by using the provided subnet ID.
 * `workspace_id` - (Optional) The ID of the Cloud Manager workspace where you want to deploy Cloud Volumes ONTAP. If not provided, Cloud Manager uses the first workspace. You can find the ID from the Workspace tab on [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
@@ -138,7 +139,7 @@ The `aws_tag` block supports the following:
 The following attributes are exported in addition to the arguments listed above:
 
 * `id` - The unique identifier for the working environment.
-* `svm_name` - The name of the SVM.
+* `svm_name` - The default name of the SVM will be exported if it is not provided in the resource.
 
 
 ## Terraform Variables
