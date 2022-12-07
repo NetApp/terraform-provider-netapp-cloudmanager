@@ -164,6 +164,33 @@ func resourceCVOVolume() *schema.Resource {
 					},
 				},
 			},
+			"snapshot_policy": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"schedule": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"schedule_type": {
+										Type:         schema.TypeString,
+										ValidateFunc: validation.StringInSlice([]string{"5min", "8hour", "hourly", "daily", "weekly", "monthly"}, true),
+										Required:     true,
+										ForceNew:     true,
+									},
+									"retention": {
+										Type:     schema.TypeInt,
+										Required: true,
+										ForceNew: true,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -231,7 +258,21 @@ func resourceCVOVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 	volume.SvmName = svm
 	workingEnvironmentType = weInfo.WorkingEnvironmentType
 	volume.WorkingEnvironmentType = workingEnvironmentType
+
 	if workingEnvironmentType != "ON_PREM" {
+		// Check if snapshot_nolicy_name exists
+		if !client.findSnapshotPolicy(weInfo.PublicID, quote.SnapshotPolicyName, clientID) {
+			// If snapshot_policy_name does not exist, create the snapshot policy
+			if v, ok := d.GetOk("snapshot_policy"); ok {
+				policy := v.(*schema.Set)
+				if policy.Len() > 0 {
+					err := client.createSnapshotPolicy(weInfo.PublicID, quote.SnapshotPolicyName, policy, clientID)
+					if err != nil {
+						return err
+					}
+				}
+			}
+		}
 		quote.WorkingEnvironmentType = workingEnvironmentType
 		quote.WorkingEnvironmentID = weInfo.PublicID
 		quote.SvmName = svm

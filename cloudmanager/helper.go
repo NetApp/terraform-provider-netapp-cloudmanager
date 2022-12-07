@@ -56,7 +56,7 @@ type workingEnvironmentOntapClusterPropertiesResponse struct {
 	ReservedSize                   interface{}            `json:"reservedSize"`
 	SaasProperties                 interface{}            `json:"saasProperties"`
 	Schedules                      interface{}            `json:"schedules"`
-	SnapshotPolicies               interface{}            `json:"snapshotPolicies"`
+	SnapshotPolicies               []cvoSnapshotPolicy    `json:"snapshotPolicies"`
 	Status                         cvoStatus              `json:"status"`
 	SupportRegistrationInformation []interface{}          `json:"supportRegistrationInformation"`
 	SupportRegistrationProperties  interface{}            `json:"supportRegistrationProperties"`
@@ -218,6 +218,18 @@ type setFlagRequest struct {
 type svmNameModificationRequest struct {
 	SvmNewName string `structs:"svmNewName"`
 	SvmName    string `structs:"svmName"`
+}
+
+// snapshotPolicy
+type cvoSnapshotPolicy struct {
+	Name        string           `json:"name"`
+	Schedules   []policySchedule `json:"schedules"`
+	Description string           `json:"description"`
+}
+
+type policySchedule struct {
+	Frequency string `json:"frequency"`
+	Retention int    `json:"retention"`
 }
 
 // Check HTTP response code, return error if HTTP request is not successed.

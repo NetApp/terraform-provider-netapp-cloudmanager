@@ -141,6 +141,17 @@ type initiator struct {
 	WorkingEnvironmentType string `structs:"workingEnvironmentType,omitempty"`
 }
 
+type createSnapshotPolicyRequest struct {
+	SnapshotPolicyName   string        `structs:"snapshotPolicyName"`
+	Schedules            []scheduleReq `structs:"schedules"`
+	WorkingEnvironmentID string        `structs:"workingEnvironmentId"`
+}
+
+type scheduleReq struct {
+	ScheduleType string `structs:"scheduleType"`
+	Retention    int    `structs:"retention"`
+}
+
 func (c *Client) createVolume(vol volumeRequest, createAggregateIfNotFound bool, clientID string) error {
 	var id string
 	if vol.FileSystemID != "" {
@@ -518,4 +529,69 @@ func (c *Client) setCommonAttributes(WorkingEnvironmentType string, d *schema.Re
 		}
 	}
 	return nil
+}
+
+// createSnapshotPolicy
+func (c *Client) createSnapshotPolicy(workingEnviromentID string, snapshotPolicyName string, set *schema.Set, clientID string) error {
+	log.Print("createSnapshotPolicy: ", snapshotPolicyName)
+	snapshotPolicy := createSnapshotPolicyRequest{}
+	snapshotPolicy.SnapshotPolicyName = snapshotPolicyName
+	snapshotPolicy.WorkingEnvironmentID = workingEnviromentID
+	for _, v := range set.List() {
+		schedules := v.(map[string]interface{})
+		scheduleSet := schedules["schedule"].([]interface{})
+		scheduleConfigs := make([]scheduleReq, 0, len(scheduleSet))
+		for _, x := range scheduleSet {
+			snapshotPolicySchedule := scheduleReq{}
+			scheduleConfig := x.(map[string]interface{})
+			snapshotPolicySchedule.ScheduleType = scheduleConfig["schedule_type"].(string)
+			snapshotPolicySchedule.Retention = scheduleConfig["retention"].(int)
+
+			scheduleConfigs = append(scheduleConfigs, snapshotPolicySchedule)
+		}
+		snapshotPolicy.Schedules = scheduleConfigs
+	}
+	baseURL, _, err := c.getAPIRoot(snapshotPolicy.WorkingEnvironmentID, clientID)
+	hostType := "CloudManagerHost"
+	if err != nil {
+		return err
+	}
+	baseURL = fmt.Sprintf("%s/working-environments/%s/snapshot-policy", baseURL, snapshotPolicy.WorkingEnvironmentID)
+	param := structs.Map(snapshotPolicy)
+	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("POST", baseURL, param, c.Token, hostType, clientID)
+	if err != nil {
+		log.Print("createSnapshotPolicy request failed ", statusCode)
+		return err
+	}
+	responseError := apiResponseChecker(statusCode, response, "createSnapshotPolicy")
+	if responseError != nil {
+		return responseError
+	}
+	err = c.waitOnCompletion(onCloudRequestID, "snapshotPolicy", "create", 10, 10, clientID)
+	if err != nil {
+		return err
+	}
+
+	if c.findSnapshotPolicy(workingEnviromentID, snapshotPolicyName, clientID) {
+		return nil
+	}
+	return fmt.Errorf("create snapshot policy failed")
+}
+
+// findSnapshotPolicy
+func (c *Client) findSnapshotPolicy(workingEnviromentID string, snapshotPolicyName string, clientID string) bool {
+	resp, err := c.getCVOProperties(workingEnviromentID, clientID)
+	if err != nil {
+		log.Print("cannot find working environment ", workingEnviromentID)
+		return false
+	}
+	snapshotPolicies := resp.SnapshotPolicies
+	for i := range snapshotPolicies {
+		if snapshotPolicies[i].Name == snapshotPolicyName {
+			log.Print("found snapshot policy: ", snapshotPolicyName)
+			return true
+		}
+	}
+	log.Print("cannot find snapshot policy ", snapshotPolicyName)
+	return false
 }
