@@ -2,6 +2,7 @@
 NEW FEATURES:
 * resource/cvo_volume: support create and delete onPrem volume.
 * resource/cvo_volume: support create snapshot policy for AWS, AZURE and GCP if the snapshot policy is not available.
+* resource/cvo_volume: add `tags` option.
 
 ## 22.11.0
 NEW FEATURES:

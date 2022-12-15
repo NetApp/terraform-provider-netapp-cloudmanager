@@ -115,6 +115,7 @@ The following arguments are supported:
 * `igroups` (Optional) List of igroups. (iSCSI protocol parameters)
 * `os_name` (Optional) Operating system. (iSCSI protocol parameters)
 * `initiator` (Optional) Set of attributes of Initiator. (iSCSI protocol parameters)
+*  `tags` - (Optional) Set tags for the volume during creation. The API doesn't contain any information about tags so the provider doesn't guarantee tags will be added successfully and detect any drift after create.
 
 The `initiator` block supports:
 * `alias` (Required) Initiator alias. (iSCSI protocol parameters)

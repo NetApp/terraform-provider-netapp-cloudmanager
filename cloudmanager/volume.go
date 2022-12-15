@@ -39,6 +39,7 @@ type volumeRequest struct {
 	FileSystemID              string                 `structs:"fileSystemId,omitempty"`
 	TenantID                  string                 `structs:"tenantId,omitempty"`
 	EnableStorageEfficiency   bool                   `structs:"enableStorageEfficiency,omitempty"`
+	VolumeTags                []volumeTag            `structs:"volumeTags,omitempty"`
 }
 
 type volumeResponse struct {
@@ -141,6 +142,10 @@ type initiator struct {
 	WorkingEnvironmentType string `structs:"workingEnvironmentType,omitempty"`
 }
 
+type volumeTag struct {
+	TagKey   string `structs:"tagKey"`
+	TagValue string `structs:"tagValue"`
+}
 type createSnapshotPolicyRequest struct {
 	SnapshotPolicyName   string        `structs:"snapshotPolicyName"`
 	Schedules            []scheduleReq `structs:"schedules"`
