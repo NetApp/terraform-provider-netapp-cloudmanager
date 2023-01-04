@@ -70,6 +70,29 @@ resource "netapp-cloudmanager_cvo_aws" "cvo-aws" {
 }
 ```
 
+**Create netapp-cloudmanager_cvo_aws single with WORM:**
+
+```
+resource "netapp-cloudmanager_cvo_aws" "cvo-aws" {
+  provider = netapp-cloudmanager
+  name = "TerraformCVO"
+  region = "us-west-2"
+  subnet_id = "subnet-xxxxxxx"
+  vpc_id = "vpc-xxxxxxxx"
+  aws_tag {
+              tag_key = "abcd"
+              tag_value = "ABCD"
+            }
+  aws_tag {
+              tag_key = "xxx"
+              tag_value = "YYY"
+            }
+  svm_password = "P@assword!"
+  client_id = netapp-cloudmanager_connector_aws.cm-aws.client_id
+  worm_retention_period_length = 2
+  worm_retention_period_unit = "months"
+}
+```
 
 
 
@@ -129,6 +152,8 @@ The following arguments are supported:
 * `upgrade_ontap_version` - (Optional) Indicates whether to upgrade ontap image with `ontap_version`. To upgrade ontap image, `ontap_version` cannot be 'latest' and `use_latest_version` needs to be false.
 * `mediator_security_group_id` - (Optional) For HA only, mediator security group id.
 * `retries` - (Optional) The number of attempts to wait for the completion of creating the CVO with 60 seconds apart for each attempt. For HA, this value is incremented by 30. The default is '60'.
+* `worm_retention_period_length` - (Optional) WORM retention period length. Once specified retention period, the WORM is enabled. When WORM storage is activated, data tiering to object storage can’t be enabled.
+* `worm_retention_period_unit` - (Optional) WORM retention period unit: ['years','months','days','hours','minutes','seconds'].
 
 The `aws_tag` block supports the following:
 * `tag_key` - (Required) The key of the tag.

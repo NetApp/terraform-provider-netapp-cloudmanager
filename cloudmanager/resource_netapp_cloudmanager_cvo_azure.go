@@ -162,6 +162,17 @@ func resourceCVOAzure() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"worm_retention_period_length": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
+			"worm_retention_period_unit": {
+				Type:         schema.TypeString,
+				ValidateFunc: validation.StringInSlice([]string{"years", "months", "days", "hours", "minutes", "seconds"}, true),
+				Optional:     true,
+				ForceNew:     true,
+			},
 			"writing_speed_state": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -174,7 +185,6 @@ func resourceCVOAzure() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				Default:      "Blob",
 				ValidateFunc: validation.StringInSlice([]string{"Blob", "NONE"}, false),
 			},
 			"security_group_id": {
@@ -376,6 +386,12 @@ func resourceCVOAzureCreate(d *schema.ResourceData, meta interface{}) error {
 		cvoDetails.SerialNumber = c.(string)
 	}
 
+	if c, ok := d.GetOk("worm_retention_period_length"); ok {
+		cvoDetails.WormRequest.RetentionPeriod.Length = c.(int)
+	}
+	if c, ok := d.GetOk("worm_retention_period_unit"); ok {
+		cvoDetails.WormRequest.RetentionPeriod.Unit = c.(string)
+	}
 	cvoDetails.IsHA = d.Get("is_ha").(bool)
 	if cvoDetails.IsHA {
 		if cvoDetails.VsaMetadata.LicenseType == "capacity-paygo" {

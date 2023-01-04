@@ -34,6 +34,7 @@ type createCVOAzureDetails struct {
 	AvailabilityZone            int                       `structs:"availabilityZone,omitempty"`
 	AzureEncryptionParameters   azureEncryptionParameters `structs:"azureEncryptionParameters,omitempty"`
 	NssAccount                  string                    `structs:"nssAccount,omitempty"`
+	WormRequest                 wormRequest               `structs:"wormRequest,omitempty"`
 	WritingSpeedState           string                    `structs:"writingSpeedState,omitempty"`
 	OptimizedNetworkUtilization bool                      `structs:"optimizedNetworkUtilization"`
 	SecurityGroupID             string                    `structs:"securityGroupId,omitempty"`

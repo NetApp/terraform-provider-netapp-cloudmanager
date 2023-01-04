@@ -147,6 +147,17 @@ func resourceCVOGCP() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"standard", "nearline", "coldline"}, false),
 			},
+			"worm_retention_period_length": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
+			"worm_retention_period_unit": {
+				Type:         schema.TypeString,
+				ValidateFunc: validation.StringInSlice([]string{"years", "months", "days", "hours", "minutes", "seconds"}, true),
+				Optional:     true,
+				ForceNew:     true,
+			},
 			"nss_account": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -420,6 +431,12 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 		cvoDetails.GcpEncryptionParameters.Key = c.(string)
 	}
 
+	if c, ok := d.GetOk("worm_retention_period_length"); ok {
+		cvoDetails.WormRequest.RetentionPeriod.Length = c.(int)
+	}
+	if c, ok := d.GetOk("worm_retention_period_unit"); ok {
+		cvoDetails.WormRequest.RetentionPeriod.Unit = c.(string)
+	}
 	cvoDetails.IsHA = d.Get("is_ha").(bool)
 
 	// initialize the svmList for GCP CVO HA SVMs adding

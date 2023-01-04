@@ -38,6 +38,7 @@ type createCVOAWSDetails struct {
 	InstanceTenancy             string                  `structs:"instanceTenancy"`
 	InstanceProfileName         string                  `structs:"instanceProfileName,omitempty"`
 	SecurityGroupID             string                  `structs:"securityGroupId,omitempty"`
+	WormRequest                 wormRequest             `structs:"wormRequest,omitempty"`
 	CloudProviderAccount        string                  `structs:"cloudProviderAccount,omitempty"`
 	BackupVolumesToCbs          bool                    `structs:"backupVolumesToCbs"`
 	EnableCompliance            bool                    `structs:"enableCompliance"`
@@ -90,12 +91,6 @@ type awsEncryptionParameters struct {
 	KmsKeyArn string `structs:"kmsKeyArn,omitempty"`
 }
 
-// deleteCVODetails the users input for deleting a cvo
-type deleteCVODetails struct {
-	InstanceID string
-	Region     string
-}
-
 // cvoList the users input for getting cvo
 type cvoList struct {
 	CVO []cvoResult `json:"vsaWorkingEnvironments"`
@@ -116,6 +111,17 @@ type tenantResult struct {
 type cvoStatusResult struct {
 	Status int    `json:"status"`
 	Error  string `json:"error"`
+}
+
+// wormRequest
+type wormRequest struct {
+	RetentionPeriod wormRetentionPeriod `structs:"retentionPeriod"`
+}
+
+// wormRetentionPeriod
+type wormRetentionPeriod struct {
+	Length int    `structs:"length"`
+	Unit   string `structs:"unit"`
 }
 
 func (c *Client) getTenant(clientID string) (string, error) {
