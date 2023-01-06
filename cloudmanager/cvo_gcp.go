@@ -34,6 +34,7 @@ type createCVOGCPDetails struct {
 	CapacityTier            string                  `structs:"capacityTier,omitempty"`
 	TierLevel               string                  `structs:"tierLevel,omitempty"`
 	NssAccount              string                  `structs:"nssAccount,omitempty"`
+	WormRequest             wormRequest             `structs:"wormRequest,omitempty"`
 	WritingSpeedState       string                  `structs:"writingSpeedState,omitempty"`
 	SerialNumber            string                  `structs:"serialNumber,omitempty"`
 	GCPLabels               []gcpLabels             `structs:"gcpLabels,omitempty"`

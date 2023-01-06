@@ -42,6 +42,11 @@ resource "netapp-cloudmanager_cvo_azure" "cl-azure" {
   capacity_tier = "Blob"
   writing_speed_state = "NORMAL"
   is_ha = false
+  azure_encryption_parameters {
+     key = "key1"
+     vault_name = "vaulta"
+     user_assigned_identity = "abcManagedIdDev"
+  }
 }
 ```
 
@@ -76,6 +81,39 @@ resource "netapp-cloudmanager_cvo_azure" "cl-azure" {
 }
 ```
 
+**Create netapp-cloudmanager_cvo_azure single with WORM:**
+
+```
+resource "netapp-cloudmanager_cvo_azure" "cl-azure" {
+  depends_on = [azurerm_role_assignment.occm-role-assignment]
+  provider = netapp-cloudmanager
+  name = "TerraformCVOAzure"
+  location = "westus"
+  availability_zone = 2
+  subscription_id = data.azurerm_subscription.primary.subscription_id
+  subnet_id = "Subnet1"
+  vnet_id = "Vnet1"
+  vnet_resource_group = "rg_westus"
+  data_encryption_type = "AZURE"
+  azure_tag {
+              tag_key = "abcd"
+              tag_value = "ABCD"
+            }
+  azure_tag {
+              tag_key = "xxx"
+              tag_value = "YYY"
+            }
+  storage_type = "Premium_LRS"
+  svm_password = "P@assword!"
+  client_id = netapp-cloudmanager_connector_azure.cm-azure.client_id
+  workspace_id = "workspace-fdgsgNse"
+  writing_speed_state = "NORMAL"
+  is_ha = false
+  worm_retention_period_length = 2
+  worm_retention_period_unit = "days"
+}
+```
+
 ## Argument Reference
 
 The following arguments are supported:
@@ -88,8 +126,7 @@ The following arguments are supported:
 * `vnet_id` - (Required) The name of the virtual network.
 * `vnet_resource_group` - (Required) The resource group in Azure associated to the virtual network.
 * `workspace_id` - (Optional) The ID of the Cloud Manager workspace where you want to deploy Cloud Volumes ONTAP. If not provided, Cloud Manager uses the first workspace. You can find the ID from the Workspace tab on [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
-* `data_encryption_type` - (Optional) The type of encryption to use for the working environment: ['AZURE', 'NONE']. The default is 'AZURE'.
-* `azure_encryption_parameters` - (Optional) AZURE encryption parameters. It is required if using AZURE encryption.
+* `data_encryption_type` - (Optional) The type of encryption to use for the working environment: ['AZURE', 'ONTAP', 'NONE']. The default is 'AZURE'.
 * `storage_type` - (Optional) The type of storage for the first data aggregate: ['Premium_LRS', 'Standard_LRS', 'StandardSSD_LRS', 'Premium_ZRS']. The default is 'Premium_LRS'
 * `svm_password` - (Required) The admin password for Cloud Volumes ONTAP.
 * `svm_name` - (Optional) The name of the SVM.
@@ -122,6 +159,13 @@ The following arguments are supported:
 * `ha_enable_https` - (Optional) For HA, enable the HTTPS connection from CVO to storage accounts. This can impact write performance. The default is false.
 * `upgrade_ontap_version` - (Optional) Indicates whether to upgrade ontap image with `ontap_version`. To upgrade ontap image, `ontap_version` cannot be 'latest' and `use_latest_version` needs to be false.
 * `retries` - (Optional) The number of attempts to wait for the completion of creating the CVO with 60 seconds apart for each attempt. For HA, this value is incremented by 30. The default is '60'.
+* `worm_retention_period_length` - (Optional) WORM retention period length. Once specified retention period, the WORM is enabled. When WORM storage is activated, data tiering to object storage can’t be enabled.
+* `worm_retention_period_unit` - (Optional) WORM retention period unit: ['years','months','days','hours','minutes','seconds'].
+
+The`azure_encryption_parameters` - (Optional) Parameters required if using azure encryption with custom key. This block supports:
+* `key` - (Required) Customize key name.
+* `vault_name` - (Required) Azure keyVault name.
+* `user_assigned_identity` - (Optional) The identity for authorizing access the keyVault.
 
 The `azure_tag` block supports:
 * `tag_key` - (Required) The key of the tag.

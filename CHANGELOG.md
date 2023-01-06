@@ -1,3 +1,11 @@
+## 23.01.0
+NEW FEATURES:
+* resource/cvo_volume: add `tags` option.
+* resource/cvo for AWS, AZURE and GCP: add `worm_retention_period_length` and `worm_retention_period_unit` to support WORM for creating a CVO.
+
+BUG FIXES:
+* resource/azure_cvo: fix bug on the `azureEncryptionParameters` with proper type.
+
 ## 22.12.0
 NEW FEATURES:
 * resource/cvo_volume: support create and delete onPrem volume.

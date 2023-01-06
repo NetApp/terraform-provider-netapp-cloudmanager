@@ -92,7 +92,7 @@ The following arguments are supported:
 * `svm_name` - (Optional) The name of the SVM. The default SVM name is used, if a name isn't provided.
 * `size` - (Required) The volume size, supported with decimal numbers.
 * `size_unit` - (Required) ['Byte' or 'KB' or 'MB' or 'GB' or 'TB'].
-* `provider_volume_type` - (Required) The underlying cloud provider volume type. For AWS: ['gp3', 'gp2', 'io1', 'st1', 'sc1']. For Azure: ['Premium_LRS','Standard_LRS','StandardSSD_LRS']. For GCP: ['pd-balanced', 'pd-ssd','pd-standard']. For onPrem: 'onprem'.
+* `provider_volume_type` - (Required) The underlying cloud provider volume type. For AWS: ['gp3', 'gp2', 'io1', 'st1', 'sc1']. For Azure: ['Premium_LRS','Standard_LRS','StandardSSD_LRS', 'Premium_ZRS']. For GCP: ['pd-balanced', 'pd-ssd','pd-standard']. For onPrem: 'onprem'.
 * `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
 * `enable_thin_provisioning` - (Optional) Enable thin provisioning.
 * `enable_compression` - (Optional) Enable compression.
@@ -115,6 +115,7 @@ The following arguments are supported:
 * `igroups` (Optional) List of igroups. (iSCSI protocol parameters)
 * `os_name` (Optional) Operating system. (iSCSI protocol parameters)
 * `initiator` (Optional) Set of attributes of Initiator. (iSCSI protocol parameters)
+*  `tags` - (Optional) Set tags for the volume during creation. The API doesn't contain any information about tags so the provider doesn't guarantee tags will be added successfully and detect any drift after create.
 
 The `initiator` block supports:
 * `alias` (Required) Initiator alias. (iSCSI protocol parameters)

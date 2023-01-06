@@ -134,6 +134,17 @@ func resourceCVOAWS() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"worm_retention_period_length": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
+			"worm_retention_period_unit": {
+				Type:         schema.TypeString,
+				ValidateFunc: validation.StringInSlice([]string{"years", "months", "days", "hours", "minutes", "seconds"}, true),
+				Optional:     true,
+				ForceNew:     true,
+			},
 			"writing_speed_state": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -156,7 +167,6 @@ func resourceCVOAWS() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				Default:      "S3",
 				ValidateFunc: validation.StringInSlice([]string{"S3", "NONE"}, false),
 			},
 			"instance_tenancy": {
@@ -458,6 +468,12 @@ func resourceCVOAWSCreate(d *schema.ResourceData, meta interface{}) error {
 		cvoDetails.VsaMetadata.ProvidedLicense = c.(string)
 	}
 
+	if c, ok := d.GetOk("worm_retention_period_length"); ok {
+		cvoDetails.WormRequest.RetentionPeriod.Length = c.(int)
+	}
+	if c, ok := d.GetOk("worm_retention_period_unit"); ok {
+		cvoDetails.WormRequest.RetentionPeriod.Unit = c.(string)
+	}
 	cvoDetails.IsHA = d.Get("is_ha").(bool)
 
 	if cvoDetails.IsHA {

@@ -164,6 +164,13 @@ func resourceCVOVolume() *schema.Resource {
 					},
 				},
 			},
+			"tags": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
 			"snapshot_policy": {
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -340,6 +347,16 @@ func resourceCVOVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 	if v, ok := d.GetOk("throughput"); ok {
 		volume.Throughput = v.(int)
+	}
+	if o, ok := d.GetOk("tags"); ok {
+		tags := make([]volumeTag, 0)
+		for k, v := range o.(map[string]interface{}) {
+			tag := volumeTag{}
+			tag.TagKey = k
+			tag.TagValue = v.(string)
+			tags = append(tags, tag)
+		}
+		volume.VolumeTags = tags
 	}
 	if volumeProtocol == "cifs" {
 		exist, err := client.checkCifsExists(workingEnvironmentType, volume.WorkingEnvironmentID, volume.SvmName, clientID)

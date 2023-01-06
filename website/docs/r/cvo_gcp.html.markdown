@@ -37,6 +37,33 @@ resource "netapp-cloudmanager_cvo_gcp" "cl-cvo-gcp" {
 }
 ```
 
+**Create netapp-cloudmanager_cvo_gcp with WORM:**
+
+```
+resource "netapp-cloudmanager_cvo_gcp" "cl-cvo-gcp" {
+  provider = netapp-cloudmanager
+  name = "terraformcvogcp"
+  project_id = "occm-project"
+  zone = "us-east1-b"
+  gcp_service_account = "fabric-pool@occm-project.iam.gserviceaccount.com"
+  svm_password = "netapp1!"
+  client_id = netapp-cloudmanager_connector_gcp.cm-gcp.client_id
+  workspace_id = "workspace-IDz6Nnwl"
+  gcp_label {
+        label_key = "abcd"
+        label_value = "ABCD"
+  }
+  svm {
+    svm_name = "svm01"
+  }
+  svm {
+    svm_name = "svm03"
+  }
+  worm_retention_period_length = 2
+  worm_retention_period_unit = "hours"
+}
+```
+
 ## Argument Reference
 
 The following arguments are supported:
@@ -90,6 +117,8 @@ The following arguments are supported:
 * `vpc3_firewall_rule_name` - (Optional) Firewall rule name for vpc4.
 * `upgrade_ontap_version` - (Optional) Indicates whether to upgrade ontap image with `ontap_version`. To upgrade ontap image, `ontap_version` cannot be 'latest' and `use_latest_version` needs to be false.
 * `retries` - (Optional) The number of attempts to wait for the completion of creating the CVO with 60 seconds apart for each attempt. For HA, this value is incremented by 30. The default is '60'.
+* `worm_retention_period_length` - (Optional) WORM retention period length. Once specified retention period, the WORM is enabled. When WORM storage is activated, data tiering to object storage can’t be enabled.
+* `worm_retention_period_unit` - (Optional) WORM retention period unit: ['years','months','days','hours','minutes','seconds'].
 
 The `gcp_label` block supports:
 * `label_key` - (Required) The key of the tag.
