@@ -70,9 +70,26 @@ func resourceCVOAzure() *schema.Resource {
 				ValidateFunc: validation.StringInSlice([]string{"GB", "TB"}, false),
 			},
 			"azure_encryption_parameters": {
-				Type:     schema.TypeString,
+				Type:     schema.TypeSet,
+				MaxItems: 1,
 				Optional: true,
 				ForceNew: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"key": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"vault_name": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"user_assigned_identity": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
 			},
 			"ontap_version": {
 				Type:     schema.TypeString,
@@ -346,11 +363,6 @@ func resourceCVOAzureCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 	cvoDetails.VsaMetadata.InstanceType = d.Get("instance_type").(string)
 
-	if cvoDetails.DataEncryptionType == "AZURE" {
-		if c, ok := d.GetOk("azure_encryption_parameters"); ok {
-			cvoDetails.AzureEncryptionParameters.Key = c.(string)
-		}
-	}
 	if c, ok := d.GetOk("cidr"); ok {
 		cvoDetails.Cidr = c.(string)
 	}
@@ -384,6 +396,13 @@ func resourceCVOAzureCreate(d *schema.ResourceData, meta interface{}) error {
 
 	if c, ok := d.GetOk("serial_number"); ok {
 		cvoDetails.SerialNumber = c.(string)
+	}
+
+	if cvoDetails.DataEncryptionType == "AZURE" {
+		if c, ok := d.GetOk("azure_encryption_parameters"); ok {
+			parametersSet := c.(*schema.Set)
+			cvoDetails.AzureEncryptionParameters = expendEncryptionParameters(parametersSet)
+		}
 	}
 
 	if c, ok := d.GetOk("worm_retention_period_length"); ok {
@@ -430,6 +449,13 @@ func resourceCVOAzureCreate(d *schema.ResourceData, meta interface{}) error {
 
 	resourceGroupPath := fmt.Sprintf("subscriptions/%s/resourceGroups/%s", cvoDetails.SubscriptionID, resourceGroup)
 	vnetFormat := "/%s/providers/Microsoft.Network/virtualNetworks/%s"
+
+	if _, ok := d.GetOk("azure_encryption_parameters"); ok {
+		if !strings.HasPrefix(cvoDetails.AzureEncryptionParameters.UserAssignedIdentity, "/subscriptions") {
+			cvoDetails.AzureEncryptionParameters.UserAssignedIdentity = fmt.Sprintf("/%s/providers/Microsoft.ManagedIdentity/userAssignedIdentities/%s",
+				resourceGroupPath, cvoDetails.AzureEncryptionParameters.UserAssignedIdentity)
+		}
+	}
 	if client.GetSimulator() {
 		log.Print("In simulator env...")
 		vnetFormat = "%s/%s"
@@ -606,4 +632,15 @@ func resourceCVOAzureExists(d *schema.ResourceData, meta interface{}) (bool, err
 
 func resourceCVOAzureImport(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
 	return nil, fmt.Errorf("CVO Azure resource's import function is disabled")
+}
+
+func expendEncryptionParameters(azEncryptParameterList *schema.Set) azureEncryptionParameters {
+	var params azureEncryptionParameters
+	for _, v := range azEncryptParameterList.List() {
+		paramSet := v.(map[string]interface{})
+		params.Key = paramSet["key"].(string)
+		params.VaultName = paramSet["vault_name"].(string)
+		params.UserAssignedIdentity = paramSet["user_assigned_identity"].(string)
+	}
+	return params
 }

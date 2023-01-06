@@ -53,7 +53,9 @@ type createCVOAzureDetails struct {
 }
 
 type azureEncryptionParameters struct {
-	Key string `structs:"key,omitempty"`
+	Key                  string `structs:"key"`
+	VaultName            string `structs:"vaultName"`
+	UserAssignedIdentity string `structs:"userAssignedIdentity,omitempty"`
 }
 
 // haParamsAzure the input for requesting a CVO
@@ -218,10 +220,10 @@ func (c *Client) createCVOAzure(cvoDetails createCVOAzureDetails, clientID strin
 	var CreationRetries int
 
 	log.Print("retries ", c.Retries)
-	if cvoDetails.IsHA == false {
+	if !cvoDetails.IsHA {
 		baseURL = "/occm/api/azure/vsa/working-environments"
 		CreationRetries = c.Retries
-	} else if cvoDetails.IsHA == true {
+	} else if cvoDetails.IsHA {
 		baseURL = "/occm/api/azure/ha/working-environments"
 		CreationRetries = c.Retries + 30
 	}
@@ -269,9 +271,9 @@ func (c *Client) deleteCVOAzure(id string, isHA bool, clientID string) error {
 
 	var baseURL string
 
-	if isHA == false {
+	if !isHA {
 		baseURL = fmt.Sprintf("/occm/api/azure/vsa/working-environments/%s", id)
-	} else if isHA == true {
+	} else if isHA {
 		baseURL = fmt.Sprintf("/occm/api/azure/ha/working-environments/%s", id)
 	}
 
@@ -298,18 +300,18 @@ func (c *Client) deleteCVOAzure(id string, isHA bool, clientID string) error {
 
 // validateCVOParams validates params
 func validateCVOAzureParams(cvoDetails createCVOAzureDetails) error {
-	if cvoDetails.VsaMetadata.UseLatestVersion == true && cvoDetails.VsaMetadata.OntapVersion != "latest" {
+	if cvoDetails.VsaMetadata.UseLatestVersion && cvoDetails.VsaMetadata.OntapVersion != "latest" {
 		return fmt.Errorf("ontap_version parameter not required when having use_latest_version as true")
 	}
 
 	// by Node byol license
-	if cvoDetails.IsHA == true && cvoDetails.VsaMetadata.LicenseType == "azure-ha-cot-premium-byol" {
+	if cvoDetails.IsHA && cvoDetails.VsaMetadata.LicenseType == "azure-ha-cot-premium-byol" {
 		if cvoDetails.HAParams.PlatformSerialNumberNode1 == "" || cvoDetails.HAParams.PlatformSerialNumberNode2 == "" {
 			return fmt.Errorf("both platform_serial_number_node1 and platform_serial_number_node2 parameters are required when having ha type as true and license_type as azure-ha-cot-premium-byol")
 		}
 	}
 
-	if cvoDetails.IsHA == false && (cvoDetails.HAParams.PlatformSerialNumberNode1 != "" || cvoDetails.HAParams.PlatformSerialNumberNode2 != "") {
+	if !cvoDetails.IsHA && (cvoDetails.HAParams.PlatformSerialNumberNode1 != "" || cvoDetails.HAParams.PlatformSerialNumberNode2 != "") {
 		return fmt.Errorf("both platform_serial_number_node1 and platform_serial_number_node2 parameters are not required when having ha type as false")
 	}
 
@@ -322,10 +324,10 @@ func validateCVOAzureParams(cvoDetails createCVOAzureDetails) error {
 
 	// by Capacity license
 	if cvoDetails.VsaMetadata.CapacityPackageName != "" {
-		if cvoDetails.IsHA == true && cvoDetails.VsaMetadata.LicenseType != "ha-capacity-paygo" {
+		if cvoDetails.IsHA && cvoDetails.VsaMetadata.LicenseType != "ha-capacity-paygo" {
 			return fmt.Errorf("license_type must be ha-capacity-paygo")
 		}
-		if cvoDetails.IsHA == false && cvoDetails.VsaMetadata.LicenseType != "capacity-paygo" {
+		if !cvoDetails.IsHA && cvoDetails.VsaMetadata.LicenseType != "capacity-paygo" {
 			return fmt.Errorf("license_type must be capacity-paygo")
 		}
 	}
