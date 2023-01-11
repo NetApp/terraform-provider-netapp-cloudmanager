@@ -70,7 +70,7 @@ The following arguments are supported:
 
 * `name` - (Required) The name of the Cloud Volumes ONTAP working environment.
 * `project_id` - (Required) The ID of the GCP project.
-* `zone` - (Required) The zone of the region where the working environment will be created.
+* `zone` - (Optional) The zone of the region where the working environment will be created. It is required in single.
 * `gcp_service_account` - (Required) The gcp_service_account email in order to enable tiering of cold data to Google Cloud Storage.
 * `svm_password` - (Required) The admin password for Cloud Volumes ONTAP.
 * `svm_name` - (Optional) The name of the SVM.
@@ -100,7 +100,7 @@ The following arguments are supported:
 * `is_ha` - (Optional) Indicate whether the working environment is an HA pair or not [true, false]. The default is false.
 * `platform_serial_number_node1` - (Optional) For HA BYOL, the serial number for the first node.
 * `platform_serial_number_node2` - (Optional) For HA BYOL, the serial number for the second node.
-* `node1_zone` - (Optional)  Zone for node 1.
+* `node1_zone` - (Optional)  Zone for node 1. It will also be used in the 'zone' if it is not provided in HA.
 * `node2_zone` - (Optional) Zone for node 2.
 * `mediator_zone` - (Optional) Zone for mediator.
 * `vpc0_node_and_data_connectivity` - (Optional) VPC path for nic1, required for node and data connectivity. If using shared VPC, netwrok_project_id must be provided.

@@ -1,3 +1,7 @@
+## 23.01.01
+BUG FIXES:
+* resource/cvo_gcp:`zone` is not required in HA case. `node1_zone` will be used when `zone` is not provided in HA.
+
 ## 23.01.0
 NEW FEATURES:
 * resource/cvo_volume: add `tags` option.

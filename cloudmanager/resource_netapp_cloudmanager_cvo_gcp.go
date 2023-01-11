@@ -28,7 +28,7 @@ func resourceCVOGCP() *schema.Resource {
 			},
 			"zone": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
 				ForceNew: true,
 			},
 			"gcp_service_account": {
@@ -343,7 +343,6 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 
 	cvoDetails.Name = d.Get("name").(string)
 	log.Print("Creat cvo name ", cvoDetails.Name)
-	cvoDetails.Region = d.Get("zone").(string)
 	cvoDetails.GCPServiceAccount = d.Get("gcp_service_account").(string)
 	cvoDetails.DataEncryptionType = d.Get("data_encryption_type").(string)
 	cvoDetails.WorkspaceID = d.Get("workspace_id").(string)
@@ -392,6 +391,22 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 		cvoDetails.EnableCompliance = c.(bool)
 	}
 
+	if c, ok := d.GetOk("zone"); ok {
+		cvoDetails.Region = c.(string)
+	}
+	cvoDetails.IsHA = d.Get("is_ha").(bool)
+	if !cvoDetails.IsHA {
+		if cvoDetails.Region == "" {
+			return fmt.Errorf("zone is required in single GCP CVO")
+		}
+	} else {
+		if c, ok := d.GetOk("node1_zone"); ok {
+			cvoDetails.HAParams.Node1Zone = c.(string)
+			if cvoDetails.Region == "" {
+				cvoDetails.Region = cvoDetails.HAParams.Node1Zone
+			}
+		}
+	}
 	var networkProjectID string
 	if c, ok := d.GetOk("network_project_id"); ok {
 		networkProjectID = c.(string)
@@ -437,7 +452,6 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 	if c, ok := d.GetOk("worm_retention_period_unit"); ok {
 		cvoDetails.WormRequest.RetentionPeriod.Unit = c.(string)
 	}
-	cvoDetails.IsHA = d.Get("is_ha").(bool)
 
 	// initialize the svmList for GCP CVO HA SVMs adding
 	svmList := []gcpSVM{}
@@ -453,9 +467,7 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 		if c, ok := d.GetOk("platform_serial_number_node2"); ok {
 			cvoDetails.HAParams.PlatformSerialNumberNode2 = c.(string)
 		}
-		if c, ok := d.GetOk("node1_zone"); ok {
-			cvoDetails.HAParams.Node1Zone = c.(string)
-		}
+
 		if c, ok := d.GetOk("node2_zone"); ok {
 			cvoDetails.HAParams.Node2Zone = c.(string)
 		}
