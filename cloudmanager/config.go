@@ -55,7 +55,7 @@ func (c *configStruct) clientFun() (*Client, error) {
 			CVSHostName:             "https://staging.api.services.cloud.netapp.com",
 		}
 	} else {
-		return &Client{}, fmt.Errorf("expected environment to be one of [prod stage], %s", c.Environment)
+		return &Client{}, fmt.Errorf("expected environment to be one of [prod stage]: %s", c.Environment)
 	}
 
 	if c.SaSecretKey != "" && c.SaClientID != "" {
