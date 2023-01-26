@@ -74,8 +74,8 @@ The following arguments are supported:
 * `gcp_service_account` - (Required) The gcp_service_account email in order to enable tiering of cold data to Google Cloud Storage.
 * `svm_password` - (Required) The admin password for Cloud Volumes ONTAP.
 * `svm_name` - (Optional) The name of the SVM.
-* `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
-* `workspace_id` - (Optional) The ID of the Cloud Manager workspace where you want to deploy Cloud Volumes ONTAP. If not provided, Cloud Manager uses the first workspace. You can find the ID from the Workspace tab on [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
+* `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
+* `workspace_id` - (Optional) The ID of the Cloud Manager workspace where you want to deploy Cloud Volumes ONTAP. If not provided, Cloud Manager uses the first workspace. You can find the ID from the Workspace tab on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
 * `data_encryption_type` - (Optional) The type of data encryption to use for the working environment: ['GCP', 'NONE']. The default is 'GCP'.
 * `gcp_encryption_parameters` - (Optional) Required if using gcp encryption with custom key. Key format is 'projects/default-project/locations/global/keyRings/test/cryptoKeys/key1'.
 * `gcp_volume_type` - (Optional) The type of the storage for the first data aggregate: ['pd-balanced', 'pd-standard', 'pd-ssd']. The default is 'pd-ssd'

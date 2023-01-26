@@ -343,13 +343,13 @@ func resourceCVSGCPVolumeRead(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	if err := d.Set("service_level", res.ServiceLevel); err != nil {
-		return fmt.Errorf("Error reading volume service_level: %s", err)
+		return fmt.Errorf("error reading volume service_level: %s", err)
 	}
 	if err := d.Set("protocol_types", res.ProtocolTypes); err != nil {
-		return fmt.Errorf("Error reading volume protocol_types: %s", err)
+		return fmt.Errorf("error reading volume protocol_types: %s", err)
 	}
 	if err := d.Set("volume_path", res.CreationToken); err != nil {
-		return fmt.Errorf("Error reading volume path or Creation Token: %s", err)
+		return fmt.Errorf("error reading volume path or Creation Token: %s", err)
 	}
 	network := res.Network
 	index := strings.Index(network, "networks/")
@@ -357,24 +357,24 @@ func resourceCVSGCPVolumeRead(d *schema.ResourceData, meta interface{}) error {
 		network = network[index+len("networks/"):]
 	}
 	if err := d.Set("network", network); err != nil {
-		return fmt.Errorf("Error reading volume network: %s", err)
+		return fmt.Errorf("error reading volume network: %s", err)
 	}
 	if err := d.Set("region", res.Region); err != nil {
-		return fmt.Errorf("Error reading volume region: %s", err)
+		return fmt.Errorf("error reading volume region: %s", err)
 	}
 	snapshotPolicy := flattenSnapshotPolicy(res.SnapshotPolicy)
 	exportPolicy := flattenExportPolicy(res.ExportPolicy)
 	if err := d.Set("snapshot_policy", snapshotPolicy); err != nil {
-		return fmt.Errorf("Error reading volume snapshot_policy: %s", err)
+		return fmt.Errorf("error reading volume snapshot_policy: %s", err)
 	}
 	if len(res.ExportPolicy.Rules) > 0 {
 		if err := d.Set("export_policy", exportPolicy); err != nil {
-			return fmt.Errorf("Error reading volume export_policy: %s", err)
+			return fmt.Errorf("error reading volume export_policy: %s", err)
 		}
 	} else {
 		a := schema.NewSet(schema.HashString, []interface{}{})
 		if err := d.Set("export_policy", a); err != nil {
-			return fmt.Errorf("Error reading volume export_policy: %s", err)
+			return fmt.Errorf("error reading volume export_policy: %s", err)
 		}
 	}
 	return nil

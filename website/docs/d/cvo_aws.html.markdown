@@ -26,7 +26,7 @@ data "netapp-cloudmanager_cvo_aws" "aws-cvo-1" {
 
 The following arguments are supported:
 
-* `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
+* `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
 * `name` - (Required) The name of the cvo aws.
 
 ## Attributes Reference

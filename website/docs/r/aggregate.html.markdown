@@ -31,9 +31,9 @@ resource "netapp-cloudmanager_aggregate" "cl-aggregate" {
 The following arguments are supported:
 
 * `name` - (Required) The name of the new aggregate.
-* `working_environment_id` - (Optional) The public ID of the working environment where the aggregate will be created. This argument is optional if working_environment_name is provided. You can find the ID from a previous create Cloud Volumes ONTAP action as shown in the example, or from the information page of the Cloud Volumes ONTAP working environment on [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
+* `working_environment_id` - (Optional) The public ID of the working environment where the aggregate will be created. This argument is optional if working_environment_name is provided. You can find the ID from a previous create Cloud Volumes ONTAP action as shown in the example, or from the information page of the Cloud Volumes ONTAP working environment on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
 * `working_environment_name` - (Optional) The working environment name where the aggregate will be created. This argument will be ignored if working_environment_id is provided.
-* `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
+* `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
 * `number_of_disks` - (Required) The required number of disks in the new aggregate.
 * `disk_size_size` - (Optional) The required size of the disks. For GB, the unit can be: [100 or 500]. For TB, the unit can be: [1,2,4,8,16]. The default is '1'
 * `disk_size_unit` - (Optional) The disk size unit ['GB' or 'TB']. The default is 'TB'

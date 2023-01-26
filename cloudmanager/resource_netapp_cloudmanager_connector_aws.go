@@ -148,7 +148,7 @@ func resourceOCCMAWS() *schema.Resource {
 }
 
 func resourceOCCMAWSCreate(d *schema.ResourceData, meta interface{}) error {
-	log.Printf("Creating OCCM: %#v", d)
+	log.Printf("Creating AWS OCCM: %#v", d)
 
 	client := meta.(*Client)
 
@@ -170,7 +170,7 @@ func resourceOCCMAWSCreate(d *schema.ResourceData, meta interface{}) error {
 		if occmDetails.ProxyURL != "" {
 			occmDetails.ProxyUserName = o.(string)
 		} else {
-			return fmt.Errorf("Missing proxy_url")
+			return fmt.Errorf("missing proxy_url")
 		}
 	}
 
@@ -178,7 +178,7 @@ func resourceOCCMAWSCreate(d *schema.ResourceData, meta interface{}) error {
 		if occmDetails.ProxyURL != "" {
 			occmDetails.ProxyPassword = o.(string)
 		} else {
-			return fmt.Errorf("Missing proxy_url")
+			return fmt.Errorf("missing proxy_url")
 		}
 	}
 
@@ -188,7 +188,7 @@ func resourceOCCMAWSCreate(d *schema.ResourceData, meta interface{}) error {
 			// read file
 			b, err := ioutil.ReadFile(cFile.(string))
 			if err != nil {
-				return fmt.Errorf("Cannot read certificate file: %s", err)
+				return fmt.Errorf("cannot read certificate file: %s", err)
 			}
 			// endcode certificate
 			encodedCertificate := base64.StdEncoding.EncodeToString(b)
@@ -231,11 +231,11 @@ func resourceOCCMAWSCreate(d *schema.ResourceData, meta interface{}) error {
 
 	d.SetId(res.InstanceID)
 	if err := d.Set("client_id", res.ClientID); err != nil {
-		return fmt.Errorf("Error reading occm client_id: %s", err)
+		return fmt.Errorf("error reading occm client_id: %s", err)
 	}
 
 	if err := d.Set("account_id", res.AccountID); err != nil {
-		return fmt.Errorf("Error reading occm account_id: %s", err)
+		return fmt.Errorf("error reading occm account_id: %s", err)
 	}
 
 	log.Printf("Created occm: %v", res)
@@ -275,11 +275,11 @@ func resourceOCCMAWSRead(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	if res.InstanceId == nil {
-		return fmt.Errorf("Connector %s not found", occmDetails.Name)
+		return fmt.Errorf("connector %s not found", occmDetails.Name)
 	}
 
 	if *res.InstanceId != id {
-		return fmt.Errorf("Expected occm ID %s, Response could not find", id)
+		return fmt.Errorf("expected occm ID %s, Response could not find", id)
 	}
 
 	if occmDetails.Region == "" {
@@ -334,7 +334,7 @@ func resourceOCCMAWSRead(d *schema.ResourceData, meta interface{}) error {
 				exclusion = true
 			}
 		}
-		if exclusion == false {
+		if !exclusion {
 			tagMap := make(map[string]string)
 			tagMap["tag_key"] = *tag.Key
 			tagMap["tag_value"] = *tag.Value
@@ -471,7 +471,7 @@ func resourceOCCMAWSUpdate(d *schema.ResourceData, meta interface{}) error {
 func resourceOCCMAWSImport(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
 	parts := strings.Split(d.Id(), ":")
 	if len(parts) != 2 {
-		return []*schema.ResourceData{}, fmt.Errorf("Wrong format of resource: %s. Please follow 'client_id/connector_id'", d.Id())
+		return []*schema.ResourceData{}, fmt.Errorf("wrong format of resource: %s. Please follow 'client_id/connector_id'", d.Id())
 	}
 
 	d.SetId(parts[1])

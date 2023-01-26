@@ -86,7 +86,7 @@ The following arguments are supported:
 * `service_level` - (Required) ['low' or 'medium' or 'high'].
 * `network`  - (Required) The network VPC of the volume.
 * `account` - (Required) The name of the account.
-* `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
+* `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
 * `working_environment_name` - (Required) The working environment name.
 * `export_policy` - (Optional) The rules of the export policy.
 * `snapshot_policy` - (Optional) The set of Snapshot Policy attributes for volume.

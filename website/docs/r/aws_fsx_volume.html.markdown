@@ -56,7 +56,7 @@ The following arguments are supported:
 * `svm_name` - (Optional) The name of the SVM. The default SVM name is used, if a name isn't provided.
 * `size` - (Required) The volume size, supported with decimal numbers.
 * `size_unit` - (Required) ['Byte' or 'KB' or 'MB' or 'GB' or 'TB'].
-* `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous created Connector action as shown in the example, or from the Connector tab on [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
+* `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous created Connector action as shown in the example, or from the Connector tab on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
 * `enable_storage_efficiency` - (Optional) Enable storage efficiency.
 * `export__policy_type` - (Optional) The export policy type. (NFS protocol parameters)
 * `export_policy_ip` - (Optional) Custom export policy list of IPs. (NFS protocol parameters)

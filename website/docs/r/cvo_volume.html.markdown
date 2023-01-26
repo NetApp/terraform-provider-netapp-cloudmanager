@@ -93,13 +93,13 @@ The following arguments are supported:
 * `size` - (Required) The volume size, supported with decimal numbers.
 * `size_unit` - (Required) ['Byte' or 'KB' or 'MB' or 'GB' or 'TB'].
 * `provider_volume_type` - (Required) The underlying cloud provider volume type. For AWS: ['gp3', 'gp2', 'io1', 'st1', 'sc1'] (ebs_volume_type on AWS CVO). For Azure: ['Premium_LRS','Standard_LRS','StandardSSD_LRS', 'Premium_ZRS'] (storage_type on Azure CVO). For GCP: ['pd-balanced', 'pd-ssd','pd-standard'] (gcp_volume_type on GCP CVO). For onPrem: 'onprem'.
-* `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
+* `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
 * `enable_thin_provisioning` - (Optional) Enable thin provisioning.
 * `enable_compression` - (Optional) Enable compression.
 * `enable_deduplication` - (Optional) Enable deduplication.
 * `aggregate_name ` - (Optional) The aggregate in which the volume will be created. If not provided, Cloud Manager chooses the best aggregate for you.
 * `volume_protocol` - (Optional) The protocol for the volume: ['nfs', 'cifs', 'iscsi']. This affects the provided parameters. The default is 'nfs'
-* `working_environment_id` - (Optional) The public ID of the working environment where the volume will be created. The ID can be optional if working_environment_name is provided. You can find the ID from the previous create Cloud Volumes ONTAP action as shown in the example, or from the Information page of the Cloud Volumes ONTAP working environment on [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
+* `working_environment_id` - (Optional) The public ID of the working environment where the volume will be created. The ID can be optional if working_environment_name is provided. You can find the ID from the previous create Cloud Volumes ONTAP action as shown in the example, or from the Information page of the Cloud Volumes ONTAP working environment on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
 * `working_environment_name` - (Optional) The working environment name where the aggregate will be created. It will be ignored if working_environment_id is provided.
 * `capacity_tier` - (Optional) The volume's capacity tier for tiering cold data to object storage: ['S3', 'Blob', 'cloudStorage']. The default values for each cloud provider are as follows: Amazon => 'S3', Azure => 'Blob', GCP => 'cloudStorage'. If none, the capacity tier won't be set on volume creation.
 * `export_policy_name` - (Optional) The export policy name. (NFS protocol parameters)
