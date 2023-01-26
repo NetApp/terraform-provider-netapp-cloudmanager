@@ -63,7 +63,7 @@ The following arguments are supported:
 Options
 * `associate_public_ip_address` - (Optional) Indicates whether to associate a public IP address to the instance. If not provided, the association will be done based on the subnet's configuration.
 * `enable_termination_protection` - (Optional) Indicates whether to enable termination protection on the instance, default is false.
-* `account_id` - (Optional) The NetApp account ID that the Connector will be associated with. If not provided, Cloud Manager uses the first account. If no account exists, Cloud Manager creates a new account. You can find the account ID in the account tab of Cloud Manager at [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
+* `account_id` - (Optional) The NetApp account ID that the Connector will be associated with. If not provided, Cloud Manager uses the first account. If no account exists, Cloud Manager creates a new account. You can find the account ID in the account tab of Cloud Manager at [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
 
 The `aws_tag` block supports the following:
 * `tag_key` - (Required) The key of the tag.

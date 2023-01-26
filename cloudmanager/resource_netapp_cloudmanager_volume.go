@@ -624,7 +624,9 @@ func resourceCVOVolumeUpdate(d *schema.ResourceData, meta interface{}) error {
 		}
 		volume.ExportPolicyInfo.Ips = ips
 	}
-
+	if v, ok := d.GetOk("svm_name"); ok {
+		svm = v.(string)
+	}
 	weInfo, err := client.getWorkingEnvironmentDetail(d, clientID)
 	if err != nil {
 		return fmt.Errorf("cannot find working environment")

@@ -70,7 +70,7 @@ The following arguments are supported:
 * `subscription`  - (Required) The name of the subscription.
 * `resource_groups` - (Required) The name of the resource group in Azure where the volume will be created.
 * `capacity_pool` - (Required) The name of the capacity pool.
-* `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
+* `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
 * `working_environment_name` - (Required) The working environment name.
 * `export_policy` - (Optional) The rules of the export policy.
 

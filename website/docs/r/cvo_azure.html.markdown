@@ -125,12 +125,12 @@ The following arguments are supported:
 * `subnet_id` - (Required) The name of the subnet for the Cloud Volumes ONTAP system.
 * `vnet_id` - (Required) The name of the virtual network.
 * `vnet_resource_group` - (Required) The resource group in Azure associated to the virtual network.
-* `workspace_id` - (Optional) The ID of the Cloud Manager workspace where you want to deploy Cloud Volumes ONTAP. If not provided, Cloud Manager uses the first workspace. You can find the ID from the Workspace tab on [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
-* `data_encryption_type` - (Optional) The type of encryption to use for the working environment: ['AZURE', 'ONTAP', 'NONE']. The default is 'AZURE'.
+* `workspace_id` - (Optional) The ID of the Cloud Manager workspace where you want to deploy Cloud Volumes ONTAP. If not provided, Cloud Manager uses the first workspace. You can find the ID from the Workspace tab on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
+* `data_encryption_type` - (Optional) The type of encryption to use for the working environment: ['AZURE', 'NONE']. The default is 'AZURE'.
 * `storage_type` - (Optional) The type of storage for the first data aggregate: ['Premium_LRS', 'Standard_LRS', 'StandardSSD_LRS', 'Premium_ZRS']. The default is 'Premium_LRS'
 * `svm_password` - (Required) The admin password for Cloud Volumes ONTAP.
 * `svm_name` - (Optional) The name of the SVM.
-* `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
+* `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
 * `resource_group` - (Optional) The resource_group where Cloud Volumes ONTAP will be created. If not provided, Cloud Manager creates the resource group (name of the working environment with suffix '-rg').
 * `allow_deploy_in_existing_rg` - (Optional) Indicates if to allow creation in existing resource group, Default is false.
 * `cidr` - (Optional) The CIDR of the VNET. If not provided, resource needs az login to authorize and fetch the cidr details from Azure.

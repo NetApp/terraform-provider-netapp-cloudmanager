@@ -24,9 +24,9 @@ func (c *configStruct) clientFun() (*Client, error) {
 	if c.Environment == "prod" {
 		log.Print("Prod Environment")
 		client = &Client{
-			CloudManagerHost:     "https://cloudmanager.cloud.netapp.com",
-			AuthHost:             "https://netapp-cloud-account.auth0.com/oauth/token",
-			SaAuthHost:           "https://cloudmanager.cloud.netapp.com/auth/oauth/token",
+			CloudManagerHost:     "https://api.bluexp.netapp.com",
+			AuthHost:             "https://api.bluexp.netapp.com/auth/oauth/token",
+			SaAuthHost:           "https://api.bluexp.netapp.com/auth/oauth/token",
 			Audience:             "https://api.cloud.netapp.com",
 			Auth0Client:          "Mu0V1ywgYteI6w1MbD15fKfVIUrNXGWC",
 			AMIFilter:            "Setup-As-Service-AMI-Prod*",
@@ -35,14 +35,14 @@ func (c *configStruct) clientFun() (*Client, error) {
 			GCPCompute:           "https://compute.googleapis.com",
 			GCPImageProject:      "netapp-cloudmanager",
 			GCPImageFamily:       "cloudmanager",
-			CVSHostName:          "https://api.services.cloud.netapp.com",
+			CVSHostName:          "https://api.bluexp.netapp.com/cloud-volumes/cvs",
 		}
 	} else if c.Environment == "stage" {
 		log.Print("Stage Environment")
 		client = &Client{
-			CloudManagerHost:        "https://staging.cloudmanager.cloud.netapp.com",
-			AuthHost:                "https://staging-netapp-cloud-account.auth0.com/oauth/token",
-			SaAuthHost:              "https://staging.cloudmanager.cloud.netapp.com/auth/oauth/token",
+			CloudManagerHost:        "https://staging.api.bluexp.netapp.com",
+			AuthHost:                "https://staging.api.bluexp.netapp.com/auth/oauth/token",
+			SaAuthHost:              "https://staging.api.bluexp.netapp.com/auth/oauth/token",
 			Audience:                "https://api.cloud.netapp.com",
 			Auth0Client:             "O6AHa7kedZfzHaxN80dnrIcuPBGEUvEv",
 			AMIFilter:               "Setup-As-Service-AMI-*",
@@ -52,10 +52,10 @@ func (c *configStruct) clientFun() (*Client, error) {
 			GCPImageProject:         "tlv-automation",
 			GCPImageFamily:          "occm-automation",
 			AzureEnvironmentForOCCM: "stage",
-			CVSHostName:             "https://staging.api.services.cloud.netapp.com",
+			CVSHostName:             "https://staging.api.bluexp.netapp.com/cloud-volumes/cvs",
 		}
 	} else {
-		return &Client{}, fmt.Errorf("expected environment to be one of [prod stage], %s", c.Environment)
+		return &Client{}, fmt.Errorf("expected environment to be one of [prod stage]: %s", c.Environment)
 	}
 
 	if c.SaSecretKey != "" && c.SaClientID != "" {

@@ -70,12 +70,12 @@ The following arguments are supported:
 
 * `name` - (Required) The name of the Cloud Volumes ONTAP working environment.
 * `project_id` - (Required) The ID of the GCP project.
-* `zone` - (Required) The zone of the region where the working environment will be created.
+* `zone` - (Optional) The zone of the region where the working environment will be created. It is required in single.
 * `gcp_service_account` - (Required) The gcp_service_account email in order to enable tiering of cold data to Google Cloud Storage.
 * `svm_password` - (Required) The admin password for Cloud Volumes ONTAP.
 * `svm_name` - (Optional) The name of the SVM.
-* `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
-* `workspace_id` - (Optional) The ID of the Cloud Manager workspace where you want to deploy Cloud Volumes ONTAP. If not provided, Cloud Manager uses the first workspace. You can find the ID from the Workspace tab on [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
+* `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
+* `workspace_id` - (Optional) The ID of the Cloud Manager workspace where you want to deploy Cloud Volumes ONTAP. If not provided, Cloud Manager uses the first workspace. You can find the ID from the Workspace tab on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
 * `data_encryption_type` - (Optional) The type of data encryption to use for the working environment: ['GCP', 'NONE']. The default is 'GCP'.
 * `gcp_encryption_parameters` - (Optional) Required if using gcp encryption with custom key. Key format is 'projects/default-project/locations/global/keyRings/test/cryptoKeys/key1'.
 * `gcp_volume_type` - (Optional) The type of the storage for the first data aggregate: ['pd-balanced', 'pd-standard', 'pd-ssd']. The default is 'pd-ssd'
@@ -100,7 +100,7 @@ The following arguments are supported:
 * `is_ha` - (Optional) Indicate whether the working environment is an HA pair or not [true, false]. The default is false.
 * `platform_serial_number_node1` - (Optional) For HA BYOL, the serial number for the first node.
 * `platform_serial_number_node2` - (Optional) For HA BYOL, the serial number for the second node.
-* `node1_zone` - (Optional)  Zone for node 1.
+* `node1_zone` - (Optional)  Zone for node 1. It will also be used in the 'zone' if it is not provided in HA.
 * `node2_zone` - (Optional) Zone for node 2.
 * `mediator_zone` - (Optional) Zone for mediator.
 * `vpc0_node_and_data_connectivity` - (Optional) VPC path for nic1, required for node and data connectivity. If using shared VPC, netwrok_project_id must be provided.

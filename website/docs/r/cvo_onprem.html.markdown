@@ -35,8 +35,8 @@ The following arguments are supported:
 * `cluster_address` - (Required) The ip address of the cluster management interface.
 * `cluster_user_name` - (Required) The admin user name for the onprem ONTAP system.
 * `cluster_password` - (Required) The admin password for the onprem ONTAP system.
-* `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
-* `workspace_id` - (Optional) The ID of the Cloud Manager workspace where you want to deploy Cloud Volumes ONTAP. If not provided, Cloud Manager uses the first workspace. You can find the ID from the Workspace tab on [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
+* `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
+* `workspace_id` - (Optional) The ID of the Cloud Manager workspace where you want to deploy Cloud Volumes ONTAP. If not provided, Cloud Manager uses the first workspace. You can find the ID from the Workspace tab on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
 * `location` - (Required) The type of location to use for the working environment: ['ON_PREM', 'AZURE', 'AWS', 'SOFTLAYER', 'GOOGLE', 'CLOUD_TIERING'].
 
 ## Attributes Reference

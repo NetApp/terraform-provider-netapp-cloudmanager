@@ -44,7 +44,7 @@ The following arguments are supported:
 * `source_volume_name` - (Required) The name of the source volume.
 * `destination_volume_name` - (Required) The name of the destination volume to be created for snapmirror relationship.
 * `tenant_id` - (Required) The NetApp account ID that the Connector will be associated with. To be used only when using FSX.
-* `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://cloudmanager.netapp.com](https://cloudmanager.netapp.com).
+* `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
 * `policy` - (Optional) The SnapMirror policy name. The default is 'MirrorAllSnapshots'.
 * `schedule` - (Optional) Schedule name. The default is '1hour'.
 * `max_transfer_rate` - (Required) Maximum transfer rate limit (KB/s). Use 0 for no limit, otherwise use number between 1024 and 2,147,482,624.  The default is 100000.

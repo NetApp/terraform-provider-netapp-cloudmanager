@@ -1,4 +1,12 @@
-## 23.01.0
+## 23.1.1
+NEW ENHANCEMENTS:
+* BlueXP update domains adjustment
+
+BUG FIXES:
+* resource/cvo_gcp:`zone` is not required in HA case. `node1_zone` will be used when `zone` is not provided in HA.
+* resource/cvo_volume: update the volume with the proper `svm_name`
+
+## 23.1.0
 NEW FEATURES:
 * resource/cvo_volume: add `tags` option.
 * resource/cvo for AWS, AZURE and GCP: add `worm_retention_period_length` and `worm_retention_period_unit` to support WORM for creating a CVO.
