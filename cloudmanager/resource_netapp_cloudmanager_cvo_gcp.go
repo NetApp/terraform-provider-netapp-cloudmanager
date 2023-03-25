@@ -342,7 +342,7 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 	cvoDetails := createCVOGCPDetails{}
 
 	cvoDetails.Name = d.Get("name").(string)
-	log.Print("Creat cvo name ", cvoDetails.Name)
+	log.Print("Create cvo name ", cvoDetails.Name)
 	cvoDetails.GCPServiceAccount = d.Get("gcp_service_account").(string)
 	cvoDetails.DataEncryptionType = d.Get("data_encryption_type").(string)
 	cvoDetails.WorkspaceID = d.Get("workspace_id").(string)

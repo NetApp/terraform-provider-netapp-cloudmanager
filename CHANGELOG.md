@@ -1,3 +1,7 @@
+## 23.1.2
+BUG FIXES:
+* cifs_server: fix bug on reading cifs based on the proper svm
+
 ## 23.1.1
 NEW ENHANCEMENTS:
 * BlueXP update domains adjustment

@@ -67,10 +67,8 @@ func (c *Client) getCIFS(cifs cifsRequest, clientID string) ([]cifsResponse, err
 	if err != nil {
 		return result, err
 	}
-	baseURL = fmt.Sprintf("%s/working-environments/%s/cifs", baseURL, cifs.WorkingEnvironmentID)
-	if cifs.SvmName != "" {
-		baseURL += "?svm=" + cifs.SvmName
-	}
+
+	baseURL = fmt.Sprintf("%s/working-environments/%s/cifs?svm=%s", baseURL, cifs.WorkingEnvironmentID, cifs.SvmName)
 	hostType := "CloudManagerHost"
 	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {

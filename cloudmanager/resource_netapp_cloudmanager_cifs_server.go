@@ -161,24 +161,22 @@ func resourceCVOCIFSCreate(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceCVOCIFSRead(d *schema.ResourceData, meta interface{}) error {
-	log.Printf("Fetching volume: %#v", d)
+	log.Printf("Fetching cifs: %#v", d)
 
 	client := meta.(*Client)
 	clientID := d.Get("client_id").(string)
 	cifs := cifsRequest{}
 
-	if v, ok := d.GetOk("working_environment_id"); ok {
-		cifs.WorkingEnvironmentID = v.(string)
-	} else {
-		workingEnvDetail, err := client.getWorkingEnvironmentDetail(d, clientID)
-		if err != nil {
-			return err
-		}
-		cifs.WorkingEnvironmentID = workingEnvDetail.PublicID
+	workingEnvDetail, err := client.getWorkingEnvironmentDetail(d, clientID)
+	if err != nil {
+		return err
 	}
+	cifs.WorkingEnvironmentID = workingEnvDetail.PublicID
 
 	if v, ok := d.GetOk("svm_name"); ok {
 		cifs.SvmName = v.(string)
+	} else {
+		cifs.SvmName = workingEnvDetail.SvmName
 	}
 	res, err := client.getCIFS(cifs, clientID)
 	if err != nil {
@@ -226,18 +224,20 @@ func resourceCVOCIFSDelete(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceCVOCIFSExists(d *schema.ResourceData, meta interface{}) (bool, error) {
-	log.Printf("Fetching cifs: %#v", d)
+	log.Printf("Fetching existing cifs: %#v", d)
 	client := meta.(*Client)
 	clientID := d.Get("client_id").(string)
 	cifs := cifsRequest{}
 
 	workingEnvDetail, err := client.getWorkingEnvironmentDetail(d, clientID)
 	if err != nil {
-		return false, nil
+		return false, err
 	}
 	cifs.WorkingEnvironmentID = workingEnvDetail.PublicID
 	if v, ok := d.GetOk("svm_name"); ok {
 		cifs.SvmName = v.(string)
+	} else {
+		cifs.SvmName = workingEnvDetail.SvmName
 	}
 	res, err := client.getCIFS(cifs, clientID)
 	if err != nil {
