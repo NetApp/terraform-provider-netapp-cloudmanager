@@ -1,6 +1,14 @@
+## 23.1.2
+NEW ENHANCEMENTS:
+* resource/cvo for AZURE and GCP: support two new capacity based package 'Edge' and 'Optimized' in `capacity_package_name`
+
+BUG FIXES:
+* cifs_server: fix bug on reading cifs based on the proper svm
+
 ## 23.1.1
 NEW ENHANCEMENTS:
 * BlueXP update domains adjustment
+* Update AZURE document
 
 BUG FIXES:
 * resource/cvo_gcp:`zone` is not required in HA case. `node1_zone` will be used when `zone` is not provided in HA.

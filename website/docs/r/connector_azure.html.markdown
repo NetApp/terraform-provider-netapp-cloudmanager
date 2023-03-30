@@ -10,9 +10,9 @@ description: |-
 
 Provides a netapp-cloudmanager_connector_azure resource. This can be used to create a new Cloud Manager Connector in AZURE.
 The environment needs to be configured with the proper credentials before it can be used (az login).
-The minimum required policy can be found at [Connector deployment policy for Azure](https://s3.amazonaws.com/occm-sample-policies/Policy_for_Setup_As_Service_Azure.json)
+The minimum required policy can be found at [Connector deployment policy for Azure](https://docs.netapp.com/us-en/cloud-manager-setup-admin/task-creating-connectors-azure.html#set-up-permissions-for-your-azure-account)
 
-In order for the Connector to create a Cloud Volumes ONTAP system, it requires a role assignment. This can be done with azurerm provider. The following role is required: [Cloud Manager policy for Azure](https://occm-sample-policies.s3.amazonaws.com/Policy_for_cloud_Manager_Azure_3.8.7.json)
+In order for the Connector to create a Cloud Volumes ONTAP system, it requires a role assignment. This can be done with azurerm provider. The following role is required: [Cloud Manager policy for Azure](https://docs.netapp.com/us-en/cloud-manager-setup-admin/reference-permissions-azure.html#custom-role-permissions)
 
 
 <!---
