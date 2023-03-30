@@ -1,4 +1,8 @@
-## 23.1.2
+## 23.3.1
+BUG FIXES:
+* Documenation formate fix
+
+## 23.3.0
 NEW ENHANCEMENTS:
 * resource/cvo for AZURE and GCP: support two new capacity based package 'Edge' and 'Optimized' in `capacity_package_name`
 

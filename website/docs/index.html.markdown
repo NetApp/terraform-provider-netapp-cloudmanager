@@ -56,10 +56,10 @@ The following arguments are used to configure the netapp-cloudmanager provider:
 ## Configure AWS Credentials
 AWS looks for credentials in the following orders:
 
-Environment Variables
-Shared Credentials file
-Shared Configuration file (if SharedConfig is enabled)
-EC2 Instance Metadata (credentials only)
+1. Environment Variables
+2. Shared Credentials file
+3. Shared Configuration file (if SharedConfig is enabled)
+4. EC2 Instance Metadata (credentials only)
 
 If neither aws_profile nor aws_profile_file_path is specified, the provider look for cred in the mentioned order.
 If one of aws_profile and aws_profile_file_path is specified, the unspecified option has default value:
@@ -79,18 +79,18 @@ environment variable is also not set.
 `az login`
 ### Option 2: Define environment variables
 Service principal with client secret
-`AZURE_CLIENT_ID` - ID of an Azure AD application
-`AZURE_TENANT_ID` - ID of the application's Azure AD tenant
-`AZURE_CLIENT_SECRET` - A client secret that was generated for the App Registration
-`AZURE_SUBSCRIPTION_ID` - Subscription identifier
+- `AZURE_CLIENT_ID` - ID of an Azure AD application
+- `AZURE_TENANT_ID` - ID of the application's Azure AD tenant
+- `AZURE_CLIENT_SECRET` - A client secret that was generated for the App Registration
+- `AZURE_SUBSCRIPTION_ID` - Subscription identifier
 ```
-export AZURE_TENANT_ID="<active_directory_tenant_id"
-export AZURE_CLIENT_ID="<service_principal_appid>"
-export AZURE_CLIENT_SECRET="<service_principal_password>"
-export AZURE_SUBSCRIPTION_ID="<subscription identifier>"
+export AZURE_TENANT_ID="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+export AZURE_CLIENT_ID="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+export AZURE_CLIENT_SECRET="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+export AZURE_SUBSCRIPTION_ID="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 ```
 
-By default, the provider will try to authenticate with Azure the CLI (`az login`) and then using environment variables.   This can be configured with `azure_auth_methods`.
+By default, the provider will try to authenticate with Azure the CLI (`az login`) and then using environment variables.   This can be configured with `azure_auth_methods`
 (az login may set the env variables, so maybe this is redundant.)
 ## Required Privileges
 
