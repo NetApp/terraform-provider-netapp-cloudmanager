@@ -1,4 +1,12 @@
-## 23.1.2
+## 23.3.1
+BUG FIXES:
+* Documenation formate fix
+
+NEW ENHANCEMENTS:
+* resource/cvo for AZURE, GCP and AWS: change `retries` default to 75 and 100 for HA.
+* resource/connector for AZURE, GCP and AWS: add `retries` option.
+
+## 23.3.0
 NEW ENHANCEMENTS:
 * resource/cvo for AZURE and GCP: support two new capacity based package 'Edge' and 'Optimized' in `capacity_package_name`
 

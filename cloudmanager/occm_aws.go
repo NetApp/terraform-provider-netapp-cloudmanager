@@ -338,7 +338,7 @@ func (c *Client) createAccount(clientID string) (string, error) {
 	return result.AccountID, nil
 }
 
-func (c *Client) createAWSInstance(occmDetails createOCCMDetails, clientID string) (string, error) {
+func (c *Client) createAWSInstance(occmDetails createOCCMDetails, clientID string, retries int) (string, error) {
 
 	instanceID, err := c.CallAWSInstanceCreate(occmDetails)
 	if err != nil {
@@ -348,7 +348,6 @@ func (c *Client) createAWSInstance(occmDetails createOCCMDetails, clientID strin
 	log.Print("Sleep for 2 minutes")
 	time.Sleep(time.Duration(120) * time.Second)
 
-	retries := 26
 	for {
 		occmResp, err := c.checkOCCMStatus(clientID)
 		if err != nil {
@@ -390,7 +389,7 @@ func (c *Client) getAWSInstance(occmDetails createOCCMDetails, id string) (ec2.I
 	return ec2.Instance{}, nil
 }
 
-func (c *Client) createOCCM(occmDetails createOCCMDetails, proxyCertificates []string, clientID string) (OCCMMResult, error) {
+func (c *Client) createOCCM(occmDetails createOCCMDetails, proxyCertificates []string, clientID string, retries int) (OCCMMResult, error) {
 	log.Printf("createOCCM %s %s", occmDetails.Name, clientID)
 	if occmDetails.AMI == "" {
 
@@ -426,7 +425,7 @@ func (c *Client) createOCCM(occmDetails createOCCMDetails, proxyCertificates []s
 	var result OCCMMResult
 	result.ClientID = newClientID
 	result.AccountID = c.AccountID
-	instanceID, err := c.createAWSInstance(occmDetails, newClientID)
+	instanceID, err := c.createAWSInstance(occmDetails, newClientID, retries)
 	if err != nil {
 		return OCCMMResult{}, err
 	}

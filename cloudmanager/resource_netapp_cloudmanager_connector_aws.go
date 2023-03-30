@@ -143,6 +143,11 @@ func resourceOCCMAWS() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"retries": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Default:  150,
+			},
 		},
 	}
 }
@@ -222,7 +227,7 @@ func resourceOCCMAWSCreate(d *schema.ResourceData, meta interface{}) error {
 		}
 	}
 
-	res, err := client.createOCCM(occmDetails, proxyCertificates, "")
+	res, err := client.createOCCM(occmDetails, proxyCertificates, "", d.Get("retries").(int))
 
 	if err != nil {
 		log.Print("Error creating instance")

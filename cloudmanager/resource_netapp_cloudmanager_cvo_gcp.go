@@ -326,7 +326,7 @@ func resourceCVOGCP() *schema.Resource {
 				Type:     schema.TypeInt,
 				Optional: true,
 				ForceNew: true,
-				Default:  60,
+				Default:  75,
 			},
 		},
 	}

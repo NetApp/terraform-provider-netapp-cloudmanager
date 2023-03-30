@@ -157,7 +157,7 @@ func (c *Client) registerAgentTOServiceForGCP(registerAgentTOServiceRequest regi
 	return result, nil
 }
 
-func (c *Client) deployGCPVM(occmDetails createOCCMDetails, proxyCertificates []string, clientID string) (OCCMMResult, error) {
+func (c *Client) deployGCPVM(occmDetails createOCCMDetails, proxyCertificates []string, clientID string, retries int) (OCCMMResult, error) {
 	var registerAgentTOService registerAgentTOServiceRequest
 	registerAgentTOService.Name = occmDetails.Name
 	registerAgentTOService.Placement.Region = occmDetails.Region
@@ -295,7 +295,6 @@ func (c *Client) deployGCPVM(occmDetails createOCCMDetails, proxyCertificates []
 	log.Print("Sleep for 2 minutes")
 	time.Sleep(time.Duration(120) * time.Second)
 
-	retries := 26
 	for {
 		occmResp, err := c.checkOCCMStatus(newClientID)
 		if err != nil {

@@ -257,7 +257,7 @@ func (c *Client) createCVOAWS(cvoDetails createCVOAWSDetails, clientID string) (
 		CreationRetries = c.Retries
 	} else if cvoDetails.IsHA == true {
 		baseURL = "/occm/api/aws/ha/working-environments"
-		CreationRetries = c.Retries + 30
+		CreationRetries = c.Retries + 25
 	}
 
 	hostType := "CloudManagerHost"
