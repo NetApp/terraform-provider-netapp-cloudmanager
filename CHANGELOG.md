@@ -1,4 +1,7 @@
 ## 23.1.2
+NEW ENHANCEMENTS:
+* resource/cvo for AZURE and GCP: support two new capacity based package 'Edge' and 'Optimized' in `capacity_package_name`
+
 BUG FIXES:
 * cifs_server: fix bug on reading cifs based on the proper svm
 

@@ -92,7 +92,7 @@ func resourceCVOGCP() *schema.Resource {
 			"capacity_package_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Essential", "Professional", "Freemium"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"Essential", "Professional", "Freemium", "Edge", "Optimized"}, false),
 			},
 			"provided_license": {
 				Type:     schema.TypeString,
