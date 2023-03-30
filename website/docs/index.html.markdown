@@ -75,10 +75,22 @@ environment variable is also not set.
 
 
 ## Configure Azure Credentials
-Refer to:
-https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs
+### Option 1: Sign in with Azure CLI
+`az login`
+### Option 2: Define environment variables
+Service principal with client secret
+`AZURE_CLIENT_ID` - ID of an Azure AD application
+`AZURE_TENANT_ID` - ID of the application's Azure AD tenant
+`AZURE_CLIENT_SECRET` - A client secret that was generated for the App Registration
+`AZURE_SUBSCRIPTION_ID` - Subscription identifier
+```
+export AZURE_TENANT_ID="<active_directory_tenant_id"
+export AZURE_CLIENT_ID="<service_principal_appid>"
+export AZURE_CLIENT_SECRET="<service_principal_password>"
+export AZURE_SUBSCRIPTION_ID="<subscription identifier>"
+```
 
-By default, the provider will try to authenticate with Azure using environment variables and then the CLI (`az login`).   This can be configured with `azure_auth_methods`.
+By default, the provider will try to authenticate with Azure the CLI (`az login`) and then using environment variables.   This can be configured with `azure_auth_methods`.
 (az login may set the env variables, so maybe this is redundant.)
 ## Required Privileges
 

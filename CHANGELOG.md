@@ -8,6 +8,7 @@ BUG FIXES:
 ## 23.1.1
 NEW ENHANCEMENTS:
 * BlueXP update domains adjustment
+* Update AZURE document
 
 BUG FIXES:
 * resource/cvo_gcp:`zone` is not required in HA case. `node1_zone` will be used when `zone` is not provided in HA.
