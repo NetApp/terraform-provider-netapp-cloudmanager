@@ -142,11 +142,6 @@ func resourceOCCMAzure() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
-			"retries": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				Default:  150,
-			},
 		},
 	}
 }
@@ -228,7 +223,7 @@ func resourceOCCMAzureCreate(d *schema.ResourceData, meta interface{}) error {
 		occmDetails.StorageAccount = o.(string)
 	}
 
-	res, err := client.createOCCMAzure(occmDetails, proxyCertificates, "", d.Get("retries").(int))
+	res, err := client.createOCCMAzure(occmDetails, proxyCertificates, "")
 	if err != nil {
 		log.Print("Error creating instance")
 		return err

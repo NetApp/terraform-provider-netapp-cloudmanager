@@ -65,7 +65,7 @@ The following arguments are supported:
 * `associate_public_ip_address` - (Optional) Indicates whether to associate the public IP address to the virtual machine.
 * `account_id` - (Optional) The NetApp account ID that the Connector will be associated with. If not provided, Cloud Manager uses the first account. If no account exists, Cloud Manager creates a new account. You can find the account ID in the account tab of Cloud Manager at [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
 * `storage_account` - (Optional) The storage account can be created automatically. When `storage_account` is not set, the name is constructed by appending 'sa' to the connector `name`. Storage account name must be between 3 and 24 characters in length and use numbers and lower-case letters only.
-* `retries` - (Optional) The number of attempts to wait for the completion of creating the connector with 30 seconds apart for each attempt. The default is '150'.
+
 
 ## Attributes Reference
 

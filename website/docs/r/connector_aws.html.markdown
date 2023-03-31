@@ -59,15 +59,15 @@ The following arguments are supported:
 * `proxy_user_name` - (Optional) The proxy user name, if using a proxy to connect to the internet.
 * `proxy_password` - (Optional) The proxy password, if using a proxy to connect to the internet.
 * `proxy_certificates` - (Optional) The proxy certificates. A list of certificate file names.
+
+Options
 * `associate_public_ip_address` - (Optional) Indicates whether to associate a public IP address to the instance. If not provided, the association will be done based on the subnet's configuration.
 * `enable_termination_protection` - (Optional) Indicates whether to enable termination protection on the instance, default is false.
 * `account_id` - (Optional) The NetApp account ID that the Connector will be associated with. If not provided, Cloud Manager uses the first account. If no account exists, Cloud Manager creates a new account. You can find the account ID in the account tab of Cloud Manager at [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
-* `retries` - (Optional) The number of attempts to wait for the completion of creating the connector with 30 seconds apart for each attempt. The default is '150'.
 
 The `aws_tag` block supports the following:
 * `tag_key` - (Required) The key of the tag.
 * `tag_value` - (Required) The tag value.
-
 
 ## Attributes Reference
 

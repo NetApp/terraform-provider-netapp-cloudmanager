@@ -1,4 +1,9 @@
-## 23.3.1
+## 23.3.3
+BUG FIXES:
+* resource/connector: revert the retries change
+* resource/cvo: revert the update values on the retries parameter
+
+## 23.3.2
 BUG FIXES:
 * Documenation formate fix
 

@@ -225,7 +225,7 @@ func (c *Client) createCVOAzure(cvoDetails createCVOAzureDetails, clientID strin
 		CreationRetries = c.Retries
 	} else if cvoDetails.IsHA {
 		baseURL = "/occm/api/azure/ha/working-environments"
-		CreationRetries = c.Retries + 25
+		CreationRetries = c.Retries + 30
 	}
 
 	log.Print(baseURL)

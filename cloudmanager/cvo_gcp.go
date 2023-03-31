@@ -136,7 +136,7 @@ func (c *Client) createCVOGCP(cvoDetails createCVOGCPDetails, clientID string) (
 	if cvoDetails.IsHA == false {
 		CreationRetries = c.Retries
 	} else if cvoDetails.IsHA == true {
-		CreationRetries = c.Retries + 25
+		CreationRetries = c.Retries + 30
 	}
 
 	err = c.waitOnCompletion(onCloudRequestID, "CVO", "create", CreationRetries, 60, clientID)
