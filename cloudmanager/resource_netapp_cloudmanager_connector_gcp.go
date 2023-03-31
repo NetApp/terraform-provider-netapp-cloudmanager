@@ -155,11 +155,6 @@ func resourceOCCMGCP() *schema.Resource {
 					Type: schema.TypeString,
 				},
 			},
-			"retries": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				Default:  150,
-			},
 		},
 	}
 }
@@ -249,7 +244,7 @@ func resourceOCCMGCPCreate(d *schema.ResourceData, meta interface{}) error {
 		occmDetails.Tags = tags
 	}
 
-	res, err := client.deployGCPVM(occmDetails, proxyCertificates, "", d.Get("retries").(int))
+	res, err := client.deployGCPVM(occmDetails, proxyCertificates, "")
 	if err != nil {
 		log.Print("Error creating instance")
 		return err

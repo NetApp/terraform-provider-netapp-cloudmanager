@@ -73,7 +73,7 @@ func (c *Client) registerAgentTOServiceForAzure(registerAgentTOServiceRequest re
 	return result, nil
 }
 
-func (c *Client) createOCCMAzure(occmDetails createOCCMDetails, proxyCertificates []string, clientID string, retries int) (OCCMMResult, error) {
+func (c *Client) createOCCMAzure(occmDetails createOCCMDetails, proxyCertificates []string, clientID string) (OCCMMResult, error) {
 	log.Print("createOCCMAzure")
 	var registerAgentTOService registerAgentTOServiceRequest
 	registerAgentTOService.Name = occmDetails.Name
@@ -133,6 +133,7 @@ func (c *Client) createOCCMAzure(occmDetails createOCCMDetails, proxyCertificate
 	log.Print("Sleep for 2 minutes")
 	time.Sleep(time.Duration(120) * time.Second)
 
+	retries := 26
 	for {
 		occmResp, err := c.checkOCCMStatus(newClientID)
 		if err != nil {
