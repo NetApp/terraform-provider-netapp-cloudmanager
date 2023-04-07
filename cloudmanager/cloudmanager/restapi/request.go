@@ -75,7 +75,7 @@ func (r *Request) BuildHTTPReq(host string, token string, audience string, baseU
 	var err error
 
 	// authenticating separately for GCP calls
-	if gcpType == true {
+	if gcpType {
 		if r.Method == "POST" {
 			if paramsNil {
 				req, err = http.NewRequest(r.Method, url, bytes.NewReader([]byte(r.GCPDeploymentTemplate)))
