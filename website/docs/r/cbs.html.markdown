@@ -42,6 +42,35 @@ resource "netapp-cloudmanager_cbs" "aws-cbs" {
   working_environment_id = netapp-cloudmanager_cvo_aws.cvo-aws.id
   client_id = netapp-cloudmanager_connector_aws.cm-aws.client_id
 }
+
+resource "netapp-cloudmanager_cbs" "zure-cbs" {
+  provider = netapp-cloudmanager
+  cloud_provider = "AZURE"
+  region = netapp-cloudmanager_cvo_azure.cvo-azure.location
+  account_id = "account-xxxxxxxx"
+  azure_cbs_parameters {
+    resource_group = "xxxxxxxxx"
+    subscription = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+    key_vault_id = "/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/xxxxxxxxx/providers/Microsoft.KeyVault/vaults/xxxxxx"
+    key_name: "xxxxxx"
+  }
+  backup_policy {
+    name = "def"
+    object_lock = "NONE
+    policy_rules {
+      rule {
+        label = "Daily"
+        retention = "30"
+      }
+      rule {
+        label = "Hourly"
+        retention = "24"
+      }
+    }
+  }
+  working_environment_id = netapp-cloudmanager_cvo_azure.cvo-azure.id
+  client_id = netapp-cloudmanager_connector_azure.cm-azure.client_id
+}
 ```
 
 ## Argument Reference
@@ -70,15 +99,15 @@ The `aws_cbs_parameters` block supports the following:
 * `access_key` - (Optional)
 * `secret_password` - (Optional)
 * `kms_key_id` - (Optional) Input field for a customer-managed key use case
-* `private_endpoint_id` - (Optional)
+* `private_endpoint_id` - (Optional) 
 
 The `azure_cbs_parameters` block supports the following:
-* `resource_group` - (Optional)
-* `storage_account` - (Required)
-* `subscription` - (Optional)
-* `private_endpoint_id` - (Optional)
-* `key_vault_id` - (Optional)
-* `key_vault_name` - (Optional)
+* `resource_group` - (Required) The resource group name.
+* `storage_account` - (Optional) The storage account.
+* `subscription` - (Required) The subscription ID.
+* `private_endpoint_id` - (Optional) The id can be found with private endpoints with JSON view in Azure.
+* `key_vault_id` - (Optional) The id can be found with key vault JSON View in Azure. e.g. "/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/xxxxxxxxx/providers/Microsoft.KeyVault/vaults/xxxxxx"
+* `key_name` - (Optional) Key vault name.
 
 The `gcp_cbs_parameters` block supports the following:
 * `project_id` - (Required)
@@ -97,5 +126,5 @@ The `policy_rules` block suports the folowings:
 * `rule` - (Optional)
 
 The `rule` blocks support the followings:
-* `label` - (Optional)
-* `retention` - (Optional)
+* `label` - (Optional) ['Hourly', 'Daily', 'Weekly', 'Monthly', 'Yearly']
+* `retention` - (Optional) The number value goes with the `label`

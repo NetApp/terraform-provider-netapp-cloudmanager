@@ -107,7 +107,7 @@ func resourceCBS() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
-						"key_vault_name": {
+						"key_name": {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
@@ -272,6 +272,10 @@ func resourceCBSCreate(d *schema.ResourceData, meta interface{}) error {
 		createCBSRequest.Aws = expandAws(aws)
 	}
 	// AZURE
+	if v, ok := d.GetOk("azure_cbs_parameters"); ok {
+		azure := v.(*schema.Set)
+		createCBSRequest.Azure = expandAzure(azure)
+	}
 	// GCP
 
 	// Validate the needed paramters
@@ -359,6 +363,33 @@ func expandAws(awsParameterList *schema.Set) awsDetails {
 		}
 		if v, ok := paramSet["archive_storage_class"]; ok {
 			params.ArchiveStorageClass = v.(string)
+		}
+	}
+	return params
+}
+
+func expandAzure(azureParameterList *schema.Set) azureDetails {
+	var params azureDetails
+
+	for _, v := range azureParameterList.List() {
+		paramSet := v.(map[string]interface{})
+		if v, ok := paramSet["resource_group"]; ok {
+			params.ResourceGroup = v.(string)
+		}
+		if v, ok := paramSet["storage_account"]; ok {
+			params.StorageAccount = v.(string)
+		}
+		if v, ok := paramSet["subscription"]; ok {
+			params.Subscription = v.(string)
+		}
+		if v, ok := paramSet["private_endpoint_id"]; ok {
+			params.PrivateEndpoint.ID = v.(string)
+		}
+		if v, ok := paramSet["key_vault_id"]; ok {
+			params.KeyVault.KeyVaultID = v.(string)
+		}
+		if v, ok := paramSet["key_name"]; ok {
+			params.KeyVault.KeyName = v.(string)
 		}
 	}
 	return params

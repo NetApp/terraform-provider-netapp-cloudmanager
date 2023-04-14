@@ -82,7 +82,77 @@ type cbsCreateResult struct {
 	ID string `json:"job-id"`
 }
 
-// fsxStatusResult for creating a fsx
+type cbsJobResult struct {
+	Job []cbsJobDetails `json:"job"`
+}
+
+type cbsJobDetails struct {
+	ID                   string      `json:"id"`
+	WorkingEnvironmentID string      `json:"working-environment-id"`
+	JobType              string      `json:"type"`
+	JobStatus            string      `json:"status"`
+	JobError             string      `json:"error"`
+	JobTime              int         `json:"time"`
+	Data                 dataDetails `json:"data"`
+}
+
+type dataDetails struct {
+	MultiVolumeBackup multiVolumeBackupDetail `json:"multi-volume-backup"`
+	Restore           restoreDetails          `json:"restore"`
+}
+
+type multiVolumeBackupDetail struct {
+	Volume []jobVolumeDetails `json:"volume"`
+}
+
+type jobVolumeDetails struct {
+	ID           string `json:"id"`
+	VolumeStatus string `json:"status"`
+	VolumeError  string `json:"error"`
+}
+
+type restoreDetails struct {
+	RestoreType string         `json:"type"`
+	Source      sourceDetails  `json:"source"`
+	Target      targetDetails  `json:"target"`
+	Batch       []batchDetails `json:"batch"`
+}
+
+type sourceDetails struct {
+	WorkingEnvironmentID   string `json:"working-environment-id"`
+	WorkingEnvironmentName string `json:"working-environment-name"`
+	Bucket                 string `json:"bucket"`
+	VolumeID               string `json:"volume-id"`
+	VolumeName             string `json:"volume-name"`
+	Snapshot               string `json:"snapshot"`
+}
+
+type targetDetails struct {
+	WorkingEnvironmentID   string `json:"working-environment-id"`
+	WorkingEnvironmentName string `json:"working-environment-name"`
+	Svm                    string `json:"svm"`
+	VolumeName             string `json:"volume-name"`
+	VolumeSize             int    `json:"volume-size"`
+	Path                   string `json:"path"`
+}
+
+type batchDetails struct {
+	ID          string        `json:"id"`
+	BatchStatus string        `json:"status"`
+	BatchError  string        `json:"error"`
+	BatchTime   int           `json:"time"`
+	BatchFile   []fileDetails `json:"file"`
+}
+
+type fileDetails struct {
+	Inode     int    `json:"inode"`
+	FilePaht  string `json:"path"`
+	FileType  string `json:"type"`
+	FileSize  int    `json:"size"`
+	FileMtime int    `json:"mtime"`
+}
+
+// cbsStatusResult for creating a cbs
 type cbsStatusResult struct {
 	Name                    string             `json:"name"`
 	ID                      string             `json:"id"`
@@ -172,6 +242,7 @@ type cbsWEResult struct {
 	RemoteMccID             string             `json:"remote-mcc-id"`
 }
 
+//  Create working environment cloud backup
 func (c *Client) createCBS(cbs cbsRequest, clientID string) (cbsCreateResult, error) {
 	log.Print("createCBS...")
 
@@ -180,7 +251,7 @@ func (c *Client) createCBS(cbs cbsRequest, clientID string) (cbsCreateResult, er
 
 	accessTokenResult, err := c.getAccessToken()
 	if err != nil {
-		log.Print("in createFSX request, failed to get AccessToken")
+		log.Print("in createCBS request, failed to get AccessToken")
 		return cbsCreateResult{}, err
 	}
 	c.Token = accessTokenResult.Token
@@ -205,7 +276,7 @@ func (c *Client) createCBS(cbs cbsRequest, clientID string) (cbsCreateResult, er
 		return cbsCreateResult{}, err
 	}
 	log.Print("cbsCreate result:", result)
-	err = c.waitOnCompletionCBS(result.ID, cbs, "CBS", "create", creationRetryCount, creationWaitTime, clientID)
+	err = c.waitOnJobCompletionCBS(result.ID, cbs, "CBS", "create", creationRetryCount, creationWaitTime, clientID)
 	if err != nil {
 		return cbsCreateResult{}, err
 	}
@@ -213,12 +284,13 @@ func (c *Client) createCBS(cbs cbsRequest, clientID string) (cbsCreateResult, er
 	return result, nil
 }
 
+// Read working environment cloud backup details
 func (c *Client) getCBS(cbs cbsRequest, clientID string) (cbsWEResult, error) {
 	log.Print("getCBS...")
 
 	accessTokenResult, err := c.getAccessToken()
 	if err != nil {
-		log.Print("in createFSX request, failed to get AccessToken")
+		log.Print("in getCBS request, failed to get AccessToken")
 		return cbsWEResult{}, err
 	}
 	c.Token = accessTokenResult.Token
@@ -239,9 +311,13 @@ func (c *Client) getCBS(cbs cbsRequest, clientID string) (cbsWEResult, error) {
 		return result, err
 	}
 	log.Printf("\tget CBS: %+v", result)
-	return result, nil
+	if result.BackupEnablementStatus == "ON" {
+		return result, nil
+	}
+	return cbsWEResult{}, fmt.Errorf("working environment %s backup status is %s", cbs.WorkingEnvironmentID, result.BackupEnablementStatus)
 }
 
+// unRegisterWE: unregister working environment
 func (c *Client) unRegisterWE(cbs cbsRequest, clientID string) error {
 	log.Print("unregister working environment...")
 
@@ -270,10 +346,11 @@ func (c *Client) unRegisterWE(cbs cbsRequest, clientID string) error {
 	return nil
 }
 
-func (c *Client) checkTaskStatusCBS(id string, accountID string, workingEnvironmentID string, clientID string) (cbsStatusResult, error) {
-	log.Printf("checkTaskStatusCBS: %s, %s, %s", id, accountID, workingEnvironmentID)
+// checkJobStatusCBS: retrieve job status
+func (c *Client) checkJobStatusCBS(jobID string, accountID string, workingEnvironmentID string, clientID string) ([]cbsJobDetails, error) {
+	log.Printf("checkJobStatusCBS: job-id:%s, act:%s, weid:%s", jobID, accountID, workingEnvironmentID)
 
-	baseURL := fmt.Sprintf("/account/%s/providers/cloudmanager_cbs/api/v1/backup/working-environment/%s/status", accountID, workingEnvironmentID)
+	baseURL := fmt.Sprintf("/account/%s/providers/cloudmanager_cbs/api/v1/job/%s", accountID, jobID)
 
 	hostType := "CloudManagerHost"
 
@@ -287,8 +364,8 @@ func (c *Client) checkTaskStatusCBS(id string, accountID string, workingEnvironm
 				time.Sleep(1 * time.Second)
 				networkRetries--
 			} else {
-				log.Print("checkTaskStatusCBS request failed ", code)
-				return cbsStatusResult{}, err
+				log.Print("checkJobStatusCBS request failed ", code)
+				return nil, err
 			}
 		} else {
 			statusCode = code
@@ -297,35 +374,37 @@ func (c *Client) checkTaskStatusCBS(id string, accountID string, workingEnvironm
 		}
 	}
 
-	responseError := apiResponseChecker(statusCode, response, "checkTaskStatusCBS")
+	responseError := apiResponseChecker(statusCode, response, "checkJobStatusCBS")
 	if responseError != nil {
-		return cbsStatusResult{}, responseError
+		return nil, responseError
 	}
 
-	var result cbsStatusResult
+	var result cbsJobResult
 	if err := json.Unmarshal(response, &result); err != nil {
-		log.Print("Failed to unmarshall response from checkTaskStatusCBS ", err)
-		return cbsStatusResult{}, err
+		log.Print("Failed to unmarshall response from checkJobStatusCBS ", err)
+		return nil, err
 	}
 
-	return result, nil
+	return result.Job, nil
 }
 
-func (c *Client) waitOnCompletionCBS(id string, cbs cbsRequest, actionName string, task string, retries int, waitInterval int, clientID string) error {
+// waitOnJobCompletionCBS: check job completed or not
+func (c *Client) waitOnJobCompletionCBS(id string, cbs cbsRequest, actionName string, task string, retries int, waitInterval int, clientID string) error {
 	for {
-		cbsStatus, err := c.checkTaskStatusCBS(id, cbs.AccountID, cbs.WorkingEnvironmentID, clientID)
+		cbsJobStatus, err := c.checkJobStatusCBS(id, cbs.AccountID, cbs.WorkingEnvironmentID, clientID)
 		if err != nil {
 			return err
 		}
-		// if cbsStatus.BackupEnablementStatus == "ON" && cbsStatus.Status == "ON" {
-		if cbsStatus.BackupEnablementStatus == "ON" {
+		if cbsJobStatus[0].JobStatus == "FAILED" {
+			return fmt.Errorf("cbs jobID %s WE %s %s %s status FAILED: %s", id, cbs.WorkingEnvironmentID, task, actionName, cbsJobStatus[0].JobError)
+		} else if cbsJobStatus[0].JobStatus == "COMPLETED" {
 			return nil
 		} else if retries == 0 {
-			log.Printf("Taking too long to %s %s weID %s backup status %s", task, actionName, cbs.WorkingEnvironmentID, cbsStatus.BackupEnablementStatus)
-			return fmt.Errorf("taking too long for %s to %s or not properly setup", actionName, task)
+			log.Printf("Taking too long to %s %s jobID %s backup status %s", task, actionName, id, cbsJobStatus[0].JobStatus)
+			return fmt.Errorf("taking too long for %s %s or not properly setup", actionName, task)
 		}
-		log.Printf("\tcheck status %+v", cbsStatus)
-		log.Printf("Sleep for %d seconds - we %s status %s backup enablement status %s", waitInterval, cbsStatus.ID, cbsStatus.Status, cbsStatus.BackupEnablementStatus)
+		log.Printf("\tcheck job status %+v", cbsJobStatus)
+		log.Printf("Sleep for %d seconds - jobID %s we %s job status %s", waitInterval, id, cbs.WorkingEnvironmentID, cbsJobStatus[0].JobStatus)
 		time.Sleep(time.Duration(waitInterval) * time.Second)
 		retries--
 	}
