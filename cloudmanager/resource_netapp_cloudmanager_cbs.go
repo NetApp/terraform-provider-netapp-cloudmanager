@@ -277,13 +277,11 @@ func resourceCBSCreate(d *schema.ResourceData, meta interface{}) error {
 		createCBSRequest.Azure = expandAzure(azure)
 	}
 	// GCP
-
-	// Validate the needed paramters
-	err = validateCBSParams(createCBSRequest)
-	if err != nil {
-		log.Print("Error validating parameters")
-		return err
+	if v, ok := d.GetOk("gcp_cbs_parameters"); ok {
+		gcp := v.(*schema.Set)
+		createCBSRequest.Gcp = expandGcp(gcp)
 	}
+
 	res, err := client.createCBS(createCBSRequest, clientID)
 	if err != nil {
 		log.Print("Error enabling cloud backup on the working environment ", createCBSRequest.WorkingEnvironmentID)
@@ -328,14 +326,22 @@ func resourceCBSDelete(d *schema.ResourceData, meta interface{}) error {
 	if err != nil {
 		return fmt.Errorf("cannot find working environment")
 	}
-	// unregister a working environment
-	unregisterWECBSRequest := cbsRequest{}
-	unregisterWECBSRequest.WorkingEnvironmentID = workingEnv.PublicID
-	unregisterWECBSRequest.AccountID = d.Get("account_id").(string)
-	log.Print("Unregistering working environment: ", unregisterWECBSRequest.WorkingEnvironmentID)
-	err = client.unRegisterWE(unregisterWECBSRequest, clientID)
+	// delete snapshot copies (volumes)
+
+	// delete snapshot copies (working environment)
+	disableWECBSRequest := cbsRequest{}
+	disableWECBSRequest.WorkingEnvironmentID = workingEnv.PublicID
+	disableWECBSRequest.AccountID = d.Get("account_id").(string)
+	err = client.deleteSnapshotCopiesWE(disableWECBSRequest, clientID)
 	if err != nil {
-		log.Print("Error unregistering working environment", unregisterWECBSRequest.WorkingEnvironmentID)
+		log.Print("Error delete snapshot copies working environment", disableWECBSRequest.WorkingEnvironmentID)
+		return err
+	}
+	// unregister a working environment
+	log.Print("Unregistering working environment: ", disableWECBSRequest.WorkingEnvironmentID)
+	err = client.unRegisterWE(disableWECBSRequest, clientID)
+	if err != nil {
+		log.Print("Error unregistering working environment", disableWECBSRequest.WorkingEnvironmentID)
 		return err
 	}
 	return nil
@@ -390,6 +396,30 @@ func expandAzure(azureParameterList *schema.Set) azureDetails {
 		}
 		if v, ok := paramSet["key_name"]; ok {
 			params.KeyVault.KeyName = v.(string)
+		}
+	}
+	return params
+}
+
+func expandGcp(gcpParameterList *schema.Set) gcpDetails {
+	var params gcpDetails
+
+	for _, v := range gcpParameterList.List() {
+		paramSet := v.(map[string]interface{})
+		if v, ok := paramSet["project_id"]; ok {
+			params.ProjectID = v.(string)
+		}
+		if v, ok := paramSet["access_key"]; ok {
+			params.AccessKey = v.(string)
+		}
+		if v, ok := paramSet["secret_password"]; ok {
+			params.SecretPassword = v.(string)
+		}
+		if v, ok := paramSet["kms_key_ring_id"]; ok {
+			params.Kms.KeyRingID = v.(string)
+		}
+		if v, ok := paramSet["kms_crypto_key_id"]; ok {
+			params.Kms.CryptoKeyID = v.(string)
 		}
 	}
 	return params

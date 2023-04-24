@@ -71,6 +71,32 @@ resource "netapp-cloudmanager_cbs" "zure-cbs" {
   working_environment_id = netapp-cloudmanager_cvo_azure.cvo-azure.id
   client_id = netapp-cloudmanager_connector_azure.cm-azure.client_id
 }
+
+resource "netapp-cloudmanager_cbs" "gcp-cbs" {
+  provider = netapp-cloudmanager
+  cloud_provider = "GCP"
+  region = "us-east4"
+  account_id = netapp-cloudmanager_connector_gcp.cl-occm-gcp.account_id
+  gcp_cbs_parameters {
+    project_id = netapp-cloudmanager_cvo_gcp.cvo-gcp.project_id
+  }
+  backup_policy {
+    name = "xyz"
+    object_lock = "NONE"
+    policy_rules {
+      rule {
+        label = "Daily"
+        retention = "30"
+      }
+      rule {
+        label = "Weekly"
+        retention = "4"
+      }
+    }
+  }
+  client_id = netapp-cloudmanager_connector_gcp.cl-occm-gcp.client_id
+  working_environment_id = netapp-cloudmanager_cvo_gcp.cvo-gcp.id
+}
 ```
 
 ## Argument Reference
@@ -110,11 +136,11 @@ The `azure_cbs_parameters` block supports the following:
 * `key_name` - (Optional) Key vault name.
 
 The `gcp_cbs_parameters` block supports the following:
-* `project_id` - (Required)
-* `access_key` - (Optional)
-* `secret_password` - (Optional)
-* `kms_key_ring_id` - (Optional)
-* `kms_crypto_key_id` - (Optional)
+* `project_id` - (Required) The ID of the GCP project.
+* `access_key` - (Optional) The GCP access key.
+* `secret_password` - (Optional) The GCP secret password.
+* `kms_key_ring_id` - (Optional) GCP KMS key ring ID.
+* `kms_crypto_key_id` - (Optional) GCP KMS crypto key ID.
 
 The `backup_policy` block suports the followings:
 * `name` - (Required)

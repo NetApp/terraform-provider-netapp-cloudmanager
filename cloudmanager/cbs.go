@@ -46,7 +46,7 @@ type azureDetails struct {
 }
 
 type gcpDetails struct {
-	ProjectID      string `struct:"project-id,omitempty"`
+	ProjectID      string `structs:"project-id,omitempty"`
 	AccessKey      string `structs:"access-key,omitempty"`
 	SecretPassword string `structs:"secret-password,omitempty"`
 	Kms            kms    `structs:"kms,omitempty"`
@@ -78,7 +78,7 @@ type kms struct {
 	CryptoKeyID string `structs:"crypto-key-id"`
 }
 
-type cbsCreateResult struct {
+type cbsAPICallResult struct {
 	ID string `json:"job-id"`
 }
 
@@ -243,7 +243,7 @@ type cbsWEResult struct {
 }
 
 //  Create working environment cloud backup
-func (c *Client) createCBS(cbs cbsRequest, clientID string) (cbsCreateResult, error) {
+func (c *Client) createCBS(cbs cbsRequest, clientID string) (cbsAPICallResult, error) {
 	log.Print("createCBS...")
 
 	creationRetryCount := 10
@@ -252,7 +252,7 @@ func (c *Client) createCBS(cbs cbsRequest, clientID string) (cbsCreateResult, er
 	accessTokenResult, err := c.getAccessToken()
 	if err != nil {
 		log.Print("in createCBS request, failed to get AccessToken")
-		return cbsCreateResult{}, err
+		return cbsAPICallResult{}, err
 	}
 	c.Token = accessTokenResult.Token
 	hostType := "CloudManagerHost"
@@ -263,22 +263,22 @@ func (c *Client) createCBS(cbs cbsRequest, clientID string) (cbsCreateResult, er
 	statusCode, response, _, err := c.CallAPIMethod("POST", baseURL, params, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("createCBS request failed ", statusCode)
-		return cbsCreateResult{}, err
+		return cbsAPICallResult{}, err
 	}
 
 	responseError := apiResponseChecker(statusCode, response, "createCBS")
 	if responseError != nil {
-		return cbsCreateResult{}, responseError
+		return cbsAPICallResult{}, responseError
 	}
-	var result cbsCreateResult
+	var result cbsAPICallResult
 	if err := json.Unmarshal(response, &result); err != nil {
 		log.Print("Failed to unmarshall response from createCBS ", err)
-		return cbsCreateResult{}, err
+		return cbsAPICallResult{}, err
 	}
 	log.Print("cbsCreate result:", result)
 	err = c.waitOnJobCompletionCBS(result.ID, cbs, "CBS", "create", creationRetryCount, creationWaitTime, clientID)
 	if err != nil {
-		return cbsCreateResult{}, err
+		return cbsAPICallResult{}, err
 	}
 
 	return result, nil
@@ -317,10 +317,54 @@ func (c *Client) getCBS(cbs cbsRequest, clientID string) (cbsWEResult, error) {
 	return cbsWEResult{}, fmt.Errorf("working environment %s backup status is %s", cbs.WorkingEnvironmentID, result.BackupEnablementStatus)
 }
 
+// delete snapshot copies (working environment)
+func (c *Client) deleteSnapshotCopiesWE(cbs cbsRequest, clientID string) error {
+	log.Print("delete snapshot copies working environment...")
+
+	jobRetryCount := 10
+	jobWaitTime := 60
+
+	accessTokenResult, err := c.getAccessToken()
+	if err != nil {
+		log.Print("in deleteSnapshotCopiesWE request, failed to get AccessToken")
+		return err
+	}
+	c.Token = accessTokenResult.Token
+
+	baseURL := fmt.Sprintf("/account/%s/providers/cloudmanager_cbs/api/v2/backup/working-environment/%s/snapshot", cbs.AccountID, cbs.WorkingEnvironmentID)
+
+	hostType := "CloudManagerHost"
+
+	statusCode, response, _, err := c.CallAPIMethod("DELETE", baseURL, nil, c.Token, hostType, clientID)
+	if err != nil {
+		log.Print("deleteSnapshotCopiesWE request failed ", statusCode)
+		return err
+	}
+
+	responseError := apiResponseChecker(statusCode, response, "unRegisterWE")
+	if responseError != nil {
+		return responseError
+	}
+
+	var result cbsAPICallResult
+	if err := json.Unmarshal(response, &result); err != nil {
+		log.Print("Failed to unmarshall response from deleteSnapshotCopiesWE ", err)
+		return err
+	}
+	log.Print("deleteSnapshotCopiesWE result:", result)
+	err = c.waitOnJobCompletionCBS(result.ID, cbs, "CBS", "deleteSnapshotCopiesWE", jobRetryCount, jobWaitTime, clientID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // unRegisterWE: unregister working environment
 func (c *Client) unRegisterWE(cbs cbsRequest, clientID string) error {
 	log.Print("unregister working environment...")
 
+	jobRetryCount := 10
+	jobWaitTime := 60
 	accessTokenResult, err := c.getAccessToken()
 	if err != nil {
 		log.Print("in unRegisterWE request, failed to get AccessToken")
@@ -342,7 +386,17 @@ func (c *Client) unRegisterWE(cbs cbsRequest, clientID string) error {
 	if responseError != nil {
 		return responseError
 	}
+	var result cbsAPICallResult
+	if err := json.Unmarshal(response, &result); err != nil {
+		log.Print("Failed to unmarshall response from unRegisterWE ", err)
+		return err
+	}
 
+	log.Print("unRegisterWE result:", result)
+	err = c.waitOnJobCompletionCBS(result.ID, cbs, "CBS", "unRegisterWE", jobRetryCount, jobWaitTime, clientID)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -408,18 +462,4 @@ func (c *Client) waitOnJobCompletionCBS(id string, cbs cbsRequest, actionName st
 		time.Sleep(time.Duration(waitInterval) * time.Second)
 		retries--
 	}
-}
-
-// validateCBSParams validates params
-func validateCBSParams(cbsDetails cbsRequest) error {
-	if cbsDetails.Provider == "AWS" && (cbsDetails.Aws.AccountID == "" || cbsDetails.Aws.ArchiveStorageClass == "") {
-		return fmt.Errorf("account_id and archive_storage_class are required for AWS CBS")
-	}
-	if cbsDetails.Provider == "AZURE" && cbsDetails.Azure.Subscription == "" {
-		return fmt.Errorf("subscription aisrequired for AZURE CBS")
-	}
-	if cbsDetails.Provider == "GCP" && cbsDetails.Gcp.ProjectID == "" {
-		return fmt.Errorf("project_id aisrequired for GCP CBS")
-	}
-	return nil
 }
