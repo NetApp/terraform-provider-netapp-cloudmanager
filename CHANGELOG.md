@@ -1,3 +1,7 @@
+## 23.3.4
+NEW FEATURESv:
+* resource/cbs: new resource cloud backup service.
+
 ## 23.3.3
 BUG FIXES:
 * resource/connector: revert the retries change

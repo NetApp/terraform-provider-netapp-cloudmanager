@@ -3,6 +3,7 @@ package cloudmanager
 import (
 	"fmt"
 	"log"
+	"strconv"
 
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
@@ -163,7 +164,7 @@ func resourceCBS() *schema.Resource {
 					Schema: map[string]*schema.Schema{
 						"name": {
 							Type:     schema.TypeString,
-							Optional: true,
+							Required: true,
 						},
 						"policy_rules": {
 							Type:     schema.TypeSet,
@@ -217,6 +218,73 @@ func resourceCBS() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"volumes": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"volume_name": {
+							Type:     schema.TypeString,
+							Required: true,
+							ForceNew: true,
+						},
+						"mode": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+						"backup_policy": {
+							Type:     schema.TypeSet,
+							MaxItems: 1,
+							Optional: true,
+							ForceNew: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"name": {
+										Type:     schema.TypeString,
+										Required: true,
+									},
+									"policy_rules": {
+										Type:     schema.TypeSet,
+										Optional: true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"rule": {
+													Type:     schema.TypeList,
+													Optional: true,
+													Elem: &schema.Resource{
+														Schema: map[string]*schema.Schema{
+															"label": {
+																Type:     schema.TypeString,
+																Optional: true,
+																ForceNew: true,
+															},
+															"retention": {
+																Type:     schema.TypeString,
+																Optional: true,
+																ForceNew: true,
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+									"archive_after_days": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"object_lock": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 			"client_id": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -232,6 +300,8 @@ func resourceCBSCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Client)
 	clientID := d.Get("client_id").(string)
 	createCBSRequest := cbsRequest{}
+	createCBSVolumeRequest := &cbsVolumeRequest{}
+	var volumesIDNameMap = map[string]map[string]string{}
 
 	workingEnv, err := client.getWorkingEnvironmentDetail(d, clientID)
 	if err != nil {
@@ -282,6 +352,45 @@ func resourceCBSCreate(d *schema.ResourceData, meta interface{}) error {
 		createCBSRequest.Gcp = expandGcp(gcp)
 	}
 
+	if volumes, ok := d.GetOk("volumes"); ok {
+		volumesSet := volumes.([]interface{})
+		volumesConfigs := make([]cbsVolume, 0, len(volumesSet))
+		for _, x := range volumesSet {
+			volume := cbsVolume{}
+			volumeConfig := x.(map[string]interface{})
+			volumeName := volumeConfig["volume_name"].(string)
+			volumeRequest := volumeRequest{}
+			volumeRequest.Name = volumeName
+			volumeRequest.WorkingEnvironmentID = createCBSRequest.WorkingEnvironmentID
+			getVolmeDetails, err := client.getVolume(volumeRequest, clientID)
+			if err != nil {
+				log.Print("Error getting volumes details ", createCBSVolumeRequest.Volume)
+				return err
+			}
+			for _, vol := range getVolmeDetails {
+				if vol.Name == volumeName {
+					volume.VolumeID = vol.ID
+					volumesIDNameMap[vol.ID] = make(map[string]string)
+					volumesIDNameMap[vol.ID]["name"] = volumeName
+					break
+				}
+			}
+			if volume.VolumeID == "" {
+				return fmt.Errorf("error retrieving volumes details: volume %s does not exist", volumeName)
+			}
+			if m, ok := volumeConfig["mode"]; ok {
+				volume.Mode = m.(string)
+			}
+			if b, ok := volumeConfig["backup_policy"]; ok {
+				backupPolicy := b.(*schema.Set)
+				volume.BackupPolicy = expandBackupPolicy(backupPolicy)
+			}
+			volumesConfigs = append(volumesConfigs, volume)
+		}
+		createCBSVolumeRequest.Volume = volumesConfigs
+
+	}
+
 	res, err := client.createCBS(createCBSRequest, clientID)
 	if err != nil {
 		log.Print("Error enabling cloud backup on the working environment ", createCBSRequest.WorkingEnvironmentID)
@@ -290,7 +399,15 @@ func resourceCBSCreate(d *schema.ResourceData, meta interface{}) error {
 
 	d.SetId(res.ID)
 
-	log.Printf("Eanbled backup cloud: %v", res)
+	if createCBSVolumeRequest != nil {
+		res, err = client.enableBackupForSingleORMultipleVolumes(createCBSRequest, *createCBSVolumeRequest, clientID, volumesIDNameMap)
+		if err != nil {
+			log.Print("Error enabling cloud backup on the volumes ", createCBSVolumeRequest.Volume)
+			return err
+		}
+	}
+
+	log.Printf("Enabled backup cloud: %v", res)
 	return resourceCBSRead(d, meta)
 }
 
@@ -326,12 +443,28 @@ func resourceCBSDelete(d *schema.ResourceData, meta interface{}) error {
 	if err != nil {
 		return fmt.Errorf("cannot find working environment")
 	}
-	// delete snapshot copies (volumes)
 
-	// delete snapshot copies (working environment)
+	// delete snapshot copies (volumes)
 	disableWECBSRequest := cbsRequest{}
 	disableWECBSRequest.WorkingEnvironmentID = workingEnv.PublicID
 	disableWECBSRequest.AccountID = d.Get("account_id").(string)
+	volumes, err := client.getCBSVolume(disableWECBSRequest, clientID)
+	if err != nil {
+		log.Print("Error retrieving volume backup details")
+		return err
+	}
+	if len(volumes) != 0 {
+		for _, eachVolume := range volumes {
+			if count, _ := strconv.Atoi(eachVolume.SnapshotCount); count > 0 {
+				err = client.deleteSnapshotCopiesVolume(disableWECBSRequest, clientID, eachVolume.ID)
+				if err != nil {
+					log.Print("Error deleting snapshot copies for volumes: ", volumes)
+					return err
+				}
+			}
+		}
+	}
+	// delete snapshot copies (working environment)
 	err = client.deleteSnapshotCopiesWE(disableWECBSRequest, clientID)
 	if err != nil {
 		log.Print("Error delete snapshot copies working environment", disableWECBSRequest.WorkingEnvironmentID)
@@ -445,7 +578,7 @@ func expandBackupPolicy(backupPolicyList *schema.Set) backupPolicy {
 					rule := ruleDetails{}
 					ruleConfig := x.(map[string]interface{})
 					rule.Label = ruleConfig["label"].(string)
-					rule.Retentioin = ruleConfig["retention"].(string)
+					rule.Retention = ruleConfig["retention"].(string)
 					ruleConfigs = append(ruleConfigs, rule)
 				}
 				params.Rule = ruleConfigs

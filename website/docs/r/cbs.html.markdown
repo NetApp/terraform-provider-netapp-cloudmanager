@@ -39,11 +39,18 @@ resource "netapp-cloudmanager_cbs" "aws-cbs" {
       }
     }
   }
+  volumes {
+    volume_name = "test"
+    mode = "SCHEDULED"
+    backup_policy {
+      name = "xxxxxxx"
+    }
+  }
   working_environment_id = netapp-cloudmanager_cvo_aws.cvo-aws.id
   client_id = netapp-cloudmanager_connector_aws.cm-aws.client_id
 }
 
-resource "netapp-cloudmanager_cbs" "zure-cbs" {
+resource "netapp-cloudmanager_cbs" "azure-cbs" {
   provider = netapp-cloudmanager
   cloud_provider = "AZURE"
   region = netapp-cloudmanager_cvo_azure.cvo-azure.location
@@ -56,7 +63,7 @@ resource "netapp-cloudmanager_cbs" "zure-cbs" {
   }
   backup_policy {
     name = "def"
-    object_lock = "NONE
+    object_lock = "NONE"
     policy_rules {
       rule {
         label = "Daily"
@@ -154,3 +161,8 @@ The `policy_rules` block suports the folowings:
 The `rule` blocks support the followings:
 * `label` - (Optional) ['Hourly', 'Daily', 'Weekly', 'Monthly', 'Yearly']
 * `retention` - (Optional) The number value goes with the `label`
+
+The `volumes` block suports the followings:
+* `volume_name` - (Required) Name of the volume to enable backup.
+* `mode` - (Optional) type of mode to create snapshot copies.
+* `backup_policy` - (Optional)

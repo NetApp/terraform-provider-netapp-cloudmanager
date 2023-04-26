@@ -28,6 +28,16 @@ type cbsRequest struct {
 	AccountID            string `structs:"account-id"`
 }
 
+type cbsVolumeRequest struct {
+	Volume []cbsVolume `structs:"volume,omitempty"`
+}
+
+type cbsVolume struct {
+	VolumeID     string       `structs:"volume-id"`
+	Mode         string       `structs:"mode,omitempty"`
+	BackupPolicy backupPolicy `structs:"backup-policy,omitempty"`
+}
+
 type awsDetails struct {
 	AccountID           string          `structs:"account-id,omitempty"`
 	AccessKey           string          `structs:"access-key,omitempty"`
@@ -64,8 +74,8 @@ type backupPolicy struct {
 }
 
 type ruleDetails struct {
-	Label      string `structs:"label"`
-	Retentioin string `structs:"retention"`
+	Label     string `structs:"label"`
+	Retention string `structs:"retention"`
 }
 
 type keyVault struct {
@@ -242,12 +252,31 @@ type cbsWEResult struct {
 	RemoteMccID             string             `json:"remote-mcc-id"`
 }
 
-//  Create working environment cloud backup
+type cbsGetVolumeResult struct {
+	Volume []cbsVolumeResult `json:"volume"`
+}
+
+type cbsVolumeResult struct {
+	Name          string `json:"name"`
+	ID            string `json:"file-system-id"`
+	SnapshotCount string `json:"snapshot-count"`
+}
+
+type cbsGetSnapshotVolumeResult struct {
+	Snapshot []cbsSnapshotVolumeResult `json:"snapshot"`
+}
+
+type cbsSnapshotVolumeResult struct {
+	Name string `json:"name"`
+	ID   string `json:"id"`
+}
+
+// Create working environment cloud backup
 func (c *Client) createCBS(cbs cbsRequest, clientID string) (cbsAPICallResult, error) {
 	log.Print("createCBS...")
 
-	creationRetryCount := 10
-	creationWaitTime := 60
+	creationRetryCount := 60
+	creationWaitTime := 10
 
 	accessTokenResult, err := c.getAccessToken()
 	if err != nil {
@@ -276,8 +305,61 @@ func (c *Client) createCBS(cbs cbsRequest, clientID string) (cbsAPICallResult, e
 		return cbsAPICallResult{}, err
 	}
 	log.Print("cbsCreate result:", result)
-	err = c.waitOnJobCompletionCBS(result.ID, cbs, "CBS", "create", creationRetryCount, creationWaitTime, clientID)
+	_, err = c.waitOnJobCompletionCBS(result.ID, cbs, "CBS", "create", creationRetryCount, creationWaitTime, clientID)
 	if err != nil {
+		return cbsAPICallResult{}, err
+	}
+
+	return result, nil
+}
+
+// enbale backup for single or multiple volumes
+func (c *Client) enableBackupForSingleORMultipleVolumes(cbs cbsRequest, cbsVolume cbsVolumeRequest, clientID string, volumesIDNameMap map[string]map[string]string) (cbsAPICallResult, error) {
+	log.Print("enableBackupForSingleORMultipleVolumes...")
+
+	creationRetryCount := 60
+	creationWaitTime := 10
+
+	accessTokenResult, err := c.getAccessToken()
+	if err != nil {
+		log.Print("in enableBackupForSingleORMultipleVolumes request, failed to get AccessToken")
+		return cbsAPICallResult{}, err
+	}
+	c.Token = accessTokenResult.Token
+	hostType := "CloudManagerHost"
+	baseURL := fmt.Sprintf("/account/%s/providers/cloudmanager_cbs/api/v2/backup/working-environment/%s/volume", cbs.AccountID, cbs.WorkingEnvironmentID)
+	params := structs.Map(cbsVolume)
+
+	log.Printf("\tparams: %+v", params)
+	statusCode, response, _, err := c.CallAPIMethod("POST", baseURL, params, c.Token, hostType, clientID)
+	if err != nil {
+		log.Print("enableBackupForSingleORMultipleVolumes request failed ", statusCode)
+		return cbsAPICallResult{}, err
+	}
+
+	responseError := apiResponseChecker(statusCode, response, "enableBackupForSingleORMultipleVolumes")
+	if responseError != nil {
+		return cbsAPICallResult{}, responseError
+	}
+	var result cbsAPICallResult
+	if err := json.Unmarshal(response, &result); err != nil {
+		log.Print("Failed to unmarshall response from enableBackupForSingleORMultipleVolumes ", err)
+		return cbsAPICallResult{}, err
+	}
+	log.Print("enableBackupForSingleORMultipleVolumes result:", result)
+	cbsJobStatus, err := c.waitOnJobCompletionCBS(result.ID, cbs, "backup for Volumes", "enable", creationRetryCount, creationWaitTime, clientID)
+	if err != nil {
+		errVolumeMessage := ""
+		noOfVolsFailed := 0
+		for _, eachVolume := range cbsJobStatus[0].Data.MultiVolumeBackup.Volume {
+			if eachVolume.VolumeStatus == "FAILED" {
+				errVolumeMessage += "for volume " + volumesIDNameMap[eachVolume.ID]["name"] + ", " + eachVolume.VolumeError + "\n"
+				noOfVolsFailed++
+			}
+		}
+		if errVolumeMessage != "" {
+			return cbsAPICallResult{}, fmt.Errorf("%s. Following %v volume have failed:\n%v", err, noOfVolsFailed, errVolumeMessage)
+		}
 		return cbsAPICallResult{}, err
 	}
 
@@ -317,12 +399,87 @@ func (c *Client) getCBS(cbs cbsRequest, clientID string) (cbsWEResult, error) {
 	return cbsWEResult{}, fmt.Errorf("working environment %s backup status is %s", cbs.WorkingEnvironmentID, result.BackupEnablementStatus)
 }
 
+// Read volume for working environment cloud backup details
+func (c *Client) getCBSVolume(cbs cbsRequest, clientID string) ([]cbsVolumeResult, error) {
+	log.Print("getCBSVolume...")
+
+	accessTokenResult, err := c.getAccessToken()
+	if err != nil {
+		log.Print("in getCBSVolume request, failed to get AccessToken")
+		return []cbsVolumeResult{}, err
+	}
+	c.Token = accessTokenResult.Token
+	hostType := "CloudManagerHost"
+	baseURL := fmt.Sprintf("/account/%s/providers/cloudmanager_cbs/api/v1/backup/working-environment/%s/volume", cbs.AccountID, cbs.WorkingEnvironmentID)
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
+	if err != nil {
+		log.Print("getCBSVolume request failed ", statusCode)
+		return []cbsVolumeResult{}, err
+	}
+	responseError := apiResponseChecker(statusCode, response, "getCBSVolume")
+	if responseError != nil {
+		return []cbsVolumeResult{}, responseError
+	}
+	var result cbsGetVolumeResult
+	if err := json.Unmarshal(response, &result); err != nil {
+		log.Print("Failed to unmarshall response from getCBSVolume ", err)
+		return []cbsVolumeResult{}, err
+	}
+	if result.Volume == nil {
+		return []cbsVolumeResult{}, nil
+	}
+	log.Printf("\tget Volume: %+v", result)
+	return result.Volume, nil
+}
+
+// delete snapshot copies (volume)
+func (c *Client) deleteSnapshotCopiesVolume(cbs cbsRequest, clientID string, volumeID string) error {
+	log.Print("delete snapshot copies volume...")
+
+	jobRetryCount := 60
+	jobWaitTime := 10
+
+	accessTokenResult, err := c.getAccessToken()
+	if err != nil {
+		log.Print("in deleteSnapshotCopiesVolume request, failed to get AccessToken")
+		return err
+	}
+	c.Token = accessTokenResult.Token
+
+	baseURL := fmt.Sprintf("/account/%s/providers/cloudmanager_cbs/api/v1/backup/working-environment/%s/volume/%s/snapshot", cbs.AccountID, cbs.WorkingEnvironmentID, volumeID)
+
+	hostType := "CloudManagerHost"
+
+	statusCode, response, _, err := c.CallAPIMethod("DELETE", baseURL, nil, c.Token, hostType, clientID)
+	if err != nil {
+		log.Print("deleteSnapshotCopiesVolume request failed ", statusCode)
+		return err
+	}
+
+	responseError := apiResponseChecker(statusCode, response, "deleteSnapshotCopiesVolume")
+	if responseError != nil {
+		return responseError
+	}
+
+	var result cbsAPICallResult
+	if err := json.Unmarshal(response, &result); err != nil {
+		log.Print("Failed to unmarshall response from deleteSnapshotCopiesVolume ", err)
+		return err
+	}
+	log.Print("deleteSnapshotCopiesVolume result:", result)
+	_, err = c.waitOnJobCompletionCBS(result.ID, cbs, "CBS", "deleteSnapshotCopiesVolume", jobRetryCount, jobWaitTime, clientID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // delete snapshot copies (working environment)
 func (c *Client) deleteSnapshotCopiesWE(cbs cbsRequest, clientID string) error {
 	log.Print("delete snapshot copies working environment...")
 
-	jobRetryCount := 10
-	jobWaitTime := 60
+	jobRetryCount := 60
+	jobWaitTime := 10
 
 	accessTokenResult, err := c.getAccessToken()
 	if err != nil {
@@ -352,7 +509,7 @@ func (c *Client) deleteSnapshotCopiesWE(cbs cbsRequest, clientID string) error {
 		return err
 	}
 	log.Print("deleteSnapshotCopiesWE result:", result)
-	err = c.waitOnJobCompletionCBS(result.ID, cbs, "CBS", "deleteSnapshotCopiesWE", jobRetryCount, jobWaitTime, clientID)
+	_, err = c.waitOnJobCompletionCBS(result.ID, cbs, "CBS", "deleteSnapshotCopiesWE", jobRetryCount, jobWaitTime, clientID)
 	if err != nil {
 		return err
 	}
@@ -363,8 +520,8 @@ func (c *Client) deleteSnapshotCopiesWE(cbs cbsRequest, clientID string) error {
 func (c *Client) unRegisterWE(cbs cbsRequest, clientID string) error {
 	log.Print("unregister working environment...")
 
-	jobRetryCount := 10
-	jobWaitTime := 60
+	jobRetryCount := 60
+	jobWaitTime := 10
 	accessTokenResult, err := c.getAccessToken()
 	if err != nil {
 		log.Print("in unRegisterWE request, failed to get AccessToken")
@@ -393,7 +550,7 @@ func (c *Client) unRegisterWE(cbs cbsRequest, clientID string) error {
 	}
 
 	log.Print("unRegisterWE result:", result)
-	err = c.waitOnJobCompletionCBS(result.ID, cbs, "CBS", "unRegisterWE", jobRetryCount, jobWaitTime, clientID)
+	_, err = c.waitOnJobCompletionCBS(result.ID, cbs, "CBS", "unRegisterWE", jobRetryCount, jobWaitTime, clientID)
 	if err != nil {
 		return err
 	}
@@ -443,19 +600,19 @@ func (c *Client) checkJobStatusCBS(jobID string, accountID string, workingEnviro
 }
 
 // waitOnJobCompletionCBS: check job completed or not
-func (c *Client) waitOnJobCompletionCBS(id string, cbs cbsRequest, actionName string, task string, retries int, waitInterval int, clientID string) error {
+func (c *Client) waitOnJobCompletionCBS(id string, cbs cbsRequest, actionName string, task string, retries int, waitInterval int, clientID string) ([]cbsJobDetails, error) {
 	for {
 		cbsJobStatus, err := c.checkJobStatusCBS(id, cbs.AccountID, cbs.WorkingEnvironmentID, clientID)
 		if err != nil {
-			return err
+			return cbsJobStatus, err
 		}
 		if cbsJobStatus[0].JobStatus == "FAILED" {
-			return fmt.Errorf("cbs jobID %s WE %s %s %s status FAILED: %s", id, cbs.WorkingEnvironmentID, task, actionName, cbsJobStatus[0].JobError)
+			return cbsJobStatus, fmt.Errorf("cbs jobID %s WE %s %s %s status FAILED: %s", id, cbs.WorkingEnvironmentID, task, actionName, cbsJobStatus[0].JobError)
 		} else if cbsJobStatus[0].JobStatus == "COMPLETED" {
-			return nil
+			return cbsJobStatus, nil
 		} else if retries == 0 {
 			log.Printf("Taking too long to %s %s jobID %s backup status %s", task, actionName, id, cbsJobStatus[0].JobStatus)
-			return fmt.Errorf("taking too long for %s %s or not properly setup", actionName, task)
+			return cbsJobStatus, fmt.Errorf("taking too long for %s %s or not properly setup", actionName, task)
 		}
 		log.Printf("\tcheck job status %+v", cbsJobStatus)
 		log.Printf("Sleep for %d seconds - jobID %s we %s job status %s", waitInterval, id, cbs.WorkingEnvironmentID, cbsJobStatus[0].JobStatus)
