@@ -1,6 +1,9 @@
 ## 23.3.4
-NEW FEATURESv:
+NEW FEATURES:
 * resource/cbs: new resource cloud backup service.
+
+BUG FIXES:
+* resource/connector for GCP: Make service_account_key optional.
 
 ## 23.3.3
 BUG FIXES:

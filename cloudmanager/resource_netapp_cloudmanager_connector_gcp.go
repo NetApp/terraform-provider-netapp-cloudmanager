@@ -66,7 +66,6 @@ func resourceOCCMGCP() *schema.Resource {
 			"service_account_key": {
 				Type:          schema.TypeString,
 				Optional:      true,
-				ForceNew:      true,
 				ConflictsWith: []string{"service_account_path"},
 				Default:       "",
 				Sensitive:     true,
@@ -440,9 +439,16 @@ func resourceOCCMGCPUpdate(d *schema.ResourceData, meta interface{}) error {
 	occmDetails.Zone = d.Get("zone").(string)
 	occmDetails.Region = string(occmDetails.Zone[0 : len(occmDetails.Zone)-2])
 	var err error
-	client.GCPServiceAccountKey, err = getGCPServiceAccountKey(d)
-	if err != nil {
-		return err
+	// Found the key has changed
+	serviceAccountKey := d.Get("service_account_key").(string)
+	if serviceAccountKey != "" && d.HasChange("service_account_key") {
+		log.Print("in resourceOCCMGCPUpdate verify service_account_key since the key is changed...")
+		_, err := client.getGCPToken(serviceAccountKey)
+		if err != nil {
+			log.Print("in resourceOCCMGCPUpdate verify service_account_key failed")
+			return err
+		}
+
 	}
 	occmDetails.Company = d.Get("company").(string)
 	clientID := d.Get("client_id").(string)

@@ -1,6 +1,7 @@
 package cloudmanager
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -9,6 +10,9 @@ import (
 	"time"
 
 	"github.com/fatih/structs"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
+	"golang.org/x/oauth2/jwt"
 	"gopkg.in/yaml.v2"
 )
 
@@ -200,7 +204,7 @@ func (c *Client) deployGCPVM(occmDetails createOCCMDetails, proxyCertificates []
 	// first resource
 	t := tresource{}
 	t.Name = fmt.Sprintf("%s-vm", occmDetails.Name)
-	if occmDetails.FirewallTags == true {
+	if occmDetails.FirewallTags {
 		t.Properties.Tags.Items = []string{"firewall-tag-bvsu", "http-server", "https-server"}
 	}
 	if len(occmDetails.Tags) > 0 {
@@ -222,7 +226,7 @@ func (c *Client) deployGCPVM(occmDetails createOCCMDetails, proxyCertificates []
 		{Key: "customData", Value: gcpCustomData}}
 
 	var accessConfigs []accessConfig
-	if occmDetails.AssociatePublicIP == true {
+	if occmDetails.AssociatePublicIP {
 		accessConfigs = []accessConfig{{Kind: "compute#accessConfig", Name: "External NAT", Type: "ONE_TO_ONE_NAT", NetworkTier: "PREMIUM"}}
 	}
 	var projectID string
@@ -276,12 +280,16 @@ func (c *Client) deployGCPVM(occmDetails createOCCMDetails, proxyCertificates []
 	}
 	}`, occmDetails.Name, occmDetails.GCPCommonSuffixName, mydata)
 
+	token, err := c.getGCPToken(c.GCPServiceAccountKey)
+	if err != nil {
+		return OCCMMResult{}, err
+	}
 	baseURL := fmt.Sprintf("/deploymentmanager/v2/projects/%s/global/deployments", occmDetails.GCPProject)
 	hostType := "GCPDeploymentManager"
 
 	log.Print("POST")
 	log.Printf("deployGCPVM: call depolyments api base client=%s", newClientID)
-	statusCode, response, _, err := c.CallAPIMethod("POST", baseURL, nil, "", hostType, newClientID)
+	statusCode, response, _, err := c.CallAPIMethod("POST", baseURL, nil, token, hostType, newClientID)
 	if err != nil {
 		log.Print("deployGCPVM request failed")
 		return OCCMMResult{}, err
@@ -319,12 +327,15 @@ func (c *Client) deployGCPVM(occmDetails createOCCMDetails, proxyCertificates []
 func (c *Client) getdeployGCPVM(occmDetails createOCCMDetails, id string, clientID string) (string, error) {
 
 	log.Print("getdeployGCPVM")
-
+	token, err := c.getGCPToken(c.GCPServiceAccountKey)
+	if err != nil {
+		return "", err
+	}
 	baseURL := fmt.Sprintf("/deploymentmanager/v2/projects/%s/global/deployments/%s%s", occmDetails.GCPProject, occmDetails.Name, occmDetails.GCPCommonSuffixName)
 	hostType := "GCPDeploymentManager"
 
 	log.Print("GET")
-	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, "", hostType, clientID)
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, token, hostType, clientID)
 	if err != nil {
 		log.Print("getdeployGCPVM request failed")
 		return "", err
@@ -350,8 +361,12 @@ func (c *Client) getdeployGCPVM(occmDetails createOCCMDetails, id string, client
 
 func (c *Client) getDisk(occmDetails createOCCMDetails, clientID string) (map[string]interface{}, error) {
 	hostType := "GCPCompute"
+	token, err := c.getGCPToken(c.GCPServiceAccountKey)
+	if err != nil {
+		return nil, err
+	}
 	baseURL := fmt.Sprintf("/compute/v1/projects/%s/zones/%s/disks/%s-vm-disk-boot", occmDetails.GCPProject, occmDetails.Zone, occmDetails.Name)
-	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, "", hostType, clientID)
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, token, hostType, clientID)
 	if err != nil {
 		log.Printf("getDisk request failed: %s", err.Error())
 		return nil, err
@@ -374,11 +389,15 @@ func (c *Client) getVMInstance(occmDetails createOCCMDetails, clientID string) (
 
 	log.Print("getVMInstance")
 
+	token, err := c.getGCPToken(c.GCPServiceAccountKey)
+	if err != nil {
+		return nil, err
+	}
 	baseURL := fmt.Sprintf("/compute/v1/projects/%s/zones/%s/instances/%s-vm", occmDetails.GCPProject, occmDetails.Zone, occmDetails.Name)
 	hostType := "GCPCompute"
 
 	log.Print("GET")
-	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, "", hostType, clientID)
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, token, hostType, clientID)
 	if err != nil {
 		log.Printf("getVMInstance request failed: %s", err.Error())
 		return nil, err
@@ -401,9 +420,13 @@ func (c *Client) getVMInstance(occmDetails createOCCMDetails, clientID string) (
 // This function is not used because can't get the update instance API from GCP working. Receive the following error: Boot disk must be the first disk attached to the instance.
 // Although there is only one disk exists all the time, I can't figure it out to make it work.
 func (c *Client) updateVMInstance(occmDetails createOCCMDetails, clientID string, updatePropertities map[string]interface{}) error {
+	token, err := c.getGCPToken(c.GCPServiceAccountKey)
+	if err != nil {
+		return err
+	}
 	baseURL := fmt.Sprintf("/compute/v1/projects/%s/zones/%s/instances/%s-vm", occmDetails.GCPProject, occmDetails.Zone, occmDetails.Name)
 	hostType := "GCPCompute"
-	statusCode, response, _, err := c.CallAPIMethod("PUT", baseURL, updatePropertities, "", hostType, clientID)
+	statusCode, response, _, err := c.CallAPIMethod("PUT", baseURL, updatePropertities, token, hostType, clientID)
 
 	if err != nil {
 		log.Print("updateVMInstance request failed")
@@ -421,10 +444,13 @@ func (c *Client) updateVMInstance(occmDetails createOCCMDetails, clientID string
 
 func (c *Client) setVMLabels(occmDetails createOCCMDetails, labels map[string]interface{}, clientID string) error {
 	log.Print("setVMLabels")
-
+	token, err := c.getGCPToken(c.GCPServiceAccountKey)
+	if err != nil {
+		return err
+	}
 	baseURL := fmt.Sprintf("/compute/v1/projects/%s/zones/%s/instances/%s-vm/setLabels", occmDetails.GCPProject, occmDetails.Zone, occmDetails.Name)
 	hostType := "GCPCompute"
-	statusCode, response, _, err := c.CallAPIMethod("POST", baseURL, labels, "", hostType, clientID)
+	statusCode, response, _, err := c.CallAPIMethod("POST", baseURL, labels, token, hostType, clientID)
 	if err != nil {
 		log.Printf("setVMLabels request failed: %s", err.Error())
 		return err
@@ -438,10 +464,13 @@ func (c *Client) setVMLabels(occmDetails createOCCMDetails, labels map[string]in
 
 func (c *Client) setDiskLabels(occmDetails createOCCMDetails, labels map[string]interface{}, clientID string) error {
 	log.Print("setDiskLabels")
-
+	token, err := c.getGCPToken(c.GCPServiceAccountKey)
+	if err != nil {
+		return err
+	}
 	baseURL := fmt.Sprintf("/compute/v1/projects/%s/zones/%s/disks/%s-vm-disk-boot/setLabels", occmDetails.GCPProject, occmDetails.Zone, occmDetails.Name)
 	hostType := "GCPCompute"
-	statusCode, response, _, err := c.CallAPIMethod("POST", baseURL, labels, "", hostType, clientID)
+	statusCode, response, _, err := c.CallAPIMethod("POST", baseURL, labels, token, hostType, clientID)
 	if err != nil {
 		log.Printf("setDiskLabels request failed: %s", err.Error())
 		return err
@@ -455,13 +484,16 @@ func (c *Client) setDiskLabels(occmDetails createOCCMDetails, labels map[string]
 
 func (c *Client) setVMInstaceTags(occmDetails createOCCMDetails, fingerprint string, clientID string) error {
 	log.Print("setVMInstaceTags")
-
+	token, err := c.getGCPToken(c.GCPServiceAccountKey)
+	if err != nil {
+		return err
+	}
 	baseURL := fmt.Sprintf("/compute/v1/projects/%s/zones/%s/instances/%s-vm/setTags", occmDetails.GCPProject, occmDetails.Region, occmDetails.Name)
 	hostType := "GCPDeploymentManager"
 	body := make(map[string]interface{})
 	body["items"] = occmDetails.Tags
 	body["fingerprint"] = fingerprint
-	statusCode, response, _, err := c.CallAPIMethod("POST", baseURL, body, "", hostType, clientID)
+	statusCode, response, _, err := c.CallAPIMethod("POST", baseURL, body, token, hostType, clientID)
 	if err != nil {
 		log.Print("setVMInstaceTags request failed")
 		return err
@@ -476,12 +508,15 @@ func (c *Client) setVMInstaceTags(occmDetails createOCCMDetails, fingerprint str
 func (c *Client) deleteOCCMGCP(request deleteOCCMDetails, clientID string) error {
 
 	log.Printf("deleteOCCMGCP %s client %s", request.Name, clientID)
-
+	token, err := c.getGCPToken(c.GCPServiceAccountKey)
+	if err != nil {
+		return err
+	}
 	baseURL := fmt.Sprintf("/deploymentmanager/v2/projects/%s/global/deployments/%s%s", request.Project, request.Name, request.GCPCommonSuffixName)
 	hostType := "GCPDeploymentManager"
 
 	log.Print("DELETE")
-	statusCode, response, _, err := c.CallAPIMethod("DELETE", baseURL, nil, "", hostType, clientID)
+	statusCode, response, _, err := c.CallAPIMethod("DELETE", baseURL, nil, token, hostType, clientID)
 	if err != nil {
 		log.Print("deleteOCCMGCP request failed")
 		return err
@@ -532,4 +567,50 @@ func convertSubnetID(projectID string, occmDetails createOCCMDetails, input stri
 	}
 	return input, nil
 
+}
+
+func (c *Client) getGCPToken(gcpServiceAccountKey string) (string, error) {
+	var token string
+	log.Printf("getGCPToken...")
+	scopes := []string{
+		"https://www.googleapis.com/auth/cloud-platform",
+		"https://www.googleapis.com/auth/compute",
+		"https://www.googleapis.com/auth/compute.readonly",
+		"https://www.googleapis.com/auth/ndev.cloudman",
+		"https://www.googleapis.com/auth/ndev.cloudman.readonly",
+		"https://www.googleapis.com/auth/devstorage.full_control",
+		"https://www.googleapis.com/auth/devstorage.read_write",
+	}
+	if gcpServiceAccountKey != "" {
+		var c = struct {
+			Email      string `json:"client_email"`
+			PrivateKey string `json:"private_key"`
+		}{}
+		json.Unmarshal([]byte(gcpServiceAccountKey), &c)
+		config := &jwt.Config{
+			Email:      c.Email,
+			PrivateKey: []byte(c.PrivateKey),
+			Scopes:     scopes,
+			TokenURL:   google.JWTTokenURL,
+		}
+		gcpToken, err := config.TokenSource(oauth2.NoContext).Token()
+		if err != nil {
+			return "", err
+		}
+		token = gcpToken.AccessToken
+	} else {
+		// find default application credential
+		ctx := context.Background()
+		credential, err := google.FindDefaultCredentials(ctx, scopes...)
+		if err != nil {
+			return "", fmt.Errorf("cannot get credentials: %v", err)
+		}
+		t, err := credential.TokenSource.Token()
+		if err != nil {
+			return "", fmt.Errorf("getGCPToken failed on get token from credential: %v", err)
+		}
+		token = t.AccessToken
+	}
+
+	return token, nil
 }

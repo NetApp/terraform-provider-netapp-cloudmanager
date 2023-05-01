@@ -2,16 +2,11 @@ package restapi
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"strings"
-
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
-	"golang.org/x/oauth2/jwt"
 )
 
 // Request represents a request to a REST API
@@ -20,51 +15,6 @@ type Request struct {
 	Params                interface{} `json:"params"`
 	GCPDeploymentTemplate string
 	GCPServiceAccountKey  string
-}
-
-func getGCPToken(url string, gcpServiceAccountKey string) (string, error) {
-	var token string
-	scopes := []string{
-		"https://www.googleapis.com/auth/cloud-platform",
-		"https://www.googleapis.com/auth/compute",
-		"https://www.googleapis.com/auth/compute.readonly",
-		"https://www.googleapis.com/auth/ndev.cloudman",
-		"https://www.googleapis.com/auth/ndev.cloudman.readonly",
-		"https://www.googleapis.com/auth/devstorage.full_control",
-		"https://www.googleapis.com/auth/devstorage.read_write",
-	}
-	if gcpServiceAccountKey != "" {
-		var c = struct {
-			Email      string `json:"client_email"`
-			PrivateKey string `json:"private_key"`
-		}{}
-		json.Unmarshal([]byte(gcpServiceAccountKey), &c)
-		config := &jwt.Config{
-			Email:      c.Email,
-			PrivateKey: []byte(c.PrivateKey),
-			Scopes:     scopes,
-			TokenURL:   google.JWTTokenURL,
-		}
-		gcpToken, err := config.TokenSource(oauth2.NoContext).Token()
-		if err != nil {
-			return "", err
-		}
-		token = gcpToken.AccessToken
-	} else {
-		// find default application credential
-		ctx := context.Background()
-		credential, err := google.FindDefaultCredentials(ctx, scopes...)
-		if err != nil {
-			return "", fmt.Errorf("cannot get credentials: %v", err)
-		}
-		t, err := credential.TokenSource.Token()
-		if err != nil {
-			return "", fmt.Errorf("getGCPToken failed on get token from credential: %v", err)
-		}
-		token = t.AccessToken
-	}
-
-	return token, nil
 }
 
 // BuildHTTPReq builds an HTTP request to carry out the REST request
@@ -84,6 +34,9 @@ func (r *Request) BuildHTTPReq(host string, token string, audience string, baseU
 				}
 			} else {
 				bodyJSON, err := json.Marshal(r.Params)
+				if err != nil {
+					return nil, err
+				}
 				req, err = http.NewRequest(r.Method, url, bytes.NewReader([]byte(bodyJSON)))
 				if err != nil {
 					return nil, err
@@ -96,10 +49,8 @@ func (r *Request) BuildHTTPReq(host string, token string, audience string, baseU
 				return nil, err
 			}
 		}
-
-		token, err = getGCPToken(url, r.GCPServiceAccountKey)
-		if err != nil {
-			return nil, err
+		if token == "" {
+			return nil, fmt.Errorf("no GCP token available")
 		}
 	} else {
 		if paramsNil {
