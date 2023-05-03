@@ -8,7 +8,7 @@ description: |-
 
 # netapp-cloudmanager_cbs
 
-Provides a netapp-cloudmanager_cbs resource. This can be used to enable cloud backup on a specific working environment Cloud Volumes ONTAP on AWS, Aure, and GCP.
+Provides a netapp-cloudmanager_cbs resource. This can be used to enable cloud backup on a specific working environment Cloud Volumes ONTAP on AWS and Aure.
 Requires existence of a Cloud Manager Connector and a Cloud Volumes ONTAP system.
 
 ## Example Usages
@@ -78,32 +78,6 @@ resource "netapp-cloudmanager_cbs" "azure-cbs" {
   working_environment_id = netapp-cloudmanager_cvo_azure.cvo-azure.id
   client_id = netapp-cloudmanager_connector_azure.cm-azure.client_id
 }
-
-resource "netapp-cloudmanager_cbs" "gcp-cbs" {
-  provider = netapp-cloudmanager
-  cloud_provider = "GCP"
-  region = "us-east4"
-  account_id = netapp-cloudmanager_connector_gcp.cl-occm-gcp.account_id
-  gcp_cbs_parameters {
-    project_id = netapp-cloudmanager_cvo_gcp.cvo-gcp.project_id
-  }
-  backup_policy {
-    name = "xyz"
-    object_lock = "NONE"
-    policy_rules {
-      rule {
-        label = "Daily"
-        retention = "30"
-      }
-      rule {
-        label = "Weekly"
-        retention = "4"
-      }
-    }
-  }
-  client_id = netapp-cloudmanager_connector_gcp.cl-occm-gcp.client_id
-  working_environment_id = netapp-cloudmanager_cvo_gcp.cvo-gcp.id
-}
 ```
 
 ## Argument Reference
@@ -124,7 +98,6 @@ The following arguments are supported:
 * `export_existing_snapshots` - (Optional) Export pre-existing Snapshot copies to object storage
 * `aws_cbs_parameters` - (Optional)
 * `azure_cbs_parameters` - (Optional)
-* `gcp_cbs_parameters` - (Optional)
 
 The `aws_cbs_parameters` block supports the following:
 * `aws_account_id` - (Optional) Required when the provider is AWS.
@@ -141,13 +114,6 @@ The `azure_cbs_parameters` block supports the following:
 * `private_endpoint_id` - (Optional) The id can be found with private endpoints with JSON view in Azure.
 * `key_vault_id` - (Optional) The id can be found with key vault JSON View in Azure. e.g. "/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/xxxxxxxxx/providers/Microsoft.KeyVault/vaults/xxxxxx"
 * `key_name` - (Optional) Key vault name.
-
-The `gcp_cbs_parameters` block supports the following:
-* `project_id` - (Required) The ID of the GCP project.
-* `access_key` - (Optional) The GCP access key.
-* `secret_password` - (Optional) The GCP secret password.
-* `kms_key_ring_id` - (Optional) GCP KMS key ring ID.
-* `kms_crypto_key_id` - (Optional) GCP KMS crypto key ID.
 
 The `backup_policy` block suports the followings:
 * `name` - (Required)

@@ -115,36 +115,37 @@ func resourceCBS() *schema.Resource {
 					},
 				},
 			},
-			"gcp_cbs_parameters": {
-				Type:     schema.TypeSet,
-				MaxItems: 1,
-				Optional: true,
-				ForceNew: true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"project_id": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"access_key": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"secret_password": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"kms_key_ring_id": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"kms_crypto_key_id": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-					},
-				},
-			},
+			// commenting out as gcp is not tested yet
+			// "gcp_cbs_parameters": {
+			// 	Type:     schema.TypeSet,
+			// 	MaxItems: 1,
+			// 	Optional: true,
+			// 	ForceNew: true,
+			// 	Elem: &schema.Resource{
+			// 		Schema: map[string]*schema.Schema{
+			// 			"project_id": {
+			// 				Type:     schema.TypeString,
+			// 				Optional: true,
+			// 			},
+			// 			"access_key": {
+			// 				Type:     schema.TypeString,
+			// 				Optional: true,
+			// 			},
+			// 			"secret_password": {
+			// 				Type:     schema.TypeString,
+			// 				Optional: true,
+			// 			},
+			// 			"kms_key_ring_id": {
+			// 				Type:     schema.TypeString,
+			// 				Optional: true,
+			// 			},
+			// 			"kms_crypto_key_id": {
+			// 				Type:     schema.TypeString,
+			// 				Optional: true,
+			// 			},
+			// 		},
+			// 	},
+			// },
 			"bucket": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -346,11 +347,12 @@ func resourceCBSCreate(d *schema.ResourceData, meta interface{}) error {
 		azure := v.(*schema.Set)
 		createCBSRequest.Azure = expandAzure(azure)
 	}
+	// commenting out as gcp is not tested yet
 	// GCP
-	if v, ok := d.GetOk("gcp_cbs_parameters"); ok {
-		gcp := v.(*schema.Set)
-		createCBSRequest.Gcp = expandGcp(gcp)
-	}
+	// if v, ok := d.GetOk("gcp_cbs_parameters"); ok {
+	// 	gcp := v.(*schema.Set)
+	// 	createCBSRequest.Gcp = expandGcp(gcp)
+	// }
 
 	if volumes, ok := d.GetOk("volumes"); ok {
 		volumesSet := volumes.([]interface{})
@@ -534,29 +536,30 @@ func expandAzure(azureParameterList *schema.Set) azureDetails {
 	return params
 }
 
-func expandGcp(gcpParameterList *schema.Set) gcpDetails {
-	var params gcpDetails
+// commenting out as gcp is not tested yet
+// func expandGcp(gcpParameterList *schema.Set) gcpDetails {
+// 	var params gcpDetails
 
-	for _, v := range gcpParameterList.List() {
-		paramSet := v.(map[string]interface{})
-		if v, ok := paramSet["project_id"]; ok {
-			params.ProjectID = v.(string)
-		}
-		if v, ok := paramSet["access_key"]; ok {
-			params.AccessKey = v.(string)
-		}
-		if v, ok := paramSet["secret_password"]; ok {
-			params.SecretPassword = v.(string)
-		}
-		if v, ok := paramSet["kms_key_ring_id"]; ok {
-			params.Kms.KeyRingID = v.(string)
-		}
-		if v, ok := paramSet["kms_crypto_key_id"]; ok {
-			params.Kms.CryptoKeyID = v.(string)
-		}
-	}
-	return params
-}
+// 	for _, v := range gcpParameterList.List() {
+// 		paramSet := v.(map[string]interface{})
+// 		if v, ok := paramSet["project_id"]; ok {
+// 			params.ProjectID = v.(string)
+// 		}
+// 		if v, ok := paramSet["access_key"]; ok {
+// 			params.AccessKey = v.(string)
+// 		}
+// 		if v, ok := paramSet["secret_password"]; ok {
+// 			params.SecretPassword = v.(string)
+// 		}
+// 		if v, ok := paramSet["kms_key_ring_id"]; ok {
+// 			params.Kms.KeyRingID = v.(string)
+// 		}
+// 		if v, ok := paramSet["kms_crypto_key_id"]; ok {
+// 			params.Kms.CryptoKeyID = v.(string)
+// 		}
+// 	}
+// 	return params
+// }
 
 func expandBackupPolicy(backupPolicyList *schema.Set) backupPolicy {
 	var params backupPolicy

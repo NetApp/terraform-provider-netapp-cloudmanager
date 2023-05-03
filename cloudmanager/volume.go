@@ -40,6 +40,7 @@ type volumeRequest struct {
 	TenantID                  string                 `structs:"tenantId,omitempty"`
 	EnableStorageEfficiency   bool                   `structs:"enableStorageEfficiency,omitempty"`
 	VolumeTags                []volumeTag            `structs:"volumeTags,omitempty"`
+	Comment                   string                 `structs:"comment,omitempty"`
 }
 
 type volumeResponse struct {
@@ -59,6 +60,7 @@ type volumeResponse struct {
 	ShareInfo              []shareInfoResponse `json:"shareInfo"`
 	MountPoint             string              `json:"mountPoint"`
 	IscsiEnabled           bool                `json:"iscsiEnabled"`
+	Comment                string              `json:"comment"`
 }
 
 type exportPolicyInfo struct {

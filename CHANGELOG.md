@@ -4,7 +4,8 @@ BUG FIXES:
 * resource/volume: disable `enable_deduplication` and `enable_compression` in read function.
 
 NEW FEATURES:
-* resource/cbs: new resource cloud backup service.
+* resource/cbs: new resource cloud backup service which supports AWS a nd Azure.
+* resource/volume: add new option`comment`.
 
 BUG FIXES:
 * resource/connector for GCP: Make service_account_key optional.
