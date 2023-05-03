@@ -221,7 +221,7 @@ func resourceCVOVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 	quote.ProviderVolumeType = d.Get("provider_volume_type").(string)
 	if v, ok := d.GetOk("enable_deduplication"); ok {
 		quote.EnableDeduplication = v.(bool)
-		volume.EnableThinProvisioning = v.(bool)
+		volume.EnableDeduplication = v.(bool)
 	}
 	if v, ok := d.GetOk("enable_thin_provisioning"); ok {
 		quote.EnableThinProvisioning = v.(bool)
@@ -480,12 +480,13 @@ func resourceCVOVolumeRead(d *schema.ResourceData, meta interface{}) error {
 			if _, ok := d.GetOk("enable_thin_provisioning"); ok {
 				d.Set("enable_thin_provisioning", volume.EnableThinProvisioning)
 			}
-			if _, ok := d.GetOk("enable_deduplication"); ok {
-				d.Set("enable_deduplication", volume.EnableDeduplication)
-			}
-			if _, ok := d.GetOk("enable_compression"); ok {
-				d.Set("enable_compression", volume.EnableCompression)
-			}
+			// setting this two in create are not working right now.
+			// if _, ok := d.GetOk("enable_deduplication"); ok {
+			// 	d.Set("enable_deduplication", volume.EnableDeduplication)
+			// }
+			// if _, ok := d.GetOk("enable_compression"); ok {
+			// 	d.Set("enable_compression", volume.EnableCompression)
+			// }
 			if _, ok := d.GetOk("export_policy_ip"); ok {
 				d.Set("export_policy_ip", volume.ExportPolicyInfo.Ips)
 			}
@@ -664,6 +665,7 @@ func resourceCVOVolumeUpdate(d *schema.ResourceData, meta interface{}) error {
 	if d.HasChange("tiering_policy") {
 		volume.TieringPolicy = d.Get("tiering_policy").(string)
 	}
+
 	err = client.updateVolume(volume, clientID)
 	if err != nil {
 		log.Print("Error updating volume")

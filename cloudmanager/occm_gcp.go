@@ -261,8 +261,14 @@ func (c *Client) deployGCPVM(occmDetails createOCCMDetails, proxyCertificates []
 	td.Type = "compute.v1.disks"
 
 	if occmDetails.Labels != nil {
-		t.Properties.Labels = occmDetails.Labels
-		td.Properties.Labels = occmDetails.Labels
+		label := map[string]string{}
+		for key, value := range occmDetails.Labels {
+			key = fmt.Sprintf("\\\"%s\\\"", key)
+			value = fmt.Sprintf("\\\"%s\\\"", value)
+			label[key] = value
+			t.Properties.Labels = label
+			td.Properties.Labels = label
+		}
 	}
 
 	content.Resources = []tresource{t, td}

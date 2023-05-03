@@ -317,48 +317,60 @@ func resourceOCCMGCPRead(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	if _, ok := d.GetOk("labels"); ok {
-	}
-	disk, err := client.getDisk(occmDetails, clientID)
-	vmInstance, err := client.getVMInstance(occmDetails, clientID)
-	vmLabels := make(map[string]interface{})
-	diskLabels := make(map[string]interface{})
-	if val, ok := vmInstance["labels"]; ok {
-		vmLabels = val.(map[string]interface{})
-	}
-	if val, ok := disk["labels"]; ok {
-		diskLabels = val.(map[string]interface{})
-	}
-	labels := make(map[string]string)
 
-	// GCP Connector consists two parts: a vm instance and a disk. We use deployment manager to create connector, the labels are set during the creation.
-	// After creation, the GET call of deployment manager will no longer gets the up to date info of the vm and disk. We must use API of disk and vm directly.
-	// For disk and vm, each can set labels differently, but the label of the connector on the UI is indistinguish.
-	// If disk and vm differ in labels, d.Set("<key>", "<diskValue>,<labelValue>").
+		disk, err := client.getDisk(occmDetails, clientID)
+		if err != nil {
+			log.Print("Error reading disk")
+			return fmt.Errorf("Error getting disk info in read function %#v", err)
+		}
+		vmInstance, err := client.getVMInstance(occmDetails, clientID)
+		if err != nil {
+			log.Print("Error reading vm")
+			return fmt.Errorf("Error getting vm info in read function %#v", err)
+		}
+		vmLabels := make(map[string]interface{})
+		diskLabels := make(map[string]interface{})
+		if val, ok := vmInstance["labels"]; ok {
+			vmLabels = val.(map[string]interface{})
+		}
+		if val, ok := disk["labels"]; ok {
+			diskLabels = val.(map[string]interface{})
+		}
+		labels := make(map[string]string)
 
-	// Check vm labels first
-	for k, vmLabelValue := range vmLabels {
-		// if both disk and vm have the same key
-		if diskLabelValue, ok := diskLabels[k]; ok {
-			// If the values are not the same
-			if diskLabelValue.(string) != vmLabelValue.(string) {
-				labels[k] = fmt.Sprintf("%s,%s", vmLabelValue.(string), diskLabelValue.(string))
-			} else {
-				// If the values are the same, set either one.
-				labels[k] = diskLabelValue.(string)
+		// GCP Connector consists two parts: a vm instance and a disk. We use deployment manager to create connector, the labels are set during the creation.
+		// After creation, the GET call of deployment manager will no longer gets the up to date info of the vm and disk. We must use API of disk and vm directly.
+		// For disk and vm, each can set labels differently, but the label of the connector on the UI is indistinguish.
+		// If disk and vm differ in labels, d.Set("<key>", "<diskValue>,<labelValue>").
+
+		// Check vm labels first
+		for k, vmLabelValue := range vmLabels {
+			// the default label being create when deploy occm.
+			if k == "gcp_resource_id" || k == "goog-dm" {
+				continue
 			}
-		} else {
-			// If disk does not have the key, but vm does, set to empty value.
-			labels[k] = ""
+			// if both disk and vm have the same key
+			if diskLabelValue, ok := diskLabels[k]; ok {
+				// If the values are not the same
+				if diskLabelValue.(string) != vmLabelValue.(string) {
+					labels[k] = fmt.Sprintf("%s,%s", vmLabelValue.(string), diskLabelValue.(string))
+				} else {
+					// If the values are the same, set either one.
+					labels[k] = diskLabelValue.(string)
+				}
+			} else {
+				// If disk does not have the key, but vm does, set to empty value.
+				labels[k] = ""
+			}
 		}
-	}
-	// check disk labels, and set the ones only exist in disk but not vm to empty value.
-	for k := range diskLabels {
-		if _, ok := vmLabels[k]; !ok {
-			labels[k] = ""
+		// check disk labels, and set the ones only exist in disk but not vm to empty value.
+		for k := range diskLabels {
+			if _, ok := vmLabels[k]; !ok {
+				labels[k] = ""
+			}
 		}
+		d.Set("labels", labels)
 	}
-	d.Set("labels", labels)
-
 	return nil
 }
 
