@@ -1,3 +1,15 @@
+## 23.5.0
+BUG FIXES:
+* resource/connector_gcp: fix label key and value do not acccpt only numeric value.
+* resource/volume: disable `enable_deduplication` and `enable_compression` in read function.
+
+NEW FEATURES:
+* resource/cbs: new resource cloud backup service which supports AWS a nd Azure.
+* resource/volume: add new option`comment`.
+
+BUG FIXES:
+* resource/connector for GCP: Make service_account_key optional.
+
 ## 23.3.3
 BUG FIXES:
 * resource/connector: revert the retries change
