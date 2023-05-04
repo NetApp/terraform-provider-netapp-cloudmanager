@@ -116,7 +116,7 @@ func resourceCVOAzure() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Essential", "Professional", "Freemium"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"Essential", "Professional", "Freemium", "Edge", "Optimized"}, false),
 			},
 			"provided_license": {
 				Type:     schema.TypeString,
