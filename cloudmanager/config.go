@@ -37,7 +37,7 @@ func (c *configStruct) clientFun() (*Client, error) {
 			GCPCompute:           "https://compute.googleapis.com",
 			GCPImageProject:      "netapp-cloudmanager",
 			GCPImageFamily:       "cloudmanager",
-			CVSHostName:          "https://api.bluexp.netapp.com/cloud-volumes/cvs",			
+			CVSHostName:          "https://api.bluexp.netapp.com/cloud-volumes/cvs",
 		}
 	} else if c.Environment == "stage" {
 		log.Print("Stage Environment")
