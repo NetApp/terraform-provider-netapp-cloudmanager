@@ -37,6 +37,11 @@ func resourceCVOAzure() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"saas_subscription_id": {
+				Type: 	schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"workspace_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -111,7 +116,7 @@ func resourceCVOAzure() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Essential", "Professional", "Freemium", "Edge", "Optimized"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"Essential", "Professional", "Freemium"}, false),
 			},
 			"provided_license": {
 				Type:     schema.TypeString,
@@ -318,6 +323,7 @@ func resourceCVOAzureCreate(d *schema.ResourceData, meta interface{}) error {
 	clientID := d.Get("client_id").(string)
 	cvoDetails.Region = d.Get("location").(string)
 	cvoDetails.SubscriptionID = d.Get("subscription_id").(string)
+	cvoDetails.SaasSubscriptionID = d.Get("saas_subscription_id").(string)
 	cvoDetails.DataEncryptionType = d.Get("data_encryption_type").(string)
 	cvoDetails.WorkspaceID = d.Get("workspace_id").(string)
 	cvoDetails.StorageType = d.Get("storage_type").(string)
