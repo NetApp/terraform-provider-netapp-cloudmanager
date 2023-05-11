@@ -63,9 +63,10 @@ type haParamsAWS struct {
 	PlatformSerialNumberNode1   string   `structs:"platformSerialNumberNode1,omitempty"`
 	PlatformSerialNumberNode2   string   `structs:"platformSerialNumberNode2,omitempty"`
 	MediatorInstanceProfileName string   `structs:"mediatorInstanceProfileName,omitempty"`
-	MediatorAssignPublicIP      *bool    `structs:"mediatorAssignPublicIP,omitempty"`
+	MediatorAssignPublicIP      bool     `structs:"mediatorAssignPublicIP,omitempty"`
 	MediatorSecurityGroupID     string   `structs:"mediatorSecurityGroupId,omitempty"`
 	RouteTableIds               []string `structs:"routeTableIds,omitempty"`
+	AssumeRoleArn               string   `structs:"assumeRoleArn,omitempty"`
 }
 
 // ebsVolumeSize the input for requesting a CVO
@@ -252,10 +253,10 @@ func (c *Client) createCVOAWS(cvoDetails createCVOAWSDetails, clientID string) (
 	var CreationRetries int
 
 	log.Print("retries ", c.Retries)
-	if cvoDetails.IsHA == false {
+	if !cvoDetails.IsHA {
 		baseURL = "/occm/api/vsa/working-environments"
 		CreationRetries = c.Retries
-	} else if cvoDetails.IsHA == true {
+	} else if cvoDetails.IsHA {
 		baseURL = "/occm/api/aws/ha/working-environments"
 		CreationRetries = c.Retries + 30
 	}
@@ -301,9 +302,9 @@ func (c *Client) deleteCVO(id string, isHA bool, clientID string) error {
 
 	var baseURL string
 
-	if isHA == false {
+	if !isHA {
 		baseURL = fmt.Sprintf("/occm/api/vsa/working-environments/%s", id)
-	} else if isHA == true {
+	} else if isHA {
 		baseURL = fmt.Sprintf("/occm/api/aws/ha/working-environments/%s", id)
 	}
 

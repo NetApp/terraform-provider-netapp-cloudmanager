@@ -341,6 +341,11 @@ func resourceCVOAWS() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"assume_role_arn": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"retries": {
 				Type:     schema.TypeInt,
 				Optional: true,
@@ -488,8 +493,7 @@ func resourceCVOAWSCreate(d *schema.ResourceData, meta interface{}) error {
 		cvoDetails.HAParams.MediatorKeyPairName = d.Get("mediator_key_pair_name").(string)
 
 		if o, ok := d.GetOkExists("mediator_assign_public_ip"); ok {
-			mediatorAssignPublicIP := o.(bool)
-			cvoDetails.HAParams.MediatorAssignPublicIP = &mediatorAssignPublicIP
+			cvoDetails.HAParams.MediatorAssignPublicIP = o.(bool)
 		}
 
 		cvoDetails.HAParams.ClusterFloatingIP = d.Get("cluster_floating_ip").(string)
@@ -512,6 +516,9 @@ func resourceCVOAWSCreate(d *schema.ResourceData, meta interface{}) error {
 		}
 		if c, ok := d.GetOk("mediator_security_group_id"); ok {
 			cvoDetails.HAParams.MediatorSecurityGroupID = c.(string)
+		}
+		if c, ok := d.GetOk("assume_role_arn"); ok {
+			cvoDetails.HAParams.AssumeRoleArn = c.(string)
 		}
 	} else {
 		if c, ok := d.GetOk("subnet_id"); ok {

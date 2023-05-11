@@ -46,6 +46,13 @@ resource "netapp-cloudmanager_cbs" "aws-cbs" {
       name = "xxxxxxx"
     }
   }
+  volumes {
+    volume_name = "test2"
+    mode = "SCHEDULED"
+    backup_policy {
+      name = "xxxxxxx"
+    }
+  }
   working_environment_id = netapp-cloudmanager_cvo_aws.cvo-aws.id
   client_id = netapp-cloudmanager_connector_aws.cm-aws.client_id
 }
@@ -73,6 +80,20 @@ resource "netapp-cloudmanager_cbs" "azure-cbs" {
         label = "Hourly"
         retention = "24"
       }
+    }
+  }
+  volumes {
+    volume_name = "test"
+    mode = "SCHEDULED"
+    backup_policy {
+      name = "xxxxxxx"
+    }
+  }
+  volumes {
+    volume_name = "test2"
+    mode = "SCHEDULED"
+    backup_policy {
+      name = "xxxxxxx"
     }
   }
   working_environment_id = netapp-cloudmanager_cvo_azure.cvo-azure.id
