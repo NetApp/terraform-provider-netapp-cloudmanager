@@ -401,7 +401,7 @@ func resourceCBSCreate(d *schema.ResourceData, meta interface{}) error {
 
 	d.SetId(res.ID)
 
-	if createCBSVolumeRequest != nil {
+	if len(createCBSVolumeRequest.Volume) != 0 {
 		res, err = client.enableBackupForSingleORMultipleVolumes(createCBSRequest, *createCBSVolumeRequest, clientID, volumesIDNameMap)
 		if err != nil {
 			log.Print("Error enabling cloud backup on the volumes ", createCBSVolumeRequest.Volume)
