@@ -1,3 +1,7 @@
+## 23.5.1
+NEW ENHANCEMENTS:
+* resoruce/cvo_aws: add `assume_role_arn` for AWS CVO HA.
+
 ## 23.5.0
 BUG FIXES:
 * resource/cbs: fix cbs to work without volume.
