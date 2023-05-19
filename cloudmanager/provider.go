@@ -17,6 +17,12 @@ func Provider() terraform.ResourceProvider {
 				DefaultFunc: schema.EnvDefaultFunc("CLOUDMANAGER_REFRESH_TOKEN", nil),
 				Description: "The refresh_token for OCCM operations.",
 			},
+			"connector_host": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("CONNECTOR_HOST", nil),
+				Description: "Connector Host when not using BlueXP.",
+			},
 			"environment": {
 				Type:        schema.TypeString,
 				Optional:    true,
@@ -108,6 +114,9 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	}
 	if v, ok := d.GetOk("aws_profile_file_path"); ok {
 		config.AWSProfileFilePath = v.(string)
+	}
+	if v, ok := d.GetOk("connector_host"); ok {
+		config.ConnectorHost = v.(string)
 	}
 	if v, ok := d.GetOk("azure_auth_methods"); ok {
 		// a bit complicated, as the type is only known at runtime

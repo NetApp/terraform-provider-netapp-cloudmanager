@@ -1,3 +1,9 @@
+## 23.5.2
+NEW ENHANCEMENTS:
+* resource/cvo_azure: add `saas_subscription_id`.
+* provider: add `connector_host` for restricted mode.
+
+
 ## 23.5.1
 NEW ENHANCEMENTS:
 * resoruce/cvo_aws: add `assume_role_arn` for AWS CVO HA.
