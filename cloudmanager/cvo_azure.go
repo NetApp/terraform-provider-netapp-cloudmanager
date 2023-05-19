@@ -21,6 +21,7 @@ type createCVOAzureDetails struct {
 	WorkspaceID                 string                    `structs:"tenantId,omitempty"`
 	Region                      string                    `structs:"region"`
 	SubscriptionID              string                    `structs:"subscriptionId"`
+	SaasSubscriptionID          string                    `structs:"saasSubscriptionId,omitempty"`
 	VnetID                      string                    `structs:"vnetId,omitempty"`
 	SvmPassword                 string                    `structs:"svmPassword"`
 	SvmName                     string                    `structs:"svmName,omitempty"`

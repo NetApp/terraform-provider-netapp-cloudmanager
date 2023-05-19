@@ -37,6 +37,11 @@ func resourceCVOAzure() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"saas_subscription_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"workspace_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -322,6 +327,10 @@ func resourceCVOAzureCreate(d *schema.ResourceData, meta interface{}) error {
 	cvoDetails.WorkspaceID = d.Get("workspace_id").(string)
 	cvoDetails.StorageType = d.Get("storage_type").(string)
 	cvoDetails.SvmPassword = d.Get("svm_password").(string)
+
+	if c, ok := d.GetOk("saas_subscription_id"); ok {
+		cvoDetails.SaasSubscriptionID = c.(string)
+	}
 	if c, ok := d.GetOk("svm_name"); ok {
 		cvoDetails.SvmName = c.(string)
 	}

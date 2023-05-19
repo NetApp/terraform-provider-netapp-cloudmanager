@@ -3,6 +3,7 @@ package cloudmanager
 import (
 	"fmt"
 	"log"
+	"strings"
 )
 
 // Config is a struct for user input
@@ -16,6 +17,7 @@ type configStruct struct {
 	AWSProfile         string
 	AWSProfileFilePath string
 	AzureAuthMethods   []string
+	ConnectorHost      string
 }
 
 // Client is the main function to connect to the APi
@@ -64,6 +66,16 @@ func (c *configStruct) clientFun() (*Client, error) {
 		client.SetRefreshToken(c.RefreshToken)
 	} else {
 		return &Client{}, fmt.Errorf("expected refresh_token or sa_secret_key and sa_client_id")
+	}
+
+	if c.ConnectorHost != "" {
+		if strings.HasPrefix(c.ConnectorHost, "https://") {
+			client.CloudManagerHost = c.ConnectorHost
+		} else if strings.HasPrefix(c.ConnectorHost, "http://") {
+			client.CloudManagerHost = c.ConnectorHost
+		} else {
+			client.CloudManagerHost = fmt.Sprintf("https://%s", c.ConnectorHost)
+		}
 	}
 
 	if c.Simulator {
