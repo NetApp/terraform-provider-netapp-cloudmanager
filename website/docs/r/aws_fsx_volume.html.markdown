@@ -26,6 +26,9 @@ resource "netapp-cloudmanager_aws_fsx_volume" "fsx-volume-nfs" {
   export_policy_ip = ["0.0.0.0/0"]
   export_policy_nfs_version = ["nfs4"]
   file_system_id = "your-file-system-id"
+  tags = {
+    "abc" = "xyz"
+  }
   client_id = netapp-cloudmanager_connector_gcp.cm-gcp.client_id
 }
 ```
@@ -66,6 +69,7 @@ The following arguments are supported:
 * `permission` (Optional) CIFS share permission type. (CIFS protocol parameters)
 * `users` (Optional) List of users with the permission. (CIFS protocol parameters)
 * `volume_protocol` - (Required) The protocol for the volume: ['nfs', 'cifs']. This affects the provided parameters.
+*  `tags` - (Optional) Set tags for the volume during creation. The API doesn't contain any information about tags so the provider doesn't guarantee tags will be added successfully and detect any drift after create.
 * `tenant_id` - (Required) The workspace id.
 
 
