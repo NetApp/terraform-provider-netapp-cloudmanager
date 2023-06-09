@@ -95,6 +95,13 @@ func resourceFsxVolume() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
+			"tags": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
 			"tenant_id": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -126,6 +133,16 @@ func resourceFSXVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 	volume.EnableCompression = false
 	volume.EnableThinProvisioning = true
 	volume.EnableStorageEfficiency = d.Get("enable_storage_efficiency").(bool)
+	if o, ok := d.GetOk("tags"); ok {
+		tags := make([]volumeTag, 0)
+		for k, v := range o.(map[string]interface{}) {
+			tag := volumeTag{}
+			tag.TagKey = k
+			tag.TagValue = v.(string)
+			tags = append(tags, tag)
+		}
+		volume.VolumeFSXTags = tags
+	}
 	err = client.setCommonAttributes(weInfo.WorkingEnvironmentType, d, &volume, clientID)
 	if err != nil {
 		return err

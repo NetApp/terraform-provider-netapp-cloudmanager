@@ -40,6 +40,7 @@ type volumeRequest struct {
 	TenantID                  string                 `structs:"tenantId,omitempty"`
 	EnableStorageEfficiency   bool                   `structs:"enableStorageEfficiency,omitempty"`
 	VolumeTags                []volumeTag            `structs:"volumeTags,omitempty"`
+	VolumeFSXTags             []volumeTag            `structs:"awsTags,omitempty"`
 	Comment                   string                 `structs:"comment,omitempty"`
 }
 
@@ -148,6 +149,7 @@ type volumeTag struct {
 	TagKey   string `structs:"tagKey"`
 	TagValue string `structs:"tagValue"`
 }
+
 type createSnapshotPolicyRequest struct {
 	SnapshotPolicyName   string        `structs:"snapshotPolicyName"`
 	Schedules            []scheduleReq `structs:"schedules"`
