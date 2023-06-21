@@ -33,7 +33,7 @@ func resourceCVOGCP() *schema.Resource {
 			},
 			"gcp_service_account": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
 				ForceNew: true,
 			},
 			"workspace_id": {
@@ -317,6 +317,11 @@ func resourceCVOGCP() *schema.Resource {
 					return new == ""
 				},
 			},
+			"flash_cache": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
 			"upgrade_ontap_version": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -343,7 +348,9 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 
 	cvoDetails.Name = d.Get("name").(string)
 	log.Print("Create cvo name ", cvoDetails.Name)
-	cvoDetails.GCPServiceAccount = d.Get("gcp_service_account").(string)
+	if c, ok := d.GetOk("gcp_service_account"); ok {
+		cvoDetails.GCPServiceAccount = c.(string)
+	}
 	cvoDetails.DataEncryptionType = d.Get("data_encryption_type").(string)
 	cvoDetails.WorkspaceID = d.Get("workspace_id").(string)
 	cvoDetails.GCPVolumeType = d.Get("gcp_volume_type").(string)
@@ -390,7 +397,10 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 	if c, ok := d.GetOk("enable_compliance"); ok {
 		cvoDetails.EnableCompliance = c.(bool)
 	}
-
+	// In GCP HA, HIGH write speed and FlashCache are coupled together both needs to be activated, one cannot be activated without the other.
+	if c, ok := d.GetOk("flash_cache"); ok {
+		cvoDetails.FlashCache = c.(bool)
+	}
 	if c, ok := d.GetOk("zone"); ok {
 		cvoDetails.Region = c.(string)
 	}
