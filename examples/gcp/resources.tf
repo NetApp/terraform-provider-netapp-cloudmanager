@@ -120,3 +120,43 @@ resource "netapp-cloudmanager_cvo_gcp" "cvo-gcp_ha" {
   nss_account = "c3c3d4e5-123d-4012-83b3-1e4abcdefg"
   client_id = netapp-cloudmanager_connector_gcp.cm-gcp.client_id
 }
+
+resource "netapp-cloudmanager_cvo_gcp" "cvo-gcp_ha_high" {
+  provider = netapp-cloudmanager
+  name = "terraformcvogcpHAhighspeed"
+  project_id = "default-project"
+  zone = "us-east1-b"
+  subnet_id = "default"
+  vpc_id = "default"
+  gcp_label {
+        label_key = "abcdefg"
+        label_value = "1232"
+  }
+  is_ha = true
+  svm_password = "********"
+  svm {
+        svm_name = "svmx"
+  }
+  svm {
+        svm_name = "svmy"
+  }
+  use_latest_version = true
+  ontap_version = "latest"
+  gcp_volume_type = "pd-ssd"
+  instance_type = "n2-standard-64"
+  writing_speed_state = "HIGH"
+  flash_cache = true
+  mediator_zone = "us-east1-d"
+  node1_zone = "us-east1-b"
+  node2_zone =  "us-east1-c"
+  subnet0_node_and_data_connectivity = "projects/default-project/regions/us-east1/subnetworks/default"
+  subnet1_cluster_connectivity = "projects/default-project/regions/us-east1/subnetworks/subnet2"
+  subnet2_ha_connectivity = "projects/default-project/regions/us-east1/subnetworks/subnet3"
+  subnet3_data_replication = "projects/default-project/regions/us-east1/subnetworks/occm-us-east1-subnet-1"
+  vpc0_node_and_data_connectivity = "projects/default-project/global/networks/default"
+  vpc1_cluster_connectivity = "projects/default-project/global/networks/vpc2"
+  vpc2_ha_connectivity = "projects/default-project/global/networks/vpc3"
+  vpc3_data_replication = "projects/default-project/global/networks/occm-network-1"
+  nss_account = "c3c3d4e5-123d-4012-83b3-1e4abcdefg"
+  client_id = netapp-cloudmanager_connector_gcp.cm-gcp.client_id
+}

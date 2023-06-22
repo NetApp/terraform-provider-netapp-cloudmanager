@@ -21,7 +21,7 @@ type createCVOGCPDetails struct {
 	DataEncryptionType      string                  `structs:"dataEncryptionType"`
 	WorkspaceID             string                  `structs:"tenantId,omitempty"`
 	Region                  string                  `structs:"region"`
-	GCPServiceAccount       string                  `structs:"gcpServiceAccount"`
+	GCPServiceAccount       string                  `structs:"gcpServiceAccount,omitempty"`
 	VpcID                   string                  `structs:"vpcId"`
 	SvmPassword             string                  `structs:"svmPassword"`
 	SvmName                 string                  `structs:"svmName,omitempty"`
@@ -44,6 +44,7 @@ type createCVOGCPDetails struct {
 	EnableCompliance        bool                    `structs:"enableCompliance"`
 	IsHA                    bool
 	HAParams                haParamsGCP `structs:"haParams,omitempty"`
+	FlashCache              bool        `structs:"flashCache"`
 }
 
 // gcpLabels the input for requesting a CVO
@@ -133,9 +134,9 @@ func (c *Client) createCVOGCP(cvoDetails createCVOGCPDetails, clientID string) (
 
 	log.Print("retries ", c.Retries)
 	var CreationRetries int
-	if cvoDetails.IsHA == false {
+	if !cvoDetails.IsHA {
 		CreationRetries = c.Retries
-	} else if cvoDetails.IsHA == true {
+	} else {
 		CreationRetries = c.Retries + 30
 	}
 
@@ -298,11 +299,7 @@ func expandGCPLabelsToUserTags(set *schema.Set) []userTags {
 
 // validateCVOGCPParams validates params
 func validateCVOGCPParams(cvoDetails createCVOGCPDetails) error {
-	if cvoDetails.IsHA && cvoDetails.WritingSpeedState != "" {
-		return fmt.Errorf("writing_speed_state parameter not required for CVO GCP HA")
-	}
-
-	if cvoDetails.VsaMetadata.UseLatestVersion == true && cvoDetails.VsaMetadata.OntapVersion != "latest" {
+	if cvoDetails.VsaMetadata.UseLatestVersion && cvoDetails.VsaMetadata.OntapVersion != "latest" {
 		return fmt.Errorf("ontap_version parameter not required when having use_latest_version as true")
 	}
 

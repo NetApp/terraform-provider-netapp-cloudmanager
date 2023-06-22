@@ -1,3 +1,7 @@
+## 23.6.1
+NEW FEATURES:
+* resource/cvo_gcp: support HIGH `writing_speed_state` in GCP HA. Make `gcp_service_account` optional .
+
 ## 23.6.0
 NEW FEATURES:
 * resource/aws_fsx_volume: add new option`tags`.

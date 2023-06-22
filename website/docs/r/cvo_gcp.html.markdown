@@ -64,6 +64,42 @@ resource "netapp-cloudmanager_cvo_gcp" "cl-cvo-gcp" {
 }
 ```
 
+**Create netapp-cloudmanager_cvo_gcp HA with HIGH writing speed:**
+
+```
+resource "netapp-cloudmanager_cvo_gcp" "cl-cvo-gcp-ha" {
+  provider = netapp-cloudmanager
+  name = "tfcvohahigh"
+  project_id = "occm-project"
+  zone = "us-east4-a"
+  subnet_id = "default"
+  vpc_id = "default"
+  gcp_service_account = "abcdefg@tlv-support.iam.gserviceaccount.com"
+  is_ha = true
+  svm_password = "netapp11!"
+  use_latest_version = false
+  ontap_version = "ONTAP-9.13.0.T1.gcpha"
+  gcp_volume_type = "pd-ssd"
+  capacity_package_name = "Professional"
+  instance_type = "n2-standard-16"
+  mediator_zone = "us-east4-c"
+  node1_zone = "us-east4-a"
+  node2_zone =  "us-east4-b"
+  subnet0_node_and_data_connectivity = "projects/tlv-support/regions/us-east4/subnetworks/default"
+  subnet1_cluster_connectivity = "projects/tlv-support/regions/us-east4/subnetworks/rn-cluster-subnet"
+  subnet2_ha_connectivity = "projects/tlv-support/regions/us-east4/subnetworks/rn-rdma-subnet"
+  subnet3_data_replication = "projects/tlv-support/regions/us-east4/subnetworks/rn-replication-subnet"
+  vpc0_node_and_data_connectivity = "projects/tlv-support/global/networks/default"
+  vpc1_cluster_connectivity = "projects/tlv-support/global/networks/rnicholl-vpc1-cluster-internal"
+  vpc2_ha_connectivity = "projects/tlv-support/global/networks/rnicholl-vpc2-rdma-internal"
+  vpc3_data_replication = "projects/tlv-support/global/networks/rnicholl-vpc3-replication-internal"
+  nss_account = "cd12x234-f876-4567-8f1f-12345678xxx"
+  client_id = netapp-cloudmanager_connector_gcp.cm-gcp.client_id
+  writing_speed_state = "HIGH"
+  flash_cache = true
+}
+```
+
 ## Argument Reference
 
 The following arguments are supported:
@@ -71,7 +107,7 @@ The following arguments are supported:
 * `name` - (Required) The name of the Cloud Volumes ONTAP working environment.
 * `project_id` - (Required) The ID of the GCP project.
 * `zone` - (Optional) The zone of the region where the working environment will be created. It is required in single.
-* `gcp_service_account` - (Required) The gcp_service_account email in order to enable tiering of cold data to Google Cloud Storage.
+* `gcp_service_account` - (Optional) The gcp_service_account email in order to enable tiering of cold data to Google Cloud Storage.
 * `svm_password` - (Required) The admin password for Cloud Volumes ONTAP.
 * `svm_name` - (Optional) The name of the SVM.
 * `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
@@ -93,7 +129,8 @@ The following arguments are supported:
 * `capacity_tier` - (Optional) Indicates the type of data tiering to use: ['cloudStorage']. The default is 'cloudStorage'.
 * `tier_level` - (Optional) In case capacity_tier is cloudStorage, this argument indicates the tiering level: ['standard', 'nearline', 'coldline']. The default is: 'standard'.
 * `nss_account` - (Optional) The NetApp Support Site account ID to use with this Cloud Volumes ONTAP system. If the license type is BYOL and an NSS account isn't provided, Cloud Manager tries to use the first existing NSS account.
-* `writing_speed_state` - (Optional) The write speed setting for Cloud Volumes ONTAP: ['NORMAL','HIGH']. The default is 'NORMAL'. This argument is not relevant for HA pairs.
+* `writing_speed_state` - (Optional) The write speed setting for Cloud Volumes ONTAP: ['NORMAL','HIGH']. The default is 'NORMAL'. For single node system, HIGH write speed is supported with all machine types. For HA, Flash Cache, high write speed, and a higher maximum transmission unit (MTU) of 8,896 bytes are available through the High write speed option with the n2-standard-16, n2-standard-32, n2-standard-48, and n2-standard-64 instance types.
+* `flash_cache` - (Optional) Enable Flash Cache. In GCP HA (version 9.13.0), HIGH write speed and FlashCache are coupled together both needs to be activated, one cannot be activated without the other.
 * `firewall_rule` - (Optional) The name of the firewall rule for Cloud Volumes ONTAP. If not provided, Cloud Manager generates the rule.
 * `backup_volumes_to_cbs` - (Optional) Automatically enable back up of all volumes to Google Cloud buckets [true, false].
 * `enable_compliance` - (Optional) Enable the Cloud Compliance service on the working environment [true, false].
