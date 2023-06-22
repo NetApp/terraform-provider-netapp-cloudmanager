@@ -1,4 +1,4 @@
-## 23.7.0
+## 23.6.1
 NEW FEATURES:
 * resource/cvo_gcp: support HIGH `writing_speed_state` in GCP HA. Make `gcp_service_account` optional .
 
