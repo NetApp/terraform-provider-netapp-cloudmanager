@@ -1,6 +1,10 @@
+## 23.7.0
+NEW FEATURES:
+* resource/connector_gcp: support adding gcp keys `gcp_block_project_ssh_keys`, `gcp_serial_port_enable`, `gcp_enable_os_login` and `gcp_enable_os_login_sk` to the config.
+
 ## 23.6.1
 NEW FEATURES:
-* resource/cvo_gcp: support HIGH `writing_speed_state` in GCP HA. Make `gcp_service_account` optional .
+* resource/cvo_gcp: support HIGH `writing_speed_state` in GCP HA. Make `gcp_service_account` optional.
 
 ## 23.6.0
 NEW FEATURES:
