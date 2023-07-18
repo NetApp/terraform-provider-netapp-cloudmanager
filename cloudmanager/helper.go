@@ -170,6 +170,23 @@ type svm struct {
 	Ver4Enabled       bool     `structs:"ver4Enabled"`
 }
 
+type configValuesUpdateRequest struct {
+	GcpBlockProjectSSHKeys bool `structs:"gcpBlockProjectSshKeys"`
+	GcpSerialPortEnable    bool `structs:"gcpSerialPortEnable"`
+	GcpEnableOsLogin       bool `structs:"gcpEnableOsLogin"`
+	GcpEnableOsLoginSk     bool `structs:"gcpEnableOsLoginSk"`
+}
+
+type configValuesResponse struct {
+	GcpInstanceMetadataItems gcpInstanceMetadata `json:"gcpInstanceMetadataItems"`
+}
+type gcpInstanceMetadata struct {
+	BlockProjectSSHKeys bool `json:"blockProjectSshKeys"`
+	SerialPortEnable    bool `json:"serialPortEnable"`
+	EnableOsLogin       bool `json:"enableOsLogin"`
+	EnableOsLoginSk     bool `json:"enableOsLoginSk"`
+}
+
 // userTags the input for requesting a CVO
 type userTags struct {
 	TagKey   string `structs:"tagKey"`
@@ -1273,6 +1290,35 @@ func (c *Client) upgradeOntapVersionAvailable(apiRoot string, id string, ontapVe
 		return "", fmt.Errorf("working environment %s: ontap version %s is not in the upgrade versions list (%+v)", id, ontapVersion, upgradeOntapVersions)
 	}
 	return "", fmt.Errorf("working environment %s: no upgrade version availble", id)
+}
+
+func (c *Client) setOCCMConfig(request configValuesUpdateRequest, clientID string) error {
+	log.Print("setOCCMConfig: set OCCM configuration")
+
+	hostType := "CloudManagerHost"
+
+	baseURL := "/occm/api/occm/config"
+	params := structs.Map(request)
+	log.Printf("\tparams: %+v", params)
+	statusCode, response, _, err := c.CallAPIMethod("PUT", baseURL, params, c.Token, hostType, clientID)
+
+	responseError := apiResponseChecker(statusCode, response, "setOCCMConfig")
+	if responseError != nil {
+		return responseError
+	}
+
+	if err != nil {
+		log.Print("setOCCMConfig request failed ", statusCode)
+		return err
+	}
+
+	var result configValuesResponse
+	if err := json.Unmarshal(response, &result); err != nil {
+		log.Print("Failed to unmarshall response from setOCCMConfig ", err)
+		return err
+	}
+	log.Printf("\tsetOCCMConfig result: %+v", result.GcpInstanceMetadataItems)
+	return nil
 }
 
 func (c *Client) setConfigFlag(request setFlagRequest, keyPath string, clientID string) error {

@@ -154,6 +154,30 @@ func resourceOCCMGCP() *schema.Resource {
 					Type: schema.TypeString,
 				},
 			},
+			"gcp_block_project_ssh_keys": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+				ForceNew: true,
+			},
+			"gcp_serial_port_enable": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  true,
+				ForceNew: true,
+			},
+			"gcp_enable_os_login": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  true,
+				ForceNew: true,
+			},
+			"gcp_enable_os_login_sk": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -243,6 +267,20 @@ func resourceOCCMGCPCreate(d *schema.ResourceData, meta interface{}) error {
 		occmDetails.Tags = tags
 	}
 
+	occmConfig := configValuesUpdateRequest{}
+	if o, ok := d.GetOk("gcp_block_project_ssh_keys"); ok {
+		occmConfig.GcpBlockProjectSSHKeys = o.(bool)
+	}
+	if o, ok := d.GetOk("gcp_serial_port_enable"); ok {
+		occmConfig.GcpSerialPortEnable = o.(bool)
+	}
+	if o, ok := d.GetOk("gcp_enable_os_login"); ok {
+		occmConfig.GcpEnableOsLogin = o.(bool)
+	}
+	if o, ok := d.GetOk("gcp_enable_os_login_sk"); ok {
+		occmConfig.GcpEnableOsLoginSk = o.(bool)
+	}
+
 	res, err := client.deployGCPVM(occmDetails, proxyCertificates, "")
 	if err != nil {
 		log.Print("Error creating instance")
@@ -256,6 +294,10 @@ func resourceOCCMGCPCreate(d *schema.ResourceData, meta interface{}) error {
 
 	if err := d.Set("account_id", res.AccountID); err != nil {
 		return fmt.Errorf("error reading occm account_id: %s", err)
+	}
+
+	if err := client.setOCCMConfig(occmConfig, res.ClientID); err != nil {
+		return fmt.Errorf("error set occm config: %s", err)
 	}
 
 	log.Printf("Created occm: %v", res)
@@ -321,12 +363,12 @@ func resourceOCCMGCPRead(d *schema.ResourceData, meta interface{}) error {
 		disk, err := client.getDisk(occmDetails, clientID)
 		if err != nil {
 			log.Print("Error reading disk")
-			return fmt.Errorf("Error getting disk info in read function %#v", err)
+			return fmt.Errorf("error getting disk info in read function %#v", err)
 		}
 		vmInstance, err := client.getVMInstance(occmDetails, clientID)
 		if err != nil {
 			log.Print("Error reading vm")
-			return fmt.Errorf("Error getting vm info in read function %#v", err)
+			return fmt.Errorf("error getting vm info in read function %#v", err)
 		}
 		vmLabels := make(map[string]interface{})
 		diskLabels := make(map[string]interface{})
