@@ -131,7 +131,9 @@ The following arguments are supported:
 * `nss_account` - (Optional) The NetApp Support Site account ID to use with this Cloud Volumes ONTAP system. If the license type is BYOL and an NSS account isn't provided, Cloud Manager tries to use the first existing NSS account.
 * `writing_speed_state` - (Optional) The write speed setting for Cloud Volumes ONTAP: ['NORMAL','HIGH']. The default is 'NORMAL'. For single node system, HIGH write speed is supported with all machine types. For HA, Flash Cache, high write speed, and a higher maximum transmission unit (MTU) of 8,896 bytes are available through the High write speed option with the n2-standard-16, n2-standard-32, n2-standard-48, and n2-standard-64 instance types.
 * `flash_cache` - (Optional) Enable Flash Cache. In GCP HA (version 9.13.0), HIGH write speed and FlashCache are coupled together both needs to be activated, one cannot be activated without the other.
-* `firewall_rule` - (Optional) The name of the firewall rule for Cloud Volumes ONTAP. If not provided, Cloud Manager generates the rule.
+* `firewall_rule` - (Optional) The name of the firewall rule for a single node cluster. If not provided, Cloud Manager generates the rule.
+* `firewall_tag_name_rule` - (Optional) Target tag of the firewall when creating a CVO with an existing firewall. It is used for a single node cluster.
+* `firewall_ip_ranges` - (Optional) Define the allowed inbound traffic for the generated policy. It is used when selecting create a new firewall. Recommanded set false: Allow traffice within the selected VPC only. Allow inbound traffic only from the cluster node VPCs.
 * `backup_volumes_to_cbs` - (Optional) Automatically enable back up of all volumes to Google Cloud buckets [true, false].
 * `enable_compliance` - (Optional) Enable the Cloud Compliance service on the working environment [true, false].
 * `is_ha` - (Optional) Indicate whether the working environment is an HA pair or not [true, false]. The default is false.
@@ -152,6 +154,10 @@ The following arguments are supported:
 * `vpc1_firewall_rule_name` - (Optional) Firewall rule name for vpc2.
 * `vpc2_firewall_rule_name` - (Optional) Firewall rule name for vpc3.
 * `vpc3_firewall_rule_name` - (Optional) Firewall rule name for vpc4.
+* `vpc0_firewall_rule_tag_name` - (Optional) Firewall rule tag name for vpc1.
+* `vpc1_firewall_rule_tag_name` - (Optional) Firewall rule tag name for vpc2.
+* `vpc2_firewall_rule_tag_name` - (Optional) Firewall rule tag name for vpc3.
+* `vpc3_firewall_rule_tag_name` - (Optional) Firewall rule tag name for vpc4.
 * `upgrade_ontap_version` - (Optional) Indicates whether to upgrade ontap image with `ontap_version`. To upgrade ontap image, `ontap_version` cannot be 'latest' and `use_latest_version` needs to be false.
 * `retries` - (Optional) The number of attempts to wait for the completion of creating the CVO with 60 seconds apart for each attempt. For HA, this value is incremented by 30. The default is '60'.
 * `worm_retention_period_length` - (Optional) WORM retention period length. Once specified retention period, the WORM is enabled. When WORM storage is activated, data tiering to object storage can’t be enabled.

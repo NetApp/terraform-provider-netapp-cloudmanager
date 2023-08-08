@@ -1,3 +1,7 @@
+## 23.8.0
+NEW FEATURES:
+* resource/cvo_gcp: asupport adding `firewall_tag_name_rule` and `firewall_ip_ranges`.
+
 ## 23.7.0
 NEW FEATURES:
 * resource/connector_gcp: support adding gcp keys `gcp_block_project_ssh_keys`, `gcp_serial_port_enable`, `gcp_enable_os_login` and `gcp_enable_os_login_sk` to the config.
