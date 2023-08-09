@@ -33,6 +33,7 @@ type createCVOGCPDetails struct {
 	Project                 string                  `structs:"project"`
 	CapacityTier            string                  `structs:"capacityTier,omitempty"`
 	TierLevel               string                  `structs:"tierLevel,omitempty"`
+	SaasSubscriptionID      string                  `structs:"saasSubscriptionId,omitempty"`
 	NssAccount              string                  `structs:"nssAccount,omitempty"`
 	WormRequest             wormRequest             `structs:"wormRequest,omitempty"`
 	WritingSpeedState       string                  `structs:"writingSpeedState,omitempty"`
@@ -40,6 +41,8 @@ type createCVOGCPDetails struct {
 	GCPLabels               []gcpLabels             `structs:"gcpLabels,omitempty"`
 	GcpEncryptionParameters gcpEncryptionParameters `structs:"gcpEncryptionParameters,omitempty"`
 	FirewallRule            string                  `structs:"firewallRule,omitempty"`
+	FirewallTagNameRule     string                  `structs:"firewallTagNameRule,omitempty"`
+	FirewallIPRanges        bool                    `structs:"firewallIpRanges"`
 	BackupVolumesToCbs      bool                    `structs:"backupVolumesToCbs"`
 	EnableCompliance        bool                    `structs:"enableCompliance"`
 	IsHA                    bool
@@ -83,6 +86,10 @@ type haParamsGCP struct {
 	VPC1FirewallRuleName           string `structs:"vpc1FirewallRuleName,omitempty"`
 	VPC2FirewallRuleName           string `structs:"vpc2FirewallRuleName,omitempty"`
 	VPC3FirewallRuleName           string `structs:"vpc3FirewallRuleName,omitempty"`
+	VPC0FirewallRuleTagName        string `structs:"vpc0FirewallRuleTagName,omitempty"`
+	VPC1FirewallRuleTagName        string `structs:"vpc1FirewallRuleTagName,omitempty"`
+	VPC2FirewallRuleTagName        string `structs:"vpc2FirewallRuleTagName,omitempty"`
+	VPC3FirewallRuleTagName        string `structs:"vpc3FirewallRuleTagName,omitempty"`
 }
 
 func (c *Client) createCVOGCP(cvoDetails createCVOGCPDetails, clientID string) (cvoResult, error) {

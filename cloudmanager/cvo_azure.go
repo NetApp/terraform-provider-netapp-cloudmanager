@@ -233,7 +233,7 @@ func (c *Client) createCVOAzure(cvoDetails createCVOAzureDetails, clientID strin
 
 	hostType := "CloudManagerHost"
 	params := structs.Map(cvoDetails)
-
+	log.Printf("Create AZURE CVO: %#v\n", params)
 	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("POST", baseURL, params, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("createCVO request failed ", statusCode)

@@ -147,6 +147,11 @@ func resourceCVOGCP() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"standard", "nearline", "coldline"}, false),
 			},
+			"saas_subscription_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"worm_retention_period_length": {
 				Type:     schema.TypeInt,
 				Optional: true,
@@ -196,6 +201,16 @@ func resourceCVOGCP() *schema.Resource {
 			},
 			"firewall_rule": {
 				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"firewall_tag_name_rule": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"firewall_ip_ranges": {
+				Type:     schema.TypeBool,
 				Optional: true,
 				ForceNew: true,
 			},
@@ -305,6 +320,26 @@ func resourceCVOGCP() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"vpc0_firewall_rule_tag_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"vpc1_firewall_rule_tag_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"vpc2_firewall_rule_tag_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"vpc3_firewall_rule_ntag_ame": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"client_id": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -330,7 +365,6 @@ func resourceCVOGCP() *schema.Resource {
 			"retries": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				ForceNew: true,
 				Default:  60,
 			},
 		},
@@ -363,6 +397,9 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 	if c, ok := d.GetOk("tier_level"); ok {
 		cvoDetails.TierLevel = c.(string)
+	}
+	if c, ok := d.GetOk("saas_subscription_id"); ok {
+		cvoDetails.SaasSubscriptionID = c.(string)
 	}
 	cvoDetails.GCPVolumeSize.Size = d.Get("gcp_volume_size").(int)
 	cvoDetails.GCPVolumeSize.Unit = d.Get("gcp_volume_size_unit").(string)
@@ -435,7 +472,12 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 	if c, ok := d.GetOk("firewall_rule"); ok {
 		cvoDetails.FirewallRule = c.(string)
 	}
-
+	if c, ok := d.GetOk("firewall_tag_name_rule"); ok {
+		cvoDetails.FirewallTagNameRule = c.(string)
+	}
+	if c, ok := d.GetOk("firewall_ip_ranges"); ok {
+		cvoDetails.FirewallIPRanges = c.(bool)
+	}
 	if c, ok := d.GetOk("writing_speed_state"); ok {
 		cvoDetails.WritingSpeedState = strings.ToUpper(c.(string))
 	}
@@ -551,6 +593,18 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 		}
 		if c, ok := d.GetOk("vpc3_firewall_rule_name"); ok {
 			cvoDetails.HAParams.VPC3FirewallRuleName = c.(string)
+		}
+		if c, ok := d.GetOk("vpc0_firewall_rule_tag_name"); ok {
+			cvoDetails.HAParams.VPC0FirewallRuleTagName = c.(string)
+		}
+		if c, ok := d.GetOk("vpc1_firewall_rule_tag_name"); ok {
+			cvoDetails.HAParams.VPC1FirewallRuleTagName = c.(string)
+		}
+		if c, ok := d.GetOk("vpc2_firewall_rule_tag_name"); ok {
+			cvoDetails.HAParams.VPC2FirewallRuleTagName = c.(string)
+		}
+		if c, ok := d.GetOk("vpc3_firewall_rule_tag_name"); ok {
+			cvoDetails.HAParams.VPC3FirewallRuleTagName = c.(string)
 		}
 		if c, ok := d.GetOk("svm"); ok {
 			svms := c.(*schema.Set)

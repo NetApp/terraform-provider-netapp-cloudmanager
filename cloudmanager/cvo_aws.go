@@ -30,6 +30,7 @@ type createCVOAWSDetails struct {
 	CapacityTier                string                  `structs:"capacityTier,omitempty"`
 	TierLevel                   string                  `structs:"tierLevel,omitempty"`
 	NssAccount                  string                  `structs:"nssAccount,omitempty"`
+	SaasSubscriptionID          string                  `structs:"saasSubscriptionId,omitempty"`
 	WritingSpeedState           string                  `structs:"writingSpeedState,omitempty"`
 	ClusterKeyPairName          string                  `structs:"clusterKeyPairName,omitempty"`
 	IOPS                        int                     `structs:"iops,omitempty"`
@@ -263,7 +264,7 @@ func (c *Client) createCVOAWS(cvoDetails createCVOAWSDetails, clientID string) (
 
 	hostType := "CloudManagerHost"
 	params := structs.Map(cvoDetails)
-
+	log.Printf("Create AWS CVO: %#v\n", params)
 	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("POST", baseURL, params, c.Token, hostType, clientID)
 	if err != nil {
 		log.Print("createCVO request failed ", statusCode)

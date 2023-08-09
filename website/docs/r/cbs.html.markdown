@@ -153,3 +153,9 @@ The `volumes` block suports the followings:
 * `volume_name` - (Required) Name of the volume to enable backup.
 * `mode` - (Optional) type of mode to create snapshot copies.
 * `backup_policy` - (Optional)
+
+## Attributes Reference
+
+The following attributes are exported in addition to the arguments listed above:
+
+* `id` - The unique identifier for the cloud backup service.
