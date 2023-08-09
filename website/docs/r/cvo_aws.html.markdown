@@ -125,6 +125,7 @@ The following arguments are supported:
 * `platform_serial_number` - (Optional) The serial number for the cluster. This is required when 'license_type' is set 'cot-premium-byol'.
 * `capacity_tier` - (Optional) Whether to enable data tiering for the first data aggregate: ['S3','NONE']. The default is 'S3'.
 * `tier_level` - (Optional) The tiering level when 'capacity_tier' is set to 'S3' ['normal','ia','ia-single','intelligent']. The default is 'normal'.
+* `saas_subscription_id` - (Optional) SaaS Subscription ID. It is needed if the subscription is not paygo type.
 * `nss_account` - (Optional) The NetApp Support Site account ID to use with this Cloud Volumes ONTAP system. If the license type is BYOL and an NSS account isn't provided, Cloud Manager tries to use the first existing NSS account.
 * `writing_speed_state` - (Optional) The write speed setting for Cloud Volumes ONTAP: ['NORMAL','HIGH']. The default is 'NORMAL'. This argument is not relevant for HA pairs.
 * `instance_tenancy` - (Optional) The EC2 instance tenancy: ['default','dedicated']. The default is 'default'.
@@ -151,6 +152,7 @@ The following arguments are supported:
 * `route_table_ids` - (Optional) For HA FloatingIP, the list of route table IDs that will be updated with the floating IPs.
 * `upgrade_ontap_version` - (Optional) Indicates whether to upgrade ontap image with `ontap_version`. To upgrade ontap image, `ontap_version` cannot be 'latest' and `use_latest_version` needs to be false.
 * `mediator_security_group_id` - (Optional) For HA only, mediator security group id.
+* `assume_role_arn` - (Optional) For HA only, Amazon Resource Name ARN of an AWS Identity and Access Managent IAM role that has created in the VPC owner account. For example, "arn:aws:iam::61239912384567:role/mediator_role_assume_fromdev"
 * `retries` - (Optional) The number of attempts to wait for the completion of creating the CVO with 60 seconds apart for each attempt. For HA, this value is incremented by 30. The default is '60'.
 * `worm_retention_period_length` - (Optional) WORM retention period length. Once specified retention period, the WORM is enabled. When WORM storage is activated, data tiering to object storage can’t be enabled.
 * `worm_retention_period_unit` - (Optional) WORM retention period unit: ['years','months','days','hours','minutes','seconds'].

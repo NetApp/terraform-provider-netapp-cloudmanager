@@ -147,6 +147,11 @@ func resourceCVOGCP() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"standard", "nearline", "coldline"}, false),
 			},
+			"saas_subscription_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"worm_retention_period_length": {
 				Type:     schema.TypeInt,
 				Optional: true,
@@ -392,6 +397,9 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 	if c, ok := d.GetOk("tier_level"); ok {
 		cvoDetails.TierLevel = c.(string)
+	}
+	if c, ok := d.GetOk("saas_subscription_id"); ok {
+		cvoDetails.SaasSubscriptionID = c.(string)
 	}
 	cvoDetails.GCPVolumeSize.Size = d.Get("gcp_volume_size").(int)
 	cvoDetails.GCPVolumeSize.Unit = d.Get("gcp_volume_size_unit").(string)

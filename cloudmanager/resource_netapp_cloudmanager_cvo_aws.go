@@ -134,6 +134,11 @@ func resourceCVOAWS() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"saas_subscription_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"worm_retention_period_length": {
 				Type:     schema.TypeInt,
 				Optional: true,
@@ -400,6 +405,11 @@ func resourceCVOAWSCreate(d *schema.ResourceData, meta interface{}) error {
 			cvoDetails.AwsTags = expandUserTags(tags)
 		}
 	}
+
+	if c, ok := d.GetOk("saas_subscription_id"); ok {
+		cvoDetails.SaasSubscriptionID = c.(string)
+	}
+
 	cvoDetails.EbsVolumeSize.Size = d.Get("ebs_volume_size").(int)
 	cvoDetails.EbsVolumeSize.Unit = d.Get("ebs_volume_size_unit").(string)
 	cvoDetails.VsaMetadata.OntapVersion = d.Get("ontap_version").(string)

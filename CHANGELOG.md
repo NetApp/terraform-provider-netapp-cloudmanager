@@ -1,10 +1,10 @@
 ## 23.8.0
-
-ENHANCEMENTS:
+NEW ENHANCEMENTS:
 * ressource/cvo_aws, cvo_azure, cvo_gcp: remove force new from `retries`.
+* resource/cvo_aws and cvo_gcp: add `saas_subscription_id`.
 
 NEW FEATURES:
-* resource/cvo_gcp: asupport adding `firewall_tag_name_rule` and `firewall_ip_ranges`.
+* resource/cvo_gcp: support adding `firewall_tag_name_rule` and `firewall_ip_ranges`.
 
 ## 23.7.0
 NEW FEATURES:

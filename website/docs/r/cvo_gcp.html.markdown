@@ -128,6 +128,7 @@ The following arguments are supported:
 * `serial_number` - (Optional) The serial number for the system. Required when using 'gcp-cot-premium-byol'.
 * `capacity_tier` - (Optional) Indicates the type of data tiering to use: ['cloudStorage']. The default is 'cloudStorage'.
 * `tier_level` - (Optional) In case capacity_tier is cloudStorage, this argument indicates the tiering level: ['standard', 'nearline', 'coldline']. The default is: 'standard'.
+* `saas_subscription_id` - (Optional) SaaS Subscription ID. It is needed if the subscription is not paygo type.
 * `nss_account` - (Optional) The NetApp Support Site account ID to use with this Cloud Volumes ONTAP system. If the license type is BYOL and an NSS account isn't provided, Cloud Manager tries to use the first existing NSS account.
 * `writing_speed_state` - (Optional) The write speed setting for Cloud Volumes ONTAP: ['NORMAL','HIGH']. The default is 'NORMAL'. For single node system, HIGH write speed is supported with all machine types. For HA, Flash Cache, high write speed, and a higher maximum transmission unit (MTU) of 8,896 bytes are available through the High write speed option with the n2-standard-16, n2-standard-32, n2-standard-48, and n2-standard-64 instance types.
 * `flash_cache` - (Optional) Enable Flash Cache. In GCP HA (version 9.13.0), HIGH write speed and FlashCache are coupled together both needs to be activated, one cannot be activated without the other.

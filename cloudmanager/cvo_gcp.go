@@ -33,6 +33,7 @@ type createCVOGCPDetails struct {
 	Project                 string                  `structs:"project"`
 	CapacityTier            string                  `structs:"capacityTier,omitempty"`
 	TierLevel               string                  `structs:"tierLevel,omitempty"`
+	SaasSubscriptionID      string                  `structs:"saasSubscriptionId,omitempty"`
 	NssAccount              string                  `structs:"nssAccount,omitempty"`
 	WormRequest             wormRequest             `structs:"wormRequest,omitempty"`
 	WritingSpeedState       string                  `structs:"writingSpeedState,omitempty"`
