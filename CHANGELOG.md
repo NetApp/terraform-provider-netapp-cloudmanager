@@ -1,4 +1,8 @@
 ## 23.8.0
+
+ENHANCEMENTS:
+* ressource/cvo_aws, cvo_azure, cvo_gcp: remove force new from `retries`.
+
 NEW FEATURES:
 * resource/cvo_gcp: asupport adding `firewall_tag_name_rule` and `firewall_ip_ranges`.
 
