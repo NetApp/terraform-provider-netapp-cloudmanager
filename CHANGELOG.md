@@ -1,6 +1,9 @@
 ## 23.8.0
-NEW ENHANCEMENTS:
+BUG FIXES:
+* resource/volume: fix documentation name for volume and add an example for creating on_prem volume.
 * ressource/cvo_aws, cvo_azure, cvo_gcp: remove force new from `retries`.
+
+NEW ENHANCEMENTS:
 * resource/cvo_aws and cvo_gcp: add `saas_subscription_id`.
 
 NEW FEATURES:
