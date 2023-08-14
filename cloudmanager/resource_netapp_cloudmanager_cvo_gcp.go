@@ -3,6 +3,7 @@ package cloudmanager
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"strings"
 
 	"github.com/hashicorp/terraform/helper/schema"
@@ -171,6 +172,7 @@ func resourceCVOGCP() *schema.Resource {
 			"writing_speed_state": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{"NORMAL", "HIGH"}, true),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return strings.EqualFold(old, new)
@@ -434,10 +436,15 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 	if c, ok := d.GetOk("enable_compliance"); ok {
 		cvoDetails.EnableCompliance = c.(bool)
 	}
-	// In GCP HA, HIGH write speed and FlashCache are coupled together both needs to be activated, one cannot be activated without the other.
+	// In both single and HA case, flash_cache only can be set when the selected instance_type
 	if c, ok := d.GetOk("flash_cache"); ok {
 		cvoDetails.FlashCache = c.(bool)
+		match, _ := regexp.MatchString("^n2-standard-(16|32|48|64)$", cvoDetails.VsaMetadata.InstanceType)
+		if !match {
+			return fmt.Errorf("instance_type has to be one of n2-standard-16,32,48,64")
+		}
 	}
+
 	if c, ok := d.GetOk("zone"); ok {
 		cvoDetails.Region = c.(string)
 	}
@@ -480,6 +487,8 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 	if c, ok := d.GetOk("writing_speed_state"); ok {
 		cvoDetails.WritingSpeedState = strings.ToUpper(c.(string))
+	} else {
+		cvoDetails.WritingSpeedState = "NORMAL"
 	}
 
 	if c, ok := d.GetOk("nss_account"); ok {
@@ -626,6 +635,7 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("createCVOGCP %s result %#v  client_id %s", cvoDetails.Name, res, clientID)
 	d.SetId(res.PublicID)
 	d.Set("svm_name", res.SvmName)
+	d.Set("writing_speed_state", res.OntapClusterProperties.WritingSpeedState)
 	log.Printf("Created cvo: %v", res)
 
 	// Add SVMs on GCP CVO HA
@@ -654,13 +664,9 @@ func resourceCVOGCPRead(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 	d.Set("svm_name", resp.SvmName)
-	if c, ok := d.GetOk("writing_speed_state"); ok {
-		if strings.EqualFold(c.(string), resp.OntapClusterProperties.WritingSpeedState) {
-			d.Set("writing_speed_state", c.(string))
-		} else {
-			d.Set("writing_speed_state", resp.OntapClusterProperties.WritingSpeedState)
-		}
-	}
+	d.Set("writing_speed_state", resp.OntapClusterProperties.WritingSpeedState)
+	d.Set("instance_type", resp.ProviderProperties.InstanceType)
+
 	return nil
 }
 
@@ -713,6 +719,18 @@ func resourceCVOGCPUpdate(d *schema.ResourceData, meta interface{}) error {
 		}
 	}
 
+	instanceType := d.Get("instance_type").(string)
+	// In both single and HA case, flash_cache only can be set when the selected instance_type
+	if _, ok := d.GetOk("flash_cache"); ok {
+		match, _ := regexp.MatchString("^n2-standard-(16|32|48|64)$", instanceType)
+		if !match {
+			return fmt.Errorf("instance_type has to be one of n2-standard-16,32,48,64")
+		}
+		if d.Get("is_ha").(bool) && d.Get("writing_speed_state").(string) == "" {
+			return fmt.Errorf("in HA, writing_speed_state has to be set when flash_cache is set")
+		}
+	}
+
 	// check if license_type and instance type are changed
 	if d.HasChange("instance_type") || d.HasChange("license_type") {
 		respErr := updateCVOLicenseInstanceType(d, meta, clientID)
@@ -741,7 +759,6 @@ func resourceCVOGCPUpdate(d *schema.ResourceData, meta interface{}) error {
 		if respErr != nil {
 			return respErr
 		}
-
 		return nil
 	}
 

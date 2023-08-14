@@ -50,7 +50,7 @@ type workingEnvironmentOntapClusterPropertiesResponse struct {
 	MonitoringProperties           interface{}            `json:"monitoringProperties"`
 	Name                           string                 `json:"name"`
 	OntapClusterProperties         ontapClusterProperties `json:"ontapClusterProperties"`
-	ProviderProperties             interface{}            `json:"providerProperties"`
+	ProviderProperties             providerProperties     `json:"providerProperties"`
 	PublicID                       string                 `json:"publicId"`
 	ReplicationProperties          interface{}            `json:"replicationProperties"`
 	ReservedSize                   interface{}            `json:"reservedSize"`
@@ -68,6 +68,11 @@ type workingEnvironmentOntapClusterPropertiesResponse struct {
 }
 
 type ontapClusterProperties struct {
+	AggregateCount                   int                   `json:"aggregateCount"`
+	VolumeCount                      int                   `json:"volumeCount"`
+	FlashCache                       bool                  `json:"flashCache"`
+	SpaceReportingLogical            bool                  `json:"spaceReportingLogical"`
+	KeystoneSubscription             bool                  `json:"keystoneSubscription"`
 	BroadcastDomainInfo              []broadcastDomainInfo `json:"broadcastDomainInfo"`
 	CanConfigureCapacityTier         bool                  `json:"canConfigureCapacityTier"`
 	CapacityTierInfo                 capacityTierInfo      `json:"capacityTierInfo"`
@@ -89,6 +94,25 @@ type ontapClusterProperties struct {
 	VscanFileOperationDefaultProfile string                `json:"vscanFileOperationDefaultProfile"`
 	WormEnabled                      bool                  `json:"wormEnabled"`
 	WritingSpeedState                string                `json:"writingSpeedState"`
+}
+
+// commond fields of GCP properties and Azure properties
+type providerProperties struct {
+	RegionName   string `json:"regionrName"`
+	InstanceType string `json:"instanceType"`
+	NumOfNics    int    `json:"numOfNics"`
+}
+
+type gcpProperties struct {
+	Name           string      `json:"name"`
+	RegionName     string      `json:"regionrName"`
+	ZoneName       []string    `json:"zoneName"`
+	InstanceType   string      `json:"instanceType"`
+	SubnetCidr     string      `json:"subnetCidr"`
+	NumOfNics      int         `json:"numOfNics"`
+	Labels         interface{} `json:"labels"`
+	ProjectName    string      `json:"projectName"`
+	DeploymentName string      `json:"deploymentName"`
 }
 
 type haProperties struct {
@@ -1172,10 +1196,14 @@ func updateCVOLicenseInstanceType(d *schema.ResourceData, meta interface{}, clie
 	if c, ok := d.GetOk("license_type"); ok {
 		request.LicenseType = c.(string)
 	}
-
+	if request.LicenseType == "capacity-paygo" && d.Get("is_ha").(bool) {
+		log.Print("Set licenseType as default value ha-capacity-paygo")
+		request.LicenseType = "ha-capacity-paygo"
+	}
 	// Update license type and instance type
 	id := d.Id()
 	baseURL := fmt.Sprintf("/working-environments/%s/license-instance-type", id)
+	log.Printf("Update license and instance type: %#v", request)
 	updateErr := client.callCMUpdateAPI("PUT", request, baseURL, id, "updateCVOLicenseInstanceType", clientID)
 	if updateErr != nil {
 		return updateErr
