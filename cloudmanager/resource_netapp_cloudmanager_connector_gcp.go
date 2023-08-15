@@ -158,25 +158,21 @@ func resourceOCCMGCP() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
-				ForceNew: true,
 			},
 			"gcp_serial_port_enable": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  true,
-				ForceNew: true,
 			},
 			"gcp_enable_os_login": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  true,
-				ForceNew: true,
 			},
 			"gcp_enable_os_login_sk": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  true,
-				ForceNew: true,
 			},
 		},
 	}
@@ -506,10 +502,27 @@ func resourceOCCMGCPUpdate(d *schema.ResourceData, meta interface{}) error {
 	}
 	occmDetails.Company = d.Get("company").(string)
 	clientID := d.Get("client_id").(string)
+	client.AccountID = d.Get("account_id").(string)
 
 	instance, err := client.getVMInstance(occmDetails, clientID)
 	if err != nil {
 		return err
+	}
+	occmConfig := configValuesUpdateRequest{}
+	if o, ok := d.GetOk("gcp_block_project_ssh_keys"); ok {
+		occmConfig.GcpBlockProjectSSHKeys = o.(bool)
+	}
+	if o, ok := d.GetOk("gcp_serial_port_enable"); ok {
+		occmConfig.GcpSerialPortEnable = o.(bool)
+	}
+	if o, ok := d.GetOk("gcp_enable_os_login"); ok {
+		occmConfig.GcpEnableOsLogin = o.(bool)
+	}
+	if o, ok := d.GetOk("gcp_enable_os_login_sk"); ok {
+		occmConfig.GcpEnableOsLoginSk = o.(bool)
+	}
+	if err := client.setOCCMConfig(occmConfig, clientID); err != nil {
+		return fmt.Errorf("error set occm config: %s", err)
 	}
 
 	if d.HasChange("tags") {

@@ -1324,6 +1324,13 @@ func (c *Client) setOCCMConfig(request configValuesUpdateRequest, clientID strin
 	log.Print("setOCCMConfig: set OCCM configuration")
 
 	hostType := "CloudManagerHost"
+	if c.Token == "" {
+		accesTokenResult, err := c.getAccessToken()
+		if err != nil {
+			return err
+		}
+		c.Token = accesTokenResult.Token
+	}
 
 	baseURL := "/occm/api/occm/config"
 	params := structs.Map(request)

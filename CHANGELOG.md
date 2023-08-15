@@ -2,6 +2,9 @@
 NEW FEATURES:
 * resource/cvo_gcp: support LDM/flashCache on both single and HA.
 
+BUG FIXES:
+* resource/connector_gcp: fix gcp config flags backward compatible issue.
+
 ## 23.8.0
 BUG FIXES:
 * resource/volume: fix documentation name for volume and add an example for creating on_prem volume.
