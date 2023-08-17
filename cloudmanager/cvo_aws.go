@@ -100,8 +100,12 @@ type cvoList struct {
 
 // cvoResult the users input for creating a cvo
 type cvoResult struct {
-	PublicID string `json:"publicId"`
-	SvmName  string `json:"svmName"`
+	PublicID               string                 `json:"publicId"`
+	Name                   string                 `json:"name"`
+	TenantID               string                 `json:"tenantId"`
+	SvmName                string                 `json:"svmName"`
+	CreatorUserEmail       string                 `json:"creatorUserEmail"`
+	OntapClusterProperties ontapClusterProperties `json:"ontapClusterProperties"`
 }
 
 // tenantResult the users input for creating a cvo
