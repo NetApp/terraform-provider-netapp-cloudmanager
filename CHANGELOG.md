@@ -1,3 +1,7 @@
+## 23.8.2
+ENHANCEMENTS:
+* support dev environment.
+
 ## 23.8.1
 NEW FEATURES:
 * resource/cvo_gcp: support LDM/flashCache on both single and HA.

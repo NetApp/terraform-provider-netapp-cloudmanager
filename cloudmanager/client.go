@@ -276,7 +276,7 @@ func (c *Client) CallDeployAzureVM(occmDetails createOCCMDetails) (string, error
 		"value": occmDetails.StorageAccount,
 	}
 
-	if c.AzureEnvironmentForOCCM == "stage" {
+	if c.AzureEnvironmentForOCCM == "stage" || c.AzureEnvironmentForOCCM == "dev" {
 		(*params)["environment"] = map[string]string{
 			"value": c.AzureEnvironmentForOCCM,
 		}
