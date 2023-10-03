@@ -1,6 +1,7 @@
 ## 23.8.2
 ENHANCEMENTS:
 * support dev environment.
+* resources/cvo: update the documentation on the `ontap_version` naming convention and the way to find the available upgrade versions on `upgrade_ontap_version`.
 
 ## 23.8.1
 NEW FEATURES:
