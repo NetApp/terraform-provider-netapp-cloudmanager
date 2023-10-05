@@ -123,7 +123,15 @@ The following arguments are supported:
 * `vpc_id` - (Optional) The name of the VPC.
 * `gcp_volume_size` - (Optional) The GCP volume size for the first data aggregate. For GB, the unit can be: [100 or 500]. For TB, the unit can be: [1,2,4,8]. The default is '1' .
 * `gcp_volume_size_unit` - (Optional) ['GB' or 'TB']. The default is 'TB'.
-* `ontap_version` - (Optional) The required ONTAP version. Ignored if 'use_latest_version' is set to true. The default is to use the latest version.
+* `ontap_version` - (Optional) The required ONTAP version. Ignored if `use_latest_version` is set to true. The default is to use the latest version. The naming convention: 
+
+|Release|Naming convention|Example|
+|-------|-----------------|-------|
+|Patch Single | `ONTAP-${version}.gcp` | ONTAP-9.13.1P1.gcp|
+|Patch HA | `ONTAP-${version}.gcpha` | ONTAP-9.13.1P1.gcpha|
+|Regular Single | `ONTAP-${version}.T1.gcp` | ONTAP-9.10.1RC1.T1.gcp|
+|Regular HA | `ONTAP-${version}.T1.gcpha` | ONTAP-9.13.0.T1.gcpha|
+
 * `use_latest_version` - (Optional) Indicates whether to use the latest available ONTAP version. The default is 'true'.
 * `license_type` - (Optional) The type of license to use. For single node: (by Capacity): ['capacity-paygo'], (by Node paygo): ['gcp-cot-explore-paygo', 'gcp-cot-standard-paygo', 'gcp-cot-premium-paygo'], (by Node byol): ['gcp-cot-premium-byol'], For HA: (by Capacity): ['ha-capacity-paygo'], (by Node paygo): ['gcp-ha-cot-explore-paygo', 'gcp-ha-cot-standard-paygo', 'gcp-ha-cot-premium-paygo'], (by Node byol): ['gcp-ha-cot-premium-byol']. The default is 'capacity-paygo' for single node, and 'ha-capacity-paygo'for HA.
 * `capacity_package_name` - (Optional) The capacity package name: ['Essential', 'Professional', 'Freemium', 'Edge', 'Optimized']. Default is 'Essential'. 'Edge' and 'Optimized' need ontap version 9.11.1 or above.
@@ -162,7 +170,7 @@ The following arguments are supported:
 * `vpc1_firewall_rule_tag_name` - (Optional) Firewall rule tag name for vpc2.
 * `vpc2_firewall_rule_tag_name` - (Optional) Firewall rule tag name for vpc3.
 * `vpc3_firewall_rule_tag_name` - (Optional) Firewall rule tag name for vpc4.
-* `upgrade_ontap_version` - (Optional) Indicates whether to upgrade ontap image with `ontap_version`. To upgrade ontap image, `ontap_version` cannot be 'latest' and `use_latest_version` needs to be false.
+* `upgrade_ontap_version` - (Optional) Indicates whether to upgrade ontap image with `ontap_version`. To upgrade ontap image, `ontap_version` cannot be 'latest' and `use_latest_version` needs to be false. The available versions can be found in BlueXP UI. Click the CVO -> click **New Version Available** under **Notifications** -> the latest available version will be shown. The list of available versions can be found in **Select older versions**. Update the `ontap_version` by follow the naming conversion.
 * `retries` - (Optional) The number of attempts to wait for the completion of creating the CVO with 60 seconds apart for each attempt. For HA, this value is incremented by 30. The default is '60'.
 * `worm_retention_period_length` - (Optional) WORM retention period length. Once specified retention period, the WORM is enabled. When WORM storage is activated, data tiering to object storage can’t be enabled.
 * `worm_retention_period_unit` - (Optional) WORM retention period unit: ['years','months','days','hours','minutes','seconds'].

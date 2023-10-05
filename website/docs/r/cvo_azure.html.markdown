@@ -136,7 +136,16 @@ The following arguments are supported:
 * `cidr` - (Optional) The CIDR of the VNET. If not provided, resource needs az login to authorize and fetch the cidr details from Azure.
 * `disk_size` - (Optional) Azure volume size for the first data aggregate. For GB, the unit can be: [100 or 500]. For TB, the unit can be: [1,2,4,8,16]. The default is '1' .
 * `disk_size_unit` - (Optional) ['GB' or 'TB']. The default is 'TB'.
-* `ontap_version` - (Optional) The required ONTAP version. Ignored if 'use_latest_version' is set to true. The default is to use the latest version.
+* `ontap_version` - (Optional) The required ONTAP version. Ignored if `use_latest_version` is set to true. The default is to use the latest version. The naming convention: 
+The naming convention: 
+
+|Release|Naming convention|Example|
+|-------|-----------------|-------|
+|Patch Single | `ONTAP-${version}.azure` | ONTAP-9.13.1P1.azure|
+|Patch HA | `ONTAP-${version}.azureha` | ONTAP-9.13.1P1.azureha|
+|Regular Single | `ONTAP-${version}.T1.azure` | ONTAP-9.14.0.T1.azure|
+|Regular HA | `ONTAP-${version}.T1.azureha` | ONTAP-9.14.0.T1.azureha|
+
 * `use_latest_version` - (Optional) Indicates whether to use the latest available ONTAP version. The default is 'true'.
 * `license_type` - (Optional) The type of license to be use. For single node: (by Capacity): ['capacity-paygo'], (by Node paygo): ['azure-cot-explore-paygo', 'azure-cot-standard-paygo', 'azure-cot-premium-paygo'], (by Node byol): ['azure-cot-premium-byol']. For HA: (by Capacity): ['ha-capacity-paygo'], (by Node paygo): ['azure-ha-cot-standard-paygo', 'azure-ha-cot-premium-paygo'], (by Node byol): ['azure-ha-cot-premium-byol']. The default is 'capacity-paygo' for single node, and 'ha-capacity-paygo'for HA.
 * `capacity_package_name` - (Optional) The capacity package name: ['Essential', 'Professional', 'Freemium', 'Edge', 'Optimized']. Default is 'Essential'. 'Edge' and 'Optimized' need ontap version 9.11.0 or above.
@@ -158,7 +167,7 @@ The following arguments are supported:
 * `availability_zone_node1` - (Optional) For HA, the availability zone for the first node.
 * `availability_zone_node2` - (Optional) For HA, the availability zone for the second node.
 * `ha_enable_https` - (Optional) For HA, enable the HTTPS connection from CVO to storage accounts. This can impact write performance. The default is false.
-* `upgrade_ontap_version` - (Optional) Indicates whether to upgrade ontap image with `ontap_version`. To upgrade ontap image, `ontap_version` cannot be 'latest' and `use_latest_version` needs to be false.
+* `upgrade_ontap_version` - (Optional) Indicates whether to upgrade ontap image with `ontap_version`. To upgrade ontap image, `ontap_version` cannot be 'latest' and `use_latest_version` needs to be false. The available versions can be found in BlueXP UI. Click the CVO -> click **New Version Available** under **Notifications** -> the latest available version will be shown. The list of available versions can be found in **Select older versions**. Update the `ontap_version` by follow the naming conversion.
 * `retries` - (Optional) The number of attempts to wait for the completion of creating the CVO with 60 seconds apart for each attempt. For HA, this value is incremented by 30. The default is '60'.
 * `worm_retention_period_length` - (Optional) WORM retention period length. Once specified retention period, the WORM is enabled. When WORM storage is activated, data tiering to object storage can’t be enabled.
 * `worm_retention_period_unit` - (Optional) WORM retention period unit: ['years','months','days','hours','minutes','seconds'].

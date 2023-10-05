@@ -89,7 +89,7 @@ func (c *Client) callTemplate() string {
             "publicIpAddressType": "Dynamic",
             "publicIpAddressSku": "Basic",
             "msiExtensionName": "ManagedIdentityExtensionForLinux",
-            "occmOffer": "[if(equals(parameters('environment'), 'stage'), 'netapp-oncommand-cloud-manager-staging-preview', 'netapp-oncommand-cloud-manager')]"
+            "occmOffer": "[if(or(equals(parameters('environment'), 'stage'), equals(parameters('environment'), 'dev')), 'netapp-oncommand-cloud-manager-staging-preview', 'netapp-oncommand-cloud-manager')]"
         },
         "resources": [
             {
@@ -279,7 +279,7 @@ func (c *Client) callTemplateDisablePublicIP() string {
             "publicIpAddressType": "Dynamic",
             "publicIpAddressSku": "Basic",
             "msiExtensionName": "ManagedIdentityExtensionForLinux",
-            "occmOffer": "[if(equals(parameters('environment'), 'stage'), 'netapp-oncommand-cloud-manager-staging-preview', 'netapp-oncommand-cloud-manager')]"
+            "occmOffer": "[if(or(equals(parameters('environment'), 'stage'), equals(parameters('environment'), 'dev')), 'netapp-oncommand-cloud-manager-staging-preview', 'netapp-oncommand-cloud-manager')]"
         },
         "resources": [
             {

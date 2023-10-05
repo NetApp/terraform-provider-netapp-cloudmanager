@@ -56,8 +56,25 @@ func (c *configStruct) clientFun() (*Client, error) {
 			AzureEnvironmentForOCCM: "stage",
 			CVSHostName:             "https://staging.api.bluexp.netapp.com/cloud-volumes/cvs",
 		}
+	} else if c.Environment == "dev" {
+		log.Print("Dev Environment")
+		client = &Client{
+			CloudManagerHost:        "https://dev.api.bluexp.netapp.com",
+			AuthHost:                "https://staging.api.bluexp.netapp.com/auth/oauth/token",
+			SaAuthHost:              "https://staging.api.bluexp.netapp.com/auth/oauth/token",
+			Audience:                "https://api.cloud.netapp.com",
+			Auth0Client:             "O6AHa7kedZfzHaxN80dnrIcuPBGEUvEv",
+			AMIFilter:               "Setup-As-Service-AMI-*",
+			AWSAccount:              "282316784512",
+			GCPDeploymentManager:    "https://www.googleapis.com",
+			GCPCompute:              "https://compute.googleapis.com",
+			GCPImageProject:         "tlv-automation",
+			GCPImageFamily:          "occm-automation",
+			AzureEnvironmentForOCCM: "stage",
+			CVSHostName:             "https://dev.api.bluexp.netapp.com/cloud-volumes/cvs",
+		}
 	} else {
-		return &Client{}, fmt.Errorf("expected environment to be one of [prod stage]: %s", c.Environment)
+		return &Client{}, fmt.Errorf("expected environment to be one of [prod stage dev]: %s", c.Environment)
 	}
 
 	if c.SaSecretKey != "" && c.SaClientID != "" {

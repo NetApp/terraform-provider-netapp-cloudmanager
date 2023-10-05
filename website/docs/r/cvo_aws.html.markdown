@@ -117,7 +117,15 @@ The following arguments are supported:
 * `iops` - (Optional) Provisioned IOPS. Required only when 'ebs_volume_type' is 'io1' or 'gp3'.
 * `throughput` - (Optional) Required only when 'ebs_volume_type' is 'gp3'.
 * `cluster_key_pair_name` - (Optional) Use for SSH authentication key pair method.
-* `ontap_version` - (Optional) The required ONTAP version. Ignored if 'use_latest_version' is set to true. The default is to use the latest version.
+* `ontap_version` - (Optional) The required ONTAP version. Ignored if 'use_latest_version' is set to true. The default is to use the latest version. The naming convention:
+
+|Release|Naming convention|Example|
+|-------|-----------------|-------|
+|Patch Single | `ONTAP-${version}` | ONTAP-9.13.1P1|
+|Patch HA | `ONTAP-${version}.ha` | ONTAP-9.13.1P1.ha|
+|Regular Single | `ONTAP-${version}.T1` | ONTAP-9.14.0.T1|
+|Regular HA | `ONTAP-${version}.T1.ha` | ONTAP-9.14.0.T1.ha|
+
 * `use_latest_version` - (Optional) Indicates whether to use the latest available ONTAP version. The default is 'true'.
 * `license_type` - (Optional) The type of license to use. For single node: (by Capacity): ['capacity-paygo'], (by Node paygo): ['cot-explore-paygo','cot-standard-paygo', 'cot-premium-paygo'], (by Node byol): ['cot-premium-byol']. For HA: (by Capacity): ['ha-capacity-paygo'], (by Node paygo): ['ha-cot-explore-paygo','ha-cot-standard-paygo','ha-cot-premium-paygo'], (by Node byol): 'ha-cot-premium-byol']. The default is 'capacity-paygo' for single node, and 'ha-capacity-paygo' for HA.
 * `capacity_package_name` - (Optional) The capacity package name: ['Essential', 'Professional', 'Freemium']. Default is 'Essential'.
@@ -150,7 +158,7 @@ The following arguments are supported:
 * `data_floating_ip` - (Optional) For HA FloatingIP, the data floating IP address.
 * `svm_floating_ip` - (Optional) For HA FloatingIP, the SVM management floating IP address.
 * `route_table_ids` - (Optional) For HA FloatingIP, the list of route table IDs that will be updated with the floating IPs.
-* `upgrade_ontap_version` - (Optional) Indicates whether to upgrade ontap image with `ontap_version`. To upgrade ontap image, `ontap_version` cannot be 'latest' and `use_latest_version` needs to be false.
+* `upgrade_ontap_version` - (Optional) Indicates whether to upgrade ontap image with `ontap_version`. To upgrade ontap image, `ontap_version` cannot be 'latest' and `use_latest_version` needs to be false. The available versions can be found in BlueXP UI. Click the CVO -> click **New Version Available** under **Notifications** -> the latest available version will be shown. The list of available versions can be found in **Select older versions**. Update the `ontap_version` by follow the naming conversion.
 * `mediator_security_group_id` - (Optional) For HA only, mediator security group id.
 * `assume_role_arn` - (Optional) For HA only, Amazon Resource Name ARN of an AWS Identity and Access Managent IAM role that has created in the VPC owner account. For example, "arn:aws:iam::61239912384567:role/mediator_role_assume_fromdev"
 * `retries` - (Optional) The number of attempts to wait for the completion of creating the CVO with 60 seconds apart for each attempt. For HA, this value is incremented by 30. The default is '60'.
