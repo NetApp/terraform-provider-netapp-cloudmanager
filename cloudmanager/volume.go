@@ -45,23 +45,23 @@ type volumeRequest struct {
 }
 
 type volumeResponse struct {
-	Name                   string              `json:"name"`
-	SvmName                string              `json:"svmName"`
-	AggregateName          string              `json:"aggregateName"`
-	Size                   size                `json:"size"`
-	SnapshotPolicyName     string              `json:"snapshotPolicy"`
-	EnableThinProvisioning bool                `json:"thinProvisioning"`
-	EnableCompression      bool                `json:"compression"`
-	EnableDeduplication    bool                `json:"deduplication"`
-	ExportPolicyInfo       exportPolicyInfo    `json:"exportPolicyInfo"`
-	ID                     string              `json:"uuid"`
-	CapacityTier           string              `json:"capacityTier,omitempty"`
-	TieringPolicy          string              `json:"tieringPolicy,omitempty"`
-	ProviderVolumeType     string              `json:"providerVolumeType"`
-	ShareInfo              []shareInfoResponse `json:"shareInfo"`
-	MountPoint             string              `json:"mountPoint"`
-	IscsiEnabled           bool                `json:"iscsiEnabled"`
-	Comment                string              `json:"comment"`
+	Name                   string                   `json:"name"`
+	SvmName                string                   `json:"svmName"`
+	AggregateName          string                   `json:"aggregateName"`
+	Size                   size                     `json:"size"`
+	SnapshotPolicyName     string                   `json:"snapshotPolicy"`
+	EnableThinProvisioning bool                     `json:"thinProvisioning"`
+	EnableCompression      bool                     `json:"compression"`
+	EnableDeduplication    bool                     `json:"deduplication"`
+	ExportPolicyInfo       exportPolicyInfoResponse `json:"exportPolicyInfo"`
+	ID                     string                   `json:"uuid"`
+	CapacityTier           string                   `json:"capacityTier,omitempty"`
+	TieringPolicy          string                   `json:"tieringPolicy,omitempty"`
+	ProviderVolumeType     string                   `json:"providerVolumeType"`
+	ShareInfo              []shareInfoResponse      `json:"shareInfo"`
+	MountPoint             string                   `json:"mountPoint"`
+	IscsiEnabled           bool                     `json:"iscsiEnabled"`
+	Comment                string                   `json:"comment"`
 }
 
 type exportPolicyInfo struct {
@@ -69,7 +69,25 @@ type exportPolicyInfo struct {
 	PolicyType string   `structs:"policyType,omitempty"`
 	Ips        []string `structs:"ips,omitempty"`
 	NfsVersion []string `structs:"nfsVersion,omitempty"`
+	// Rules      exportPolicyRule `structs:"rules,omitempty"`
 }
+
+type exportPolicyInfoResponse struct {
+	Name       string   `json:"name"`
+	PolicyType string   `json:"policyType"`
+	Ips        []string `json:"ips"`
+	NfsVersion []string `json:"nfsVersion"`
+	// Rules      exportPolicyRule `json:"rules"`
+}
+
+// type exportPolicyRule struct {
+// 	Protocols []string `structs:"protocols"`
+// 	Clients   []string `structs:"clients"`
+// 	RoRule    []string `structs:"ro_rule"`
+// 	RwRule    []string `structs:"rw_rule"`
+// 	Superuser []string `structs:"superuser"`
+// 	Index     int32    `structs:"index"`
+// }
 
 type size struct {
 	Size float64 `structs:"size"`

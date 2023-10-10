@@ -1,4 +1,7 @@
 ## 23.8.2
+BUG FIXES:
+* resource/volume: fix schema structure for export policy response in volume.
+
 ENHANCEMENTS:
 * support dev environment.
 * resources/cvo: update the documentation on the `ontap_version` naming convention and the way to find the available upgrade versions on `upgrade_ontap_version`.
