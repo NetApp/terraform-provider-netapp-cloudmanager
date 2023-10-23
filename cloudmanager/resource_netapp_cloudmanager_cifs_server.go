@@ -184,9 +184,10 @@ func resourceCVOCIFSRead(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 	for _, cifsConfig := range res {
-		log.Printf("cifs config: %v", cifsConfig)
-		if cifsConfig.Domain == d.Get("domain").(string) && cifsConfig.DNSDomain == d.Get("dns_domain").(string) &&
-			cifsConfig.NetBIOS == d.Get("netbios").(string) && cifsConfig.OrganizationalUnit == d.Get("organizational_unit").(string) {
+		log.Printf("cifs config: %#v", cifsConfig)
+		// domain, dns_domain, netbios are all converted to low case in the API response
+		if cifsConfig.Domain == strings.ToLower(d.Get("domain").(string)) && cifsConfig.DNSDomain == strings.ToLower(d.Get("dns_domain").(string)) &&
+			cifsConfig.NetBIOS == strings.ToLower(d.Get("netbios").(string)) && cifsConfig.OrganizationalUnit == d.Get("organizational_unit").(string) {
 			d.Set("ip_addresses", cifsConfig.IPAddresses)
 			return nil
 		}

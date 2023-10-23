@@ -22,12 +22,11 @@ type cifsRequest struct {
 
 type cifsResponse struct {
 	Domain             string   `json:"activeDirectoryDomain"`
-	Username           string   `json:"activeDirectoryUsername"`
-	Password           string   `json:"activeDirectoryPassword"`
 	DNSDomain          string   `json:"dnsDomain"`
 	IPAddresses        []string `json:"ipAddresses"`
 	NetBIOS            string   `json:"netBIOS"`
 	OrganizationalUnit string   `json:"organizationalUnit"`
+	AuthenticationType string   `json:"authenticationType"`
 }
 
 type cifsDeleteRequest struct {
@@ -72,10 +71,10 @@ func (c *Client) getCIFS(cifs cifsRequest, clientID string) ([]cifsResponse, err
 	hostType := "CloudManagerHost"
 	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
-		log.Print("createCIFS request failed ", statusCode)
+		log.Print("getCIFS request failed ", statusCode)
 		return result, err
 	}
-	responseError := apiResponseChecker(statusCode, response, "createCifs")
+	responseError := apiResponseChecker(statusCode, response, "getCIFS")
 	if responseError != nil {
 		return result, responseError
 	}

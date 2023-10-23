@@ -1,3 +1,7 @@
+## 23.10.0
+## BUG FIXES:
+* resources/cifs_server: fix the read function on domain, dns_domain and netbios checking with case insensitive.
+
 ## 23.8.2
 BUG FIXES:
 * resource/volume: fix schema structure for export policy response in volume.
