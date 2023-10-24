@@ -1,5 +1,6 @@
 ## 23.10.0
-## BUG FIXES:
+BUG FIXES:
+* resource/aws_fsx: handling for a situation in which the status does not exist yet.
 * resources/cifs_server: fix the read function on domain, dns_domain and netbios checking with case insensitive.
 
 ## 23.8.2
