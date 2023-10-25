@@ -1,7 +1,8 @@
 ## 23.10.0
 BUG FIXES:
 * resource/aws_fsx: handling for a situation in which the status does not exist yet.
-* resources/cifs_server: fix the read function on domain, dns_domain and netbios checking with case insensitive.
+* resource/cifs_server: fix the read function on domain, dns_domain and netbios checking with case insensitive.
+* resource/volume: add `export_policy_rule_super_user` and `export_policy_rule_access_control` options. Fix export policy update error.
 
 ## 23.8.2
 BUG FIXES:

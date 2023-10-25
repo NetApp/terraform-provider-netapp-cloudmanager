@@ -80,7 +80,7 @@ func resourceCVOVolume() *schema.Resource {
 				Optional: true,
 			},
 			"export_policy_ip": {
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				Optional: true,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
@@ -92,6 +92,15 @@ func resourceCVOVolume() *schema.Resource {
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
+			},
+			"export_policy_rule_access_control": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"readonly", "readwrite", "none"}, false),
+			},
+			"export_policy_rule_super_user": {
+				Type:     schema.TypeBool,
+				Optional: true,
 			},
 			"iops": {
 				Type:     schema.TypeInt,
@@ -297,6 +306,75 @@ func resourceCVOVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 				}
 			}
 		}
+		// exmaple of the export policy info in volume creation from the UI timeline. Be aware that it might be out of date as time changes.
+		// Note that for update, export policy info has different structure.
+		// "exportPolicyInfo": {
+		// 	"policyType": "custom",
+		// 	"rules": [
+		// 	  {
+		// 		"nfsVersion": [
+		// 		  "nfs4",
+		// 		  "nfs3"
+		// 		],
+		// 		"superuser": false,
+		// 		"ruleAccessControl": "readonly",
+		// 		"ips": [
+		// 		  "0.0.0.0"
+		// 		],
+		// 		"index": 1
+		// 	  }
+		// 	]
+		//   }
+		if d.HasChange("export_policy_name") || d.HasChange("export_policy_type") || d.HasChange("export_policy_ip") || d.HasChange("export_policy_nfs_version") || d.HasChange("export_policy_rule_access_control") || d.HasChange("export_policy_rule_super_user") {
+			var exportPolicyTypeOK, exportPolicyIPOK, exportPolicyNfsVersionOK, exportPolicyRuleAccessControlOK, exportPolicyRuleSuperUserOK bool
+			var nfsVersion, policyIps []string
+			if v, ok := d.GetOk("export_policy_name"); ok {
+				volume.ExportPolicyInfo.Name = v.(string)
+			}
+			if v, ok := d.GetOk("export_policy_ip"); ok {
+				ips := make([]string, 0, len(v.([]interface{})))
+				for _, x := range v.([]interface{}) {
+					ips = append(ips, x.(string))
+				}
+				policyIps = ips
+				exportPolicyIPOK = true
+			}
+			if v, ok := d.GetOk("export_policy_nfs_version"); ok {
+				nfs := make([]string, 0, v.(*schema.Set).Len())
+				for _, x := range v.(*schema.Set).List() {
+					nfs = append(nfs, x.(string))
+				}
+				nfsVersion = nfs
+				exportPolicyNfsVersionOK = true
+			}
+			if _, ok := d.GetOk("export_policy_rule_access_control"); ok {
+				exportPolicyRuleAccessControlOK = true
+			}
+			if _, ok := d.GetOkExists("export_policy_rule_super_user"); ok {
+				exportPolicyRuleSuperUserOK = true
+			}
+			if v, ok := d.GetOk("export_policy_type"); ok {
+				volume.ExportPolicyInfo.PolicyType = v.(string)
+				exportPolicyTypeOK = true
+			}
+			if !exportPolicyTypeOK || !exportPolicyIPOK || !exportPolicyNfsVersionOK || !exportPolicyRuleAccessControlOK || !exportPolicyRuleSuperUserOK {
+				return fmt.Errorf("export_policy_type, export_policy_ip, export_policy_nfs_version, export_policy_rule_access_control and export_policy_rule_super_user are required for export policy")
+			}
+			var rules []ExportPolicyRule
+			rules = make([]ExportPolicyRule, len(policyIps))
+			for i, x := range policyIps {
+				rules[i] = ExportPolicyRule{}
+				eachRule := make([]string, 1)
+				eachRule[0] = x
+				rules[i].Ips = eachRule
+				rules[i].NfsVersion = nfsVersion
+				rules[i].Superuser = d.Get("export_policy_rule_super_user").(bool)
+				rules[i].RuleAccessControl = d.Get("export_policy_rule_access_control").(string)
+				rules[i].Index = int32(i + 1)
+			}
+			volume.ExportPolicyInfo.Rules = rules
+		}
+
 		response, err := client.quoteVolume(quote, clientID)
 		if err != nil {
 			log.Printf("Error quoting volume")
@@ -313,28 +391,8 @@ func resourceCVOVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 	volume.Size.Size = d.Get("size").(float64)
 	volume.Size.Unit = d.Get("unit").(string)
 	volumeProtocol := d.Get("volume_protocol").(string)
-	if v, ok := d.GetOk("export_policy_name"); ok {
-		volume.ExportPolicyInfo.Name = v.(string)
-	}
 	if v, ok := d.GetOk("comment"); ok {
 		volume.Comment = v.(string)
-	}
-	if v, ok := d.GetOk("export_policy_type"); ok {
-		volume.ExportPolicyInfo.PolicyType = v.(string)
-	}
-	if v, ok := d.GetOk("export_policy_ip"); ok {
-		ips := make([]string, 0, v.(*schema.Set).Len())
-		for _, x := range v.(*schema.Set).List() {
-			ips = append(ips, x.(string))
-		}
-		volume.ExportPolicyInfo.Ips = ips
-	}
-	if v, ok := d.GetOk("export_policy_nfs_version"); ok {
-		nfs := make([]string, 0, v.(*schema.Set).Len())
-		for _, x := range v.(*schema.Set).List() {
-			nfs = append(nfs, x.(string))
-		}
-		volume.ExportPolicyInfo.NfsVersion = nfs
 	}
 	if v, ok := d.GetOk("iops"); ok {
 		volume.Iops = v.(int)
@@ -614,14 +672,94 @@ func resourceCVOVolumeUpdate(d *schema.ResourceData, meta interface{}) error {
 	volume := volumeRequest{}
 	var svm string
 	volume.Name = d.Get("name").(string)
-	volume.ExportPolicyInfo.PolicyType = d.Get("export_policy_type").(string)
-	if v, ok := d.GetOk("export_policy_ip"); ok {
-		ips := make([]string, 0, v.(*schema.Set).Len())
-		for _, x := range v.(*schema.Set).List() {
-			ips = append(ips, x.(string))
+	if d.HasChange("export_policy_ip") || d.HasChange("export_policy_nfs_version") || d.HasChange("export_policy_rule_super_user") || d.HasChange("export_policy_rule_access_control") {
+		var exportPolicyTypeOK, exportPolicyIPOK, exportPolicyNfsVersionOK, exportPolicyRuleAccessControlOK, exportPolicyRuleSuperUserOK bool
+		if v, ok := d.GetOk("export_policy_name"); ok {
+			volume.ExportPolicyInfo.Name = v.(string)
 		}
-		volume.ExportPolicyInfo.Ips = ips
+		if v, ok := d.GetOk("export_policy_nfs_version"); ok {
+			nfsVersions := make([]string, 0, v.(*schema.Set).Len())
+			for _, x := range v.(*schema.Set).List() {
+				nfsVersions = append(nfsVersions, x.(string))
+			}
+			volume.ExportPolicyInfo.NfsVersion = nfsVersions
+			exportPolicyNfsVersionOK = true
+		}
+		if v, ok := d.GetOk("export_policy_type"); ok {
+			volume.ExportPolicyInfo.PolicyType = v.(string)
+			exportPolicyTypeOK = true
+		}
+		if v, ok := d.GetOk("export_policy_ip"); ok {
+			ips := make([]string, 0, len(v.([]interface{})))
+			for _, x := range v.([]interface{}) {
+				ips = append(ips, x.(string))
+			}
+			volume.ExportPolicyInfo.Ips = ips
+			exportPolicyIPOK = true
+		}
+		if _, ok := d.GetOkExists("export_policy_rule_super_user"); ok {
+			exportPolicyRuleSuperUserOK = true
+		}
+		if _, ok := d.GetOk("export_policy_rule_access_control"); ok {
+			exportPolicyRuleAccessControlOK = true
+		}
+		// example of export poliy info for update.
+		// "exportPolicyInfo": {
+		// 	"ips": [
+		// 	  "0.0.0.0",
+		// 	  "0.0.0.1"
+		// 	],
+		// 	"nfsVersion": [
+		// 	  "nfs4",
+		// 	  "nfs3"
+		// 	],
+		// 	"policyType": "custom",
+		// 	"rules": [
+		// 	  {
+		// 		"nfsVersion": [
+		// 		  "nfs4",
+		// 		  "nfs3"
+		// 		],
+		// 		"superuser": false,
+		// 		"ruleAccessControl": "readonly",
+		// 		"ips": [
+		// 		  "10.0.0.0"
+		// 		],
+		// 		"index": 1
+		// 	  },
+		// 	  {
+		// 		"nfsVersion": [
+		// 		  "nfs4",
+		// 		  "nfs3"
+		// 		],
+		// 		"superuser": false,
+		// 		"ruleAccessControl": "readonly",
+		// 		"ips": [
+		// 		  "10.0.0.1"
+		// 		],
+		// 		"index": 2
+		// 	  }
+		// 	]
+		//   }
+		if !exportPolicyTypeOK || !exportPolicyIPOK || !exportPolicyNfsVersionOK || !exportPolicyRuleAccessControlOK || !exportPolicyRuleSuperUserOK {
+			return fmt.Errorf("export_policy_type, export_policy_ip, export_policy_nfs_version, export_policy_rule_access_control and export_policy_rule_super_user are required for export policy")
+		}
+		var rules []ExportPolicyRule
+		rules = make([]ExportPolicyRule, len(volume.ExportPolicyInfo.Ips))
+		for i, x := range volume.ExportPolicyInfo.Ips {
+			rules[i] = ExportPolicyRule{}
+			eachRule := make([]string, 1)
+			eachRule[0] = x
+			rules[i].Ips = eachRule
+			rules[i].NfsVersion = volume.ExportPolicyInfo.NfsVersion
+			rules[i].Superuser = d.Get("export_policy_rule_super_user").(bool)
+			rules[i].RuleAccessControl = d.Get("export_policy_rule_access_control").(string)
+			rules[i].Index = int32(i + 1)
+		}
+		volume.ExportPolicyInfo.Rules = rules
+
 	}
+
 	if v, ok := d.GetOk("svm_name"); ok {
 		svm = v.(string)
 	}
@@ -676,7 +814,7 @@ func resourceVolumeCustomizeDiff(diff *schema.ResourceDiff, v interface{}) error
 	// Check supported modification: Use volume name as an indication to know if this is a creation or modification
 	if !(diff.HasChange("name")) {
 		changeableParams := []string{"volume_protocol", "export_policy_type", "export_policy_ip", "export_policy_name", "export_policy_nfs_version",
-			"share_name", "permission", "users", "tiering_policy", "snapshot_policy_name"}
+			"share_name", "permission", "users", "tiering_policy", "snapshot_policy_name", "export_policy_rule_access_control", "export_policy_rule_super_user"}
 		changedKeys := diff.GetChangedKeysPrefix("")
 		for _, key := range changedKeys {
 			found := false

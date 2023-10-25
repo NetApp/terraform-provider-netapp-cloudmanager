@@ -28,6 +28,8 @@ resource "netapp-cloudmanager_volume" "cvo-volume-nfs" {
   export_policy_type = "custom"
   export_policy_ip = ["0.0.0.0/0"]
   export_policy_nfs_version = ["nfs4"]
+  export_policy_rule_access_control = "readwrite"
+  export_policy_rule_super_user = true
   snapshot_policy_name = "sp1"
   snapshot_policy {
      schedule {
@@ -121,8 +123,11 @@ The following arguments are supported:
 * `capacity_tier` - (Optional) The volume's capacity tier for tiering cold data to object storage: ['S3', 'Blob', 'cloudStorage']. The default values for each cloud provider are as follows: Amazon => 'S3', Azure => 'Blob', GCP => 'cloudStorage'. If none, the capacity tier won't be set on volume creation.
 * `export_policy_name` - (Optional) The export policy name. (NFS protocol parameters)
 * `export__policy_type` - (Optional) The export policy type. (NFS protocol parameters)
-* `export_policy_ip` - (Optional) Custom export policy list of IPs. (NFS protocol parameters)
+* `export_policy_ip` - (Optional) Custom export policy list of IPs. Order matters. (NFS protocol parameters)
 * `export_policy_nfs_version` - (Optional) Export policy protocol. (NFS protocol parameters)
+* `export_policy_rule_access_control` (Optional) Choice of 'readonly', 'readwrite', 'none'. (NFS protocol parameters) 
+* `export_policy_rule_super_user` - (Optional) Boolean option to sepecify super user or not. (NFS protocol parameters)
+  `export__policy_type`, `export_policy_ip`, `export_policy_nfs_version`, `export_policy_nfs_version` and  `export_policy_rule_super_user` are required together for export policy.
 * `snapshot_policy_name` - (Optional) Snapshot policy name. The default is 'default'. (NFS protocol parameters)
 * `iops` - (Optional) Provisioned IOPS. Needed only when 'provider_volume_type' is 'io1' or 'gp3'
 * `throughput` - (Optional) Required only when 'provider_volume_type' is 'gp3'.
