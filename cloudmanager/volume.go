@@ -21,7 +21,7 @@ type volumeRequest struct {
 	EnableThinProvisioning    bool                   `structs:"enableThinProvisioning"`
 	EnableCompression         bool                   `structs:"enableCompression"`
 	EnableDeduplication       bool                   `structs:"enableDeduplication"`
-	ExportPolicyInfo          exportPolicyInfo       `structs:"exportPolicyInfo,omitempty"`
+	ExportPolicyInfo          ExportPolicyInfo       `structs:"exportPolicyInfo,omitempty"`
 	ID                        string                 `structs:"uuid"`
 	NewAggregate              bool                   `structs:"newAggregate"`
 	CapacityTier              string                 `structs:"capacityTier,omitempty"`
@@ -45,31 +45,72 @@ type volumeRequest struct {
 }
 
 type volumeResponse struct {
-	Name                   string              `json:"name"`
-	SvmName                string              `json:"svmName"`
-	AggregateName          string              `json:"aggregateName"`
-	Size                   size                `json:"size"`
-	SnapshotPolicyName     string              `json:"snapshotPolicy"`
-	EnableThinProvisioning bool                `json:"thinProvisioning"`
-	EnableCompression      bool                `json:"compression"`
-	EnableDeduplication    bool                `json:"deduplication"`
-	ExportPolicyInfo       exportPolicyInfo    `json:"exportPolicyInfo"`
-	ID                     string              `json:"uuid"`
-	CapacityTier           string              `json:"capacityTier,omitempty"`
-	TieringPolicy          string              `json:"tieringPolicy,omitempty"`
-	ProviderVolumeType     string              `json:"providerVolumeType"`
-	ShareInfo              []shareInfoResponse `json:"shareInfo"`
-	MountPoint             string              `json:"mountPoint"`
-	IscsiEnabled           bool                `json:"iscsiEnabled"`
-	Comment                string              `json:"comment"`
+	Name                   string                   `json:"name"`
+	SvmName                string                   `json:"svmName"`
+	AggregateName          string                   `json:"aggregateName"`
+	Size                   size                     `json:"size"`
+	SnapshotPolicyName     string                   `json:"snapshotPolicy"`
+	EnableThinProvisioning bool                     `json:"thinProvisioning"`
+	EnableCompression      bool                     `json:"compression"`
+	EnableDeduplication    bool                     `json:"deduplication"`
+	ExportPolicyInfo       ExportPolicyInfoResponse `json:"exportPolicyInfo"`
+	ID                     string                   `json:"uuid"`
+	CapacityTier           string                   `json:"capacityTier,omitempty"`
+	TieringPolicy          string                   `json:"tieringPolicy,omitempty"`
+	ProviderVolumeType     string                   `json:"providerVolumeType"`
+	ShareInfo              []shareInfoResponse      `json:"shareInfo"`
+	MountPoint             string                   `json:"mountPoint"`
+	IscsiEnabled           bool                     `json:"iscsiEnabled"`
+	Comment                string                   `json:"comment"`
 }
 
-type exportPolicyInfo struct {
-	Name       string   `structs:"name,omitempty"`
-	PolicyType string   `structs:"policyType,omitempty"`
-	Ips        []string `structs:"ips,omitempty"`
-	NfsVersion []string `structs:"nfsVersion,omitempty"`
+// ExportPolicyInfo describes the export policy section.
+type ExportPolicyInfo struct {
+	Name       string             `structs:"name,omitempty"`
+	PolicyType string             `structs:"policyType,omitempty"`
+	Ips        []string           `structs:"ips,omitempty"`
+	NfsVersion []string           `structs:"nfsVersion,omitempty"`
+	Rules      []ExportPolicyRule `structs:"rules,omitempty"`
 }
+
+// ExportPolicyInfoResponse describes the export policy section in API response.
+type ExportPolicyInfoResponse struct {
+	Name       string             `json:"name"`
+	PolicyType string             `json:"policyType"`
+	Ips        []string           `json:"ips"`
+	NfsVersion []string           `json:"nfsVersion"`
+	Rules      []ExportPolicyRule `json:"rules"`
+}
+
+// ExportPolicyRule describes the export policy rule section.
+type ExportPolicyRule struct {
+	// Protocols         []string `structs:"protocols"`
+	// Clients           []string `structs:"clients"`
+	// RoRule            []string `structs:"ro_rule"`
+	// RwRule            []string `structs:"rw_rule"`
+	Superuser         bool     `structs:"superuser"`
+	Index             int32    `structs:"index,omitempty"`
+	RuleAccessControl string   `structs:"ruleAccessControl"`
+	Ips               []string `structs:"ips"`
+	NfsVersion        []string `structs:"nfsVersion,omitempty"`
+}
+
+type exportPolicyInfoResponse struct {
+	Name       string   `json:"name"`
+	PolicyType string   `json:"policyType"`
+	Ips        []string `json:"ips"`
+	NfsVersion []string `json:"nfsVersion"`
+	// Rules      exportPolicyRule `json:"rules"`
+}
+
+// type exportPolicyRule struct {
+// 	Protocols []string `structs:"protocols"`
+// 	Clients   []string `structs:"clients"`
+// 	RoRule    []string `structs:"ro_rule"`
+// 	RwRule    []string `structs:"rw_rule"`
+// 	Superuser []string `structs:"superuser"`
+// 	Index     int32    `structs:"index"`
+// }
 
 type size struct {
 	Size float64 `structs:"size"`
@@ -85,7 +126,7 @@ type quoteRequest struct {
 	EnableCompression      bool             `structs:"enableCompression"`
 	EnableDeduplication    bool             `structs:"enableDeduplication"`
 	ReplicationFlow        bool             `structs:"replicationFlow"`
-	ExportPolicyInfo       exportPolicyInfo `structs:"exportPolicyInfo,omitempty"`
+	ExportPolicyInfo       ExportPolicyInfo `structs:"exportPolicyInfo,omitempty"`
 	SnapshotPolicyName     string           `structs:"snapshotPolicyName"`
 	Name                   string           `structs:"name"`
 	CapacityTier           string           `structs:"capacityTier,omitempty"`

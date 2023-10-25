@@ -1,4 +1,13 @@
+## 23.10.0
+BUG FIXES:
+* resource/aws_fsx: handling for a situation in which the status does not exist yet.
+* resource/cifs_server: fix the read function on domain, dns_domain and netbios checking with case insensitive.
+* resource/volume: add `export_policy_rule_super_user` and `export_policy_rule_access_control` options. Fix export policy update error.
+
 ## 23.8.2
+BUG FIXES:
+* resource/volume: fix schema structure for export policy response in volume.
+
 ENHANCEMENTS:
 * support dev environment.
 * resources/cvo: update the documentation on the `ontap_version` naming convention and the way to find the available upgrade versions on `upgrade_ontap_version`.

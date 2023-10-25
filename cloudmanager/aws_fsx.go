@@ -363,7 +363,7 @@ func (c *Client) checkTaskStatusFSX(id string, tenantID string) (providerDetails
 		code, result, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, "")
 		if err != nil {
 			if networkRetries > 0 {
-				time.Sleep(1 * time.Second)
+				time.Sleep(2 * time.Second)
 				networkRetries--
 			} else {
 				log.Print("checkTaskStatusFSX request failed ", code)
@@ -391,6 +391,8 @@ func (c *Client) checkTaskStatusFSX(id string, tenantID string) (providerDetails
 }
 
 func (c *Client) waitOnCompletionFSX(id string, tenantID string, actionName string, task string, retries int, waitInterval int) error {
+	// below timeout is for handling for a situation in which the status does not exist yet
+	time.Sleep(5 * time.Second)
 	for {
 		fsxStatus, failureErrorMessage, err := c.checkTaskStatusFSX(id, tenantID)
 		if err != nil {
