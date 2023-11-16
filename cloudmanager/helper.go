@@ -915,18 +915,29 @@ func (c *Client) getWorkingEnvironmentProperties(apiRoot string, id string, fiel
 
 	var statusCode int
 	var response []byte
-	networkRetries := 3
+	networkRetries := 10
+	httpRetries := 10 // retry if API returns non 200 status code
 	for {
 		code, result, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
 		if err != nil {
+			log.Printf("network error %v", err)
 			if networkRetries > 0 {
-				time.Sleep(1 * time.Second)
+				time.Sleep(2 * time.Second)
 				networkRetries--
 			} else {
 				log.Printf("getWorkingEnvironmentProperties %s request failed (%d) %s", baseURL, statusCode, err)
 				return workingEnvironmentOntapClusterPropertiesResponse{}, err
 			}
 		} else {
+			if code > 400 { //client error or server error
+				log.Printf("http status code %v", code)
+				log.Printf("http response %s", result)
+				if httpRetries > 0 {
+					time.Sleep(10 * time.Second)
+					httpRetries--
+					continue
+				}
+			}
 			statusCode = code
 			response = result
 			break
