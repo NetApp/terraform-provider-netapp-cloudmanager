@@ -1,3 +1,7 @@
+## 23.11.0
+*ENHANCEMENTS: add retries when http returns >200 status code in getWorkingEnvironmentProperties. 
+
+
 ## 23.10.0
 BUG FIXES:
 * resource/aws_fsx: handling for a situation in which the status does not exist yet.
