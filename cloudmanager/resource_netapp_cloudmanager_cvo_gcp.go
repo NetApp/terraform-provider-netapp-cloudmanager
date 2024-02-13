@@ -337,7 +337,7 @@ func resourceCVOGCP() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
-			"vpc3_firewall_rule_ntag_ame": {
+			"vpc3_firewall_rule_tag_name": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
