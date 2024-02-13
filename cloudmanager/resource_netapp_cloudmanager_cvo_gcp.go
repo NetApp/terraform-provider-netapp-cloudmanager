@@ -337,7 +337,7 @@ func resourceCVOGCP() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
-			"vpc3_firewall_rule_ntag_ame": {
+			"vpc3_firewall_rule_tag_name": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
@@ -678,7 +678,6 @@ func resourceCVOGCPDelete(d *schema.ResourceData, meta interface{}) error {
 	id := d.Id()
 	clientID := d.Get("client_id").(string)
 	isHA := d.Get("is_ha").(bool)
-
 	deleteErr := client.deleteCVOGCP(id, isHA, clientID)
 	if deleteErr != nil {
 		log.Print("Error deleting cvo")

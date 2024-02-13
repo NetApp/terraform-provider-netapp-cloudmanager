@@ -1,6 +1,11 @@
+## 24.1.0
+NEW ENHANCEMENTS:
+* resource/cvo_gcp: fix typo on vpc3_firewall_rule_tag_name.
+* add logging to API calls.
+
+
 ## 23.11.0
 *ENHANCEMENTS: add retries when http returns >200 status code in getWorkingEnvironmentProperties. 
-
 
 ## 23.10.0
 BUG FIXES:

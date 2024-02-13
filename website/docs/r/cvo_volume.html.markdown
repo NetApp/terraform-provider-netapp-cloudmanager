@@ -28,6 +28,8 @@ resource "netapp-cloudmanager_volume" "cvo-volume-nfs" {
   export_policy_type = "custom"
   export_policy_ip = ["0.0.0.0/0"]
   export_policy_nfs_version = ["nfs4"]
+  export_policy_rule_access_control = "readwrite"
+  export_policy_rule_super_user = true
   snapshot_policy_name = "sp1"
   snapshot_policy {
      schedule {
@@ -83,6 +85,23 @@ resource "netapp-cloudmanager_volume" "cvo-volume-iscsi" {
 }
 ```
 
+**Create netapp-cloudmanager_volume on OnPrem:**
+
+```
+resource "netapp-cloudmanager_volume" "cvo-volume-onprem" {
+  provider = netapp-cloudmanager
+  name = "onprem_test_vol"
+  volume_protocol = "nfs"
+  provider_volume_type = "onprem"
+  size = 10
+  unit = "GB"
+  export_policy_type = "custom"
+  export_policy_ip = ["0.0.0.0/0"]
+   svm_name = "test_onprem"
+  working_environment_name = "cvo-name"
+  client_id = netapp-cloudmanager_connector_gcp.cm-gcp.client_id
+}
+```
 
 ## Argument Reference
 
@@ -97,15 +116,18 @@ The following arguments are supported:
 * `enable_thin_provisioning` - (Optional) Enable thin provisioning.
 * `enable_compression` - (Optional) Enable compression.
 * `enable_deduplication` - (Optional) Enable deduplication.
-* `aggregate_name ` - (Optional) The aggregate in which the volume will be created. If not provided, Cloud Manager chooses the best aggregate for you.
+* `aggregate_name ` - (Optional) The aggregate in which the volume will be created. If not provided, Cloud Manager chooses the best aggregate for you. For OnPrem, aggregate input is required.
 * `volume_protocol` - (Optional) The protocol for the volume: ['nfs', 'cifs', 'iscsi']. This affects the provided parameters. The default is 'nfs'
 * `working_environment_id` - (Optional) The public ID of the working environment where the volume will be created. The ID can be optional if working_environment_name is provided. You can find the ID from the previous create Cloud Volumes ONTAP action as shown in the example, or from the Information page of the Cloud Volumes ONTAP working environment on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
 * `working_environment_name` - (Optional) The working environment name where the aggregate will be created. It will be ignored if working_environment_id is provided.
 * `capacity_tier` - (Optional) The volume's capacity tier for tiering cold data to object storage: ['S3', 'Blob', 'cloudStorage']. The default values for each cloud provider are as follows: Amazon => 'S3', Azure => 'Blob', GCP => 'cloudStorage'. If none, the capacity tier won't be set on volume creation.
 * `export_policy_name` - (Optional) The export policy name. (NFS protocol parameters)
 * `export__policy_type` - (Optional) The export policy type. (NFS protocol parameters)
-* `export_policy_ip` - (Optional) Custom export policy list of IPs. (NFS protocol parameters)
+* `export_policy_ip` - (Optional) Custom export policy list of IPs. Order matters. (NFS protocol parameters)
 * `export_policy_nfs_version` - (Optional) Export policy protocol. (NFS protocol parameters)
+* `export_policy_rule_access_control` (Optional) Choice of 'readonly', 'readwrite', 'none'. (NFS protocol parameters) 
+* `export_policy_rule_super_user` - (Optional) Boolean option to sepecify super user or not. (NFS protocol parameters)
+  `export__policy_type`, `export_policy_ip`, `export_policy_nfs_version`, `export_policy_nfs_version` and  `export_policy_rule_super_user` are required together for export policy.
 * `snapshot_policy_name` - (Optional) Snapshot policy name. The default is 'default'. (NFS protocol parameters)
 * `iops` - (Optional) Provisioned IOPS. Needed only when 'provider_volume_type' is 'io1' or 'gp3'
 * `throughput` - (Optional) Required only when 'provider_volume_type' is 'gp3'.
