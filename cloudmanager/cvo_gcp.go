@@ -176,7 +176,6 @@ func (c *Client) deleteCVOGCP(id string, isHA bool, clientID string) error {
 	baseURL := getAPIRootForWorkingEnvironment(isHA, id)
 
 	hostType := "CloudManagerHost"
-
 	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("DELETE", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
 		log.Printf("deleteCVO %s request failed %#v", id, statusCode)
