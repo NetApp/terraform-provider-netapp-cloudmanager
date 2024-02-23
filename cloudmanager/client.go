@@ -71,7 +71,7 @@ type Client struct {
 }
 
 // CallAWSInstanceCreate can be used to make a request to create AWS Instance
-func (c *Client) CallAWSInstanceCreate(occmDetails createOCCMDetails) (string, error) {
+func (c *Client) CallAWSInstanceCreate(occmDetails createAWSOCCMDetails) (string, error) {
 
 	var sess *session.Session
 	if c.AWSProfile != "" {
@@ -160,6 +160,16 @@ func (c *Client) CallAWSInstanceCreate(occmDetails createOCCMDetails) (string, e
 		// Network interfaces and an instance-level security groups may not be specified on the same request
 		runInstancesInput.SecurityGroupIds = securityGroupIds
 	}
+	runInstancesInput.MetadataOptions = &ec2.InstanceMetadataOptionsRequest{}
+	if occmDetails.InstanceMetadata.HTTPEndpoint != nil {
+		runInstancesInput.MetadataOptions.HttpEndpoint = aws.String(*occmDetails.InstanceMetadata.HTTPEndpoint)
+	}
+	if occmDetails.InstanceMetadata.HTTPPutResponseHopLimit != nil {
+		runInstancesInput.MetadataOptions.HttpPutResponseHopLimit = aws.Int64(*occmDetails.InstanceMetadata.HTTPPutResponseHopLimit)
+	}
+	if occmDetails.InstanceMetadata.HTTPTokens != nil {
+		runInstancesInput.MetadataOptions.HttpTokens = aws.String(*occmDetails.InstanceMetadata.HTTPTokens)
+	}
 	log.Print("CallAWSInstanceCreate occmDetails name:", occmDetails.Name)
 	runResult, err := svc.RunInstances(runInstancesInput)
 
@@ -171,6 +181,42 @@ func (c *Client) CallAWSInstanceCreate(occmDetails createOCCMDetails) (string, e
 	log.Printf("Created instance %s", *runResult.Instances[0].InstanceId)
 	log.Print("After create intance - CallAWSInstanceCreate occmDetails name:", occmDetails.Name)
 	return *runResult.Instances[0].InstanceId, nil
+}
+
+// CallAWSInstanceUpdate updates the instance metadata
+func (c *Client) CallAWSInstanceUpdate(occmDetails createAWSOCCMDetails) error {
+
+	var sess *session.Session
+	if c.AWSProfile != "" {
+		sess = session.Must(session.NewSession(
+			&aws.Config{
+				Region:      aws.String(occmDetails.Region),
+				Credentials: credentials.NewSharedCredentials(c.AWSProfileFilePath, c.AWSProfile),
+			}))
+	} else {
+		sess = session.Must(session.NewSession(aws.NewConfig().WithRegion(occmDetails.Region)))
+	}
+
+	// Create EC2 service client
+	svc := ec2.New(sess)
+
+	modifyInstanceMetadataInput := &ec2.ModifyInstanceMetadataOptionsInput{
+		InstanceId:              aws.String(occmDetails.InstanceID),
+		HttpTokens:              aws.String(*occmDetails.InstanceMetadata.HTTPTokens),
+		HttpEndpoint:            aws.String(*occmDetails.InstanceMetadata.HTTPEndpoint),
+		HttpPutResponseHopLimit: aws.Int64(*occmDetails.InstanceMetadata.HTTPPutResponseHopLimit),
+	}
+
+	log.Print("CallAWSInstanceUpdate occmDetails name:", occmDetails.Name)
+	result, err := svc.ModifyInstanceMetadataOptions(modifyInstanceMetadataInput)
+
+	if err != nil {
+		log.Print("Could not update instance ", err)
+		return err
+	}
+
+	log.Printf("Updated instance %s", *result.InstanceMetadataOptions, *result.InstanceId)
+	return nil
 }
 
 // CallAWSInstanceTerminate can be used to make a request to terminate AWS Instance
@@ -524,7 +570,7 @@ func (c *Client) CallDeleteAzureVM(occmDetails deleteOCCMDetails) error {
 }
 
 // CallAMIGet can be used to make a request to get AWS AMI
-func (c *Client) CallAMIGet(occmDetails createOCCMDetails) (string, error) {
+func (c *Client) CallAMIGet(occmDetails createAWSOCCMDetails) (string, error) {
 
 	var sess *session.Session
 	if c.AWSProfile != "" {
@@ -653,7 +699,7 @@ func (c *Client) CallVNetGetCidr(subscriptionID string, resourceGroup string, vn
 }
 
 // CallAWSInstanceGet can be used to make a request to get AWS Instance
-func (c *Client) CallAWSInstanceGet(occmDetails createOCCMDetails) ([]ec2.Instance, error) {
+func (c *Client) CallAWSInstanceGet(occmDetails createAWSOCCMDetails) ([]ec2.Instance, error) {
 	if occmDetails.Region == "" {
 		regions, err := c.CallAWSRegionGet(occmDetails)
 		if err != nil {
@@ -733,7 +779,7 @@ func (c *Client) CallAWSInstanceGet(occmDetails createOCCMDetails) ([]ec2.Instan
 }
 
 // CallAWSRegionGet describe all regions.
-func (c *Client) CallAWSRegionGet(occmDetails createOCCMDetails) ([]string, error) {
+func (c *Client) CallAWSRegionGet(occmDetails createAWSOCCMDetails) ([]string, error) {
 	var sess *session.Session
 	if c.AWSProfile != "" {
 		sess = session.Must(session.NewSession(
@@ -854,7 +900,7 @@ func (c *Client) GetSimulator() bool {
 }
 
 // CallAWSTagCreate creates tag
-func (c *Client) CallAWSTagCreate(occmDetails createOCCMDetails) error {
+func (c *Client) CallAWSTagCreate(occmDetails createAWSOCCMDetails) error {
 
 	var sess *session.Session
 	if c.AWSProfile != "" {
@@ -900,7 +946,7 @@ func (c *Client) CallAWSTagCreate(occmDetails createOCCMDetails) error {
 }
 
 // CallAWSTagDelete deletes tag
-func (c *Client) CallAWSTagDelete(occmDetails createOCCMDetails) error {
+func (c *Client) CallAWSTagDelete(occmDetails createAWSOCCMDetails) error {
 
 	var sess *session.Session
 	if c.AWSProfile != "" {
@@ -946,7 +992,7 @@ func (c *Client) CallAWSTagDelete(occmDetails createOCCMDetails) error {
 }
 
 // CallAWSDescribeInstanceAttribute returns disableAPITermination.
-func (c *Client) CallAWSDescribeInstanceAttribute(occmDetails createOCCMDetails) (bool, error) {
+func (c *Client) CallAWSDescribeInstanceAttribute(occmDetails createAWSOCCMDetails) (bool, error) {
 
 	var sess *session.Session
 	if c.AWSProfile != "" {
