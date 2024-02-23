@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform/helper/validation"
 )
 
 func resourceOCCMAWS() *schema.Resource {
@@ -143,6 +144,33 @@ func resourceOCCMAWS() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"instance_metadata": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"http_put_response_hop_limit": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							Computed:     true,
+							ValidateFunc: validation.IntBetween(1, 64),
+						},
+						"http_tokens": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							Computed:     true,
+							ValidateFunc: validation.StringInSlice([]string{"optional", "required"}, false),
+						},
+						"http_endpoint": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							Computed:     true,
+							ValidateFunc: validation.StringInSlice([]string{"enabled", "disabled"}, false),
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -152,7 +180,7 @@ func resourceOCCMAWSCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*Client)
 
-	occmDetails := createOCCMDetails{}
+	occmDetails := createAWSOCCMDetails{}
 
 	occmDetails.Name = d.Get("name").(string)
 	occmDetails.Region = d.Get("region").(string)
@@ -222,7 +250,24 @@ func resourceOCCMAWSCreate(d *schema.ResourceData, meta interface{}) error {
 		}
 	}
 
-	res, err := client.createOCCM(occmDetails, proxyCertificates, "")
+	if o, ok := d.GetOk("instance_metadata"); ok {
+		instanceMetaData := o.(*schema.Set)
+		if instanceMetaData.Len() == 1 {
+			instanceMetadata := instanceMetaData.List()[0].(map[string]interface{})
+			httpPutResponseHopLimit := int64(instanceMetadata["http_put_response_hop_limit"].(int))
+			httpTokens := instanceMetadata["http_tokens"].(string)
+			httpEndpoint := instanceMetadata["http_endpoint"].(string)
+			occmDetails.InstanceMetadata = AWSInstanceMetadata{
+				HTTPPutResponseHopLimit: &httpPutResponseHopLimit,
+				HTTPTokens:              &httpTokens,
+				HTTPEndpoint:            &httpEndpoint,
+			}
+		} else {
+			return fmt.Errorf("error creating occm: the length of instance_metadata can not be more than 1. Current length: %d", instanceMetaData.Len())
+		}
+	}
+
+	res, err := client.createAWSOCCM(occmDetails, proxyCertificates, "")
 
 	if err != nil {
 		log.Print("Error creating instance")
@@ -247,7 +292,7 @@ func resourceOCCMAWSRead(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("Reading OCCM: %#v", d)
 	client := meta.(*Client)
 	var clientID string
-	occmDetails := createOCCMDetails{}
+	occmDetails := createAWSOCCMDetails{}
 
 	occmDetails.Name = d.Get("name").(string)
 	occmDetails.Region = d.Get("region").(string)
@@ -281,6 +326,14 @@ func resourceOCCMAWSRead(d *schema.ResourceData, meta interface{}) error {
 	if *res.InstanceId != id {
 		return fmt.Errorf("expected occm ID %s, Response could not find", id)
 	}
+
+	instanceMetadata := make([]map[string]interface{}, 0)
+	instanceMetadataMap := make(map[string]interface{})
+	instanceMetadataMap["http_put_response_hop_limit"] = *res.MetadataOptions.HttpPutResponseHopLimit
+	instanceMetadataMap["http_tokens"] = *res.MetadataOptions.HttpTokens
+	instanceMetadataMap["http_endpoint"] = *res.MetadataOptions.HttpEndpoint
+	instanceMetadata = append(instanceMetadata, instanceMetadataMap)
+	d.Set("instance_metadata", instanceMetadata)
 
 	if occmDetails.Region == "" {
 		occmDetails.Region = *res.Placement.AvailabilityZone
@@ -391,7 +444,7 @@ func resourceOCCMAWSExists(d *schema.ResourceData, meta interface{}) (bool, erro
 	client := meta.(*Client)
 
 	id := d.Id()
-	occmDetails := createOCCMDetails{}
+	occmDetails := createAWSOCCMDetails{}
 
 	occmDetails.Name = d.Get("name").(string)
 	occmDetails.Region = d.Get("region").(string)
@@ -429,7 +482,7 @@ func resourceOCCMAWSExists(d *schema.ResourceData, meta interface{}) (bool, erro
 func resourceOCCMAWSUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Client)
 
-	occmDetails := createOCCMDetails{}
+	occmDetails := createAWSOCCMDetails{}
 	deleteAwsTags := []userTags{}
 	addModifyAwsTags := []userTags{}
 	if d.HasChange("aws_tag") {
@@ -458,8 +511,26 @@ func resourceOCCMAWSUpdate(d *schema.ResourceData, meta interface{}) error {
 	occmDetails.IamInstanceProfileName = d.Get("iam_instance_profile_name").(string)
 	occmDetails.Company = d.Get("company").(string)
 	occmDetails.InstanceID = d.Id()
+	callAWSInstanceUpdate := false
+	if d.HasChange("instance_metadata") {
+		callAWSInstanceUpdate = true
+		instanceMetaData := d.Get("instance_metadata").(*schema.Set)
+		if instanceMetaData.Len() == 1 {
+			instanceMetadata := instanceMetaData.List()[0].(map[string]interface{})
+			httpPutResponseHopLimit := int64(instanceMetadata["http_put_response_hop_limit"].(int))
+			httpTokens := instanceMetadata["http_tokens"].(string)
+			httpEndpoint := instanceMetadata["http_endpoint"].(string)
+			occmDetails.InstanceMetadata = AWSInstanceMetadata{
+				HTTPPutResponseHopLimit: &httpPutResponseHopLimit,
+				HTTPTokens:              &httpTokens,
+				HTTPEndpoint:            &httpEndpoint,
+			}
+		} else {
+			return fmt.Errorf("error updataing occm: the length of instance_metadata can not be more than 1. Current length: %d", instanceMetaData.Len())
+		}
+	}
 
-	err := client.updateOCCM(occmDetails, nil, deleteAwsTags, addModifyAwsTags, clientID)
+	err := client.updateOCCM(occmDetails, nil, deleteAwsTags, addModifyAwsTags, clientID, callAWSInstanceUpdate)
 
 	if err != nil {
 		log.Print("Error updating instance")

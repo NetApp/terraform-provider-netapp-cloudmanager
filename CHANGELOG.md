@@ -1,5 +1,9 @@
+## 24.2.0
+NEW FEATURES:
+* resource/connector_aws: support `instance_metadata` block.
+
 ## 24.1.0
-NEW ENHANCEMENTS:
+ENHANCEMENTS:
 * resource/cvo_gcp: fix typo on vpc3_firewall_rule_tag_name.
 * add logging to API calls.
 

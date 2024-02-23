@@ -70,6 +70,56 @@ type createOCCMDetails struct {
 	Labels                       map[string]string
 }
 
+// Each Connector should have its own struct as each cloud provider has different fields
+// createAWSOCCMDetails the users input for creating a occm
+type createAWSOCCMDetails struct {
+	Name                         string
+	GCPProject                   string
+	Company                      string
+	InstanceID                   string
+	Region                       string
+	Location                     string
+	Zone                         string
+	AMI                          string
+	KeyName                      string
+	InstanceType                 string
+	IamInstanceProfileName       string
+	SecurityGroupID              string
+	SubnetID                     string
+	NetworkProjectID             string
+	ProxyURL                     string
+	ProxyUserName                string
+	ProxyPassword                string
+	ResourceGroup                string
+	SubscriptionID               string
+	MachineType                  string
+	ServiceAccountEmail          string
+	GCPCommonSuffixName          string
+	VnetID                       string
+	VnetResourceGroup            string
+	AdminUsername                string
+	AdminPassword                string
+	VirtualMachineSize           string
+	NetworkSecurityGroupName     string
+	NetworkSecurityResourceGroup string
+	AssociatePublicIPAddress     *bool
+	AssociatePublicIP            bool
+	FirewallTags                 bool
+	EnableTerminationProtection  *bool
+	AwsTags                      []userTags
+	Tags                         []string
+	StorageAccount               string
+	Labels                       map[string]string
+	InstanceMetadata             AWSInstanceMetadata
+}
+
+// AWSInstanceMetadata describes the metadata options for the ec2 instance
+type AWSInstanceMetadata struct {
+	HTTPEndpoint            *string
+	HTTPPutResponseHopLimit *int64
+	HTTPTokens              *string
+}
+
 // deleteOCCMDetails the users input for deleting a occm
 type deleteOCCMDetails struct {
 	InstanceID          string
@@ -338,7 +388,7 @@ func (c *Client) createAccount(clientID string) (string, error) {
 	return result.AccountID, nil
 }
 
-func (c *Client) createAWSInstance(occmDetails createOCCMDetails, clientID string) (string, error) {
+func (c *Client) createAWSInstance(occmDetails createAWSOCCMDetails, clientID string) (string, error) {
 
 	instanceID, err := c.CallAWSInstanceCreate(occmDetails)
 	if err != nil {
@@ -369,12 +419,12 @@ func (c *Client) createAWSInstance(occmDetails createOCCMDetails, clientID strin
 	return instanceID, nil
 }
 
-func (c *Client) getAWSInstance(occmDetails createOCCMDetails, id string) (ec2.Instance, error) {
+func (c *Client) getAWSInstance(occmDetails createAWSOCCMDetails, id string) (ec2.Instance, error) {
 
 	log.Print("getAWSInstance")
 
 	res, err := c.CallAWSInstanceGet(occmDetails)
-	returnOCCM := createOCCMDetails{}
+	returnOCCM := createAWSOCCMDetails{}
 	if err != nil {
 		return ec2.Instance{}, err
 	}
@@ -384,13 +434,65 @@ func (c *Client) getAWSInstance(occmDetails createOCCMDetails, id string) (ec2.I
 			returnOCCM.AMI = *instance.ImageId
 			returnOCCM.InstanceID = *instance.InstanceId
 			returnOCCM.InstanceType = *instance.InstanceType
+			returnOCCM.InstanceMetadata = AWSInstanceMetadata{
+				HTTPEndpoint:            instance.MetadataOptions.HttpEndpoint,
+				HTTPPutResponseHopLimit: instance.MetadataOptions.HttpPutResponseHopLimit,
+				HTTPTokens:              instance.MetadataOptions.HttpTokens,
+			}
 			return instance, nil
 		}
 	}
 	return ec2.Instance{}, nil
 }
 
-func (c *Client) createOCCM(occmDetails createOCCMDetails, proxyCertificates []string, clientID string) (OCCMMResult, error) {
+// TODO: move this general function out of this file, As it is sepefic to AWS
+func (c *Client) createOCCM(occmDetails createAWSOCCMDetails, proxyCertificates []string, clientID string) (OCCMMResult, error) {
+	log.Printf("createOCCM %s %s", occmDetails.Name, clientID)
+	if occmDetails.AMI == "" {
+
+		ami, err := c.CallAMIGet(occmDetails)
+		if err != nil {
+			return OCCMMResult{}, err
+		}
+		occmDetails.AMI = ami
+	}
+
+	var registerAgentTOService registerAgentTOServiceRequest
+	registerAgentTOService.Name = occmDetails.Name
+	registerAgentTOService.Placement.Region = occmDetails.Region
+	registerAgentTOService.Placement.Subnet = occmDetails.SubnetID
+	registerAgentTOService.Company = occmDetails.Company
+	if occmDetails.ProxyURL != "" {
+		registerAgentTOService.Extra.Proxy.ProxyURL = occmDetails.ProxyURL
+	}
+
+	if occmDetails.ProxyUserName != "" {
+		registerAgentTOService.Extra.Proxy.ProxyUserName = occmDetails.ProxyUserName
+	}
+
+	if occmDetails.ProxyPassword != "" {
+		registerAgentTOService.Extra.Proxy.ProxyPassword = occmDetails.ProxyPassword
+	}
+
+	userData, newClientID, err := c.getUserData(registerAgentTOService, proxyCertificates, clientID)
+	if err != nil {
+		return OCCMMResult{}, err
+	}
+	c.UserData = userData
+	var result OCCMMResult
+	result.ClientID = newClientID
+	result.AccountID = c.AccountID
+	instanceID, err := c.createAWSInstance(occmDetails, newClientID)
+	if err != nil {
+		return OCCMMResult{}, err
+	}
+	result.InstanceID = instanceID
+
+	log.Printf("createOCCM clientID: %s, cclient=%s", result.ClientID, newClientID)
+	return result, nil
+}
+
+func (c *Client) createAWSOCCM(occmDetails createAWSOCCMDetails, proxyCertificates []string, clientID string) (OCCMMResult, error) {
 	log.Printf("createOCCM %s %s", occmDetails.Name, clientID)
 	if occmDetails.AMI == "" {
 
@@ -522,7 +624,7 @@ func (c *Client) deleteOCCM(request deleteOCCMDetails, clientID string) error {
 }
 
 // only tags can be updated. Other update functionalities to be added.
-func (c *Client) updateOCCM(occmDetails createOCCMDetails, proxyCertificates []string, deleteTags []userTags, addModifyTags []userTags, clientID string) error {
+func (c *Client) updateOCCM(occmDetails createAWSOCCMDetails, proxyCertificates []string, deleteTags []userTags, addModifyTags []userTags, clientID string, callAWSInstanceUpdate bool) error {
 
 	log.Print("updating OCCM")
 	if occmDetails.AMI == "" {
@@ -533,39 +635,48 @@ func (c *Client) updateOCCM(occmDetails createOCCMDetails, proxyCertificates []s
 		}
 		occmDetails.AMI = ami
 	}
+	//No documentation on the follwing code. It was working until the time instance update was added. The error is:
+	//	code: 403, message: Action not allowed for user
 
-	var registerAgentTOService registerAgentTOServiceRequest
-	registerAgentTOService.Name = occmDetails.Name
-	registerAgentTOService.Placement.Region = occmDetails.Region
-	registerAgentTOService.Placement.Subnet = occmDetails.SubnetID
-	registerAgentTOService.Company = occmDetails.Company
-	if occmDetails.ProxyURL != "" {
-		registerAgentTOService.Extra.Proxy.ProxyURL = occmDetails.ProxyURL
-	}
+	// var registerAgentTOService registerAgentTOServiceRequest
+	// registerAgentTOService.Name = occmDetails.Name
+	// registerAgentTOService.Placement.Region = occmDetails.Region
+	// registerAgentTOService.Placement.Subnet = occmDetails.SubnetID
+	// registerAgentTOService.Company = occmDetails.Company
+	// if occmDetails.ProxyURL != "" {
+	// 	registerAgentTOService.Extra.Proxy.ProxyURL = occmDetails.ProxyURL
+	// }
 
-	if occmDetails.ProxyUserName != "" {
-		registerAgentTOService.Extra.Proxy.ProxyUserName = occmDetails.ProxyUserName
-	}
+	// if occmDetails.ProxyUserName != "" {
+	// 	registerAgentTOService.Extra.Proxy.ProxyUserName = occmDetails.ProxyUserName
+	// }
 
-	if occmDetails.ProxyPassword != "" {
-		registerAgentTOService.Extra.Proxy.ProxyPassword = occmDetails.ProxyPassword
-	}
+	// if occmDetails.ProxyPassword != "" {
+	// 	registerAgentTOService.Extra.Proxy.ProxyPassword = occmDetails.ProxyPassword
+	// }
 
-	userData, _, err := c.getUserData(registerAgentTOService, proxyCertificates, clientID)
-	if err != nil {
-		return err
-	}
-	c.UserData = userData
+	// userData, _, err := c.getUserData(registerAgentTOService, proxyCertificates, clientID)
+	// if err != nil {
+	// 	return err
+	// }
+	// c.UserData = userData
+
 	if len(addModifyTags) > 0 {
 		occmDetails.AwsTags = addModifyTags
-		err = c.CallAWSTagCreate(occmDetails)
+		err := c.CallAWSTagCreate(occmDetails)
 		if err != nil {
 			return err
 		}
 	}
 	if len(deleteTags) > 0 {
 		occmDetails.AwsTags = deleteTags
-		err = c.CallAWSTagDelete(occmDetails)
+		err := c.CallAWSTagDelete(occmDetails)
+		if err != nil {
+			return err
+		}
+	}
+	if callAWSInstanceUpdate {
+		err := c.CallAWSInstanceUpdate(occmDetails)
 		if err != nil {
 			return err
 		}
