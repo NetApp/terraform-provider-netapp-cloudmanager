@@ -2,6 +2,7 @@ package cloudmanager
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
@@ -66,6 +67,10 @@ func Provider() terraform.ResourceProvider {
 				},
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("AZURE_AUTH_METHODS", nil),
+			},
+			"connector_ip": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 		},
 
@@ -133,5 +138,10 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	} else {
 		config.AzureAuthMethods = []string{"cli", "env"}
 	}
+
+	if v, ok := d.GetOk("connector_ip"); ok {
+		config.ConnectorIP = v.(string)
+	}
+	log.Printf("Configuring provider with: %#v", config.ConnectorIP)
 	return config.clientFun()
 }

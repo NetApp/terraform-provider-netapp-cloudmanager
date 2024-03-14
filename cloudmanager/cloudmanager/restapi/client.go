@@ -21,6 +21,7 @@ type Client struct {
 	GCPDeploymentManager string
 	CVSHostName          string
 	GCPCompute           string
+	ConnectorIP          string
 
 	httpClient http.Client
 }
@@ -51,6 +52,9 @@ func (c *Client) Do(baseURL string, hostType string, token string, paramsNil boo
 	} else if hostType == "GCPCompute" {
 		host = c.GCPCompute
 		gcpType = true
+	} else if hostType == "ConnectorIP" {
+		host = c.ConnectorIP
+		log.Printf("ConnectorIP is: %s", host)
 	}
 	httpReq, err := req.BuildHTTPReq(host, token, c.Audience, baseURL, paramsNil, accountID, clientID, gcpType, simulator)
 	if err != nil {

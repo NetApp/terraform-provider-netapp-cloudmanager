@@ -18,6 +18,7 @@ type configStruct struct {
 	AWSProfileFilePath string
 	AzureAuthMethods   []string
 	ConnectorHost      string
+	ConnectorIP        string
 }
 
 // Client is the main function to connect to the APi
@@ -38,6 +39,9 @@ func (c *configStruct) clientFun() (*Client, error) {
 			GCPImageProject:      "netapp-cloudmanager",
 			GCPImageFamily:       "cloudmanager",
 			CVSHostName:          "https://api.bluexp.netapp.com/cloud-volumes/cvs",
+		}
+		if c.ConnectorIP != "" {
+			client.ConnectorIP = "http://" + c.ConnectorIP
 		}
 	} else if c.Environment == "stage" {
 		log.Print("Stage Environment")
@@ -101,6 +105,5 @@ func (c *configStruct) clientFun() (*Client, error) {
 	client.AWSProfile = c.AWSProfile
 	client.AWSProfileFilePath = c.AWSProfileFilePath
 	client.AzureAuthMethods = c.AzureAuthMethods
-
 	return client, nil
 }

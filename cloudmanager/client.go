@@ -68,6 +68,7 @@ type Client struct {
 	AWSProfile         string
 	AWSProfileFilePath string
 	AzureAuthMethods   []string
+	ConnectorIP        string
 }
 
 // CallAWSInstanceCreate can be used to make a request to create AWS Instance
@@ -857,6 +858,7 @@ func (c *Client) init() {
 		GCPDeploymentManager: c.GCPDeploymentManager,
 		CVSHostName:          c.CVSHostName,
 		GCPCompute:           c.GCPCompute,
+		ConnectorIP:          c.ConnectorIP,
 	}
 }
 
