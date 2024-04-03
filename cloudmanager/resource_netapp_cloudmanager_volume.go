@@ -807,6 +807,15 @@ func resourceCVOVolumeUpdate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
+    if d.HasChange("comment") {
+	   if v, ok := d.GetOk("comment"); ok {
+	      volume.Comment = v.(string)
+	   } else {
+	      volume.Comment = "" 
+	   }
+	}
+
+
 	return resourceCVOVolumeRead(d, meta)
 }
 
@@ -814,7 +823,7 @@ func resourceVolumeCustomizeDiff(diff *schema.ResourceDiff, v interface{}) error
 	// Check supported modification: Use volume name as an indication to know if this is a creation or modification
 	if !(diff.HasChange("name")) {
 		changeableParams := []string{"volume_protocol", "export_policy_type", "export_policy_ip", "export_policy_name", "export_policy_nfs_version",
-			"share_name", "permission", "users", "tiering_policy", "snapshot_policy_name", "export_policy_rule_access_control", "export_policy_rule_super_user"}
+			"share_name", "permission", "users", "tiering_policy", "snapshot_policy_name", "export_policy_rule_access_control", "export_policy_rule_super_user", "comment"}
 		changedKeys := diff.GetChangedKeysPrefix("")
 		for _, key := range changedKeys {
 			found := false
