@@ -807,7 +807,7 @@ func resourceCVOVolumeUpdate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-    if d.HasChange("comment") {
+	if d.HasChange("comment") {
 	   if v, ok := d.GetOk("comment"); ok {
 	      volume.Comment = v.(string)
 	   } else {
