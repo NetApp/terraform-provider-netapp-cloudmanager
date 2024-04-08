@@ -1,6 +1,15 @@
+## 24.2.0
+NEW FEATURES:
+* resource/connector_aws: support `instance_metadata` block.
+
+## 24.1.0
+ENHANCEMENTS:
+* resource/cvo_gcp: fix typo on vpc3_firewall_rule_tag_name.
+* add logging to API calls.
+
+
 ## 23.11.0
 *ENHANCEMENTS: add retries when http returns >200 status code in getWorkingEnvironmentProperties. 
-
 
 ## 23.10.0
 BUG FIXES:

@@ -36,6 +36,11 @@ resource "netapp-cloudmanager_connector_aws" "cl-occm-aws" {
               tag_key = "xxx"
               tag_value = "YYY"
             }
+  instance_metadata{
+    http_put_response_hop_limit = 2
+    http_tokens = "required"
+    http_endpoint = "enabled"
+  }
   subnet_id = "subnet-xxxxx"
   security_group_id = "sg-xxxxxxxxx"
   iam_instance_profile_name = "OCCM_AUTOMATION"
@@ -59,15 +64,19 @@ The following arguments are supported:
 * `proxy_user_name` - (Optional) The proxy user name, if using a proxy to connect to the internet.
 * `proxy_password` - (Optional) The proxy password, if using a proxy to connect to the internet.
 * `proxy_certificates` - (Optional) The proxy certificates. A list of certificate file names.
-
-Options
 * `associate_public_ip_address` - (Optional) Indicates whether to associate a public IP address to the instance. If not provided, the association will be done based on the subnet's configuration.
 * `enable_termination_protection` - (Optional) Indicates whether to enable termination protection on the instance, default is false.
 * `account_id` - (Optional) The NetApp account ID that the Connector will be associated with. If not provided, Cloud Manager uses the first account. If no account exists, Cloud Manager creates a new account. You can find the account ID in the account tab of Cloud Manager at [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
+* `instance_metadata` - (Optional,Computed) The block of AWS EC2 instacne metadata.
 
 The `aws_tag` block supports the following:
 * `tag_key` - (Required) The key of the tag.
 * `tag_value` - (Required) The tag value.
+
+The `instance_metadata` block supports the following:
+* `http_endpoint` - (Optional, Computed) If the value is disabled, you cannot access your instance metadata. Choices: ["enabled", "disabled"]
+* `http_tokens` - (Optional, Computed) Indicates whether IMDSv2 is required. Choices: ["optional", "required"]
+* `http_put_response_hop_limit` - (Optional, Computed) The desired HTTP PUT response hop limit for instance metadata requests. The larger the number, the further instance metadata requests can travel. Possible values: Integers from 1 to 64.
 
 ## Attributes Reference
 

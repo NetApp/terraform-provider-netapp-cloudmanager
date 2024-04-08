@@ -1,6 +1,7 @@
 package restapi
 
 import (
+	"bytes"
 	"errors"
 	"io/ioutil"
 	"log"
@@ -51,11 +52,11 @@ func (c *Client) Do(baseURL string, hostType string, token string, paramsNil boo
 		host = c.GCPCompute
 		gcpType = true
 	}
-
 	httpReq, err := req.BuildHTTPReq(host, token, c.Audience, baseURL, paramsNil, accountID, clientID, gcpType, simulator)
 	if err != nil {
 		return statusCode, res, onCloudRequestID, err
 	}
+	log.Printf("Sending HTTP request: %s %s %#v", httpReq.Method, httpReq.URL.String(), map[string]interface{}{"body": req.Params})
 	httpRes, err := c.httpClient.Do(httpReq)
 	if err != nil {
 		log.Print("HTTP req failed")
@@ -80,5 +81,6 @@ func (c *Client) Do(baseURL string, hostType string, token string, paramsNil boo
 	}
 
 	statusCode = httpRes.StatusCode
+	log.Printf("received: %s %s %d %#v", req.Method, httpReq.URL.String(), statusCode, bytes.NewBuffer(res).String())
 	return statusCode, res, onCloudRequestID, nil
 }
