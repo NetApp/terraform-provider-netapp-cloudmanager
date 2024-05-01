@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
@@ -515,7 +516,6 @@ func resourceCVOVolumeRead(d *schema.ResourceData, meta interface{}) error {
 		}
 	}
 	volume.SvmName = svm
-
 	res, err := client.getVolume(volume, clientID)
 	if err != nil {
 		log.Print("Error reading volume")
@@ -523,6 +523,7 @@ func resourceCVOVolumeRead(d *schema.ResourceData, meta interface{}) error {
 	}
 	for _, volume := range res {
 		if volume.ID == d.Id() {
+			log.Printf("### Fetching volume: %#v", volume)
 			if _, ok := d.GetOk("aggregate_name"); ok {
 				d.Set("aggregate_name", volume.AggregateName)
 			}
@@ -744,8 +745,8 @@ func resourceCVOVolumeUpdate(d *schema.ResourceData, meta interface{}) error {
 		if !exportPolicyTypeOK || !exportPolicyIPOK || !exportPolicyNfsVersionOK || !exportPolicyRuleAccessControlOK || !exportPolicyRuleSuperUserOK {
 			return fmt.Errorf("export_policy_type, export_policy_ip, export_policy_nfs_version, export_policy_rule_access_control and export_policy_rule_super_user are required for export policy")
 		}
-		var rules []ExportPolicyRule
-		rules = make([]ExportPolicyRule, len(volume.ExportPolicyInfo.Ips))
+
+		rules := make([]ExportPolicyRule, len(volume.ExportPolicyInfo.Ips))
 		for i, x := range volume.ExportPolicyInfo.Ips {
 			rules[i] = ExportPolicyRule{}
 			eachRule := make([]string, 1)
@@ -777,12 +778,15 @@ func resourceCVOVolumeUpdate(d *schema.ResourceData, meta interface{}) error {
 	if d.HasChange("export_policy_name") {
 		volume.ExportPolicyInfo.Name = d.Get("export_policy_name").(string)
 	}
-	if v, ok := d.GetOk("export_policy_nfs_version"); ok {
-		nfs := make([]string, 0, v.(*schema.Set).Len())
-		for _, x := range v.(*schema.Set).List() {
-			nfs = append(nfs, x.(string))
+	// set values on export policy nfs version only when export policy nfs version is changed
+	if d.HasChange("export_policy_nfs_version") {
+		if v, ok := d.GetOk("export_policy_nfs_version"); ok {
+			nfs := make([]string, 0, v.(*schema.Set).Len())
+			for _, x := range v.(*schema.Set).List() {
+				nfs = append(nfs, x.(string))
+			}
+			volume.ExportPolicyInfo.NfsVersion = nfs
 		}
-		volume.ExportPolicyInfo.NfsVersion = nfs
 	}
 	if d.HasChange("permission") || d.HasChange("users") {
 		volume.ShareInfoUpdate.ShareName = d.Get("share_name").(string)
@@ -801,20 +805,28 @@ func resourceCVOVolumeUpdate(d *schema.ResourceData, meta interface{}) error {
 		volume.TieringPolicy = d.Get("tiering_policy").(string)
 	}
 
+	if d.HasChange("comment") {
+		volume.Comment = d.Get("comment").(string)
+	}
+	log.Printf("###Updating volume: %#v", volume)
 	err = client.updateVolume(volume, clientID)
 	if err != nil {
 		log.Print("Error updating volume")
 		return err
 	}
 
+	// add sleep to wait for the volume to be updated NOC-37737
+	time.Sleep(3 * time.Minute)
 	return resourceCVOVolumeRead(d, meta)
 }
 
 func resourceVolumeCustomizeDiff(diff *schema.ResourceDiff, v interface{}) error {
 	// Check supported modification: Use volume name as an indication to know if this is a creation or modification
 	if !(diff.HasChange("name")) {
-		changeableParams := []string{"volume_protocol", "export_policy_type", "export_policy_ip", "export_policy_name", "export_policy_nfs_version",
-			"share_name", "permission", "users", "tiering_policy", "snapshot_policy_name", "export_policy_rule_access_control", "export_policy_rule_super_user"}
+		changeableParams := []string{"volume_protocol", "export_policy_type", "export_policy_ip",
+			"export_policy_name", "export_policy_nfs_version", "share_name", "permission", "users",
+			"tiering_policy", "snapshot_policy_name", "export_policy_rule_access_control",
+			"export_policy_rule_super_user", "comment"}
 		changedKeys := diff.GetChangedKeysPrefix("")
 		for _, key := range changedKeys {
 			found := false

@@ -355,7 +355,7 @@ func (c *Client) updateVolume(request volumeRequest, clientID string) error {
 	}
 	baseURL = fmt.Sprintf("%s/volumes/%s/%s/%s", baseURL, id, request.SvmName, request.Name)
 	params := structs.Map(request)
-	statusCode, response, _, err := c.CallAPIMethod("PUT", baseURL, params, c.Token, hostType, clientID)
+	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("PUT", baseURL, params, c.Token, hostType, clientID)
 
 	responseError := apiResponseChecker(statusCode, response, "updateVolume")
 	if responseError != nil {
@@ -364,6 +364,11 @@ func (c *Client) updateVolume(request volumeRequest, clientID string) error {
 
 	if err != nil {
 		log.Print("updateVolume request failed ", statusCode)
+		return err
+	}
+
+	err = c.waitOnCompletion(onCloudRequestID, "volume", "update", 40, 10, clientID)
+	if err != nil {
 		return err
 	}
 	return nil
