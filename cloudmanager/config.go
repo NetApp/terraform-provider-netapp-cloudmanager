@@ -27,7 +27,7 @@ func (c *configStruct) clientFun() (*Client, error) {
 	if c.Environment == "prod" {
 		log.Print("Prod Environment")
 		client = &Client{
-			CloudManagerHost:     "https://api.bluexp.netapp.com",
+			CloudManagerHost:     "https://cloudmanager.cloud.netapp.com",
 			AuthHost:             "https://api.bluexp.netapp.com/auth/oauth/token",
 			SaAuthHost:           "https://api.bluexp.netapp.com/auth/oauth/token",
 			Audience:             "https://api.cloud.netapp.com",
