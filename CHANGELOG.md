@@ -1,5 +1,11 @@
+
 BUG FIXES:
 * resource/volume: support update comment with adding the missing bits in the volume update control path.
+
+=======
+## 24.3.0
+BUG FIXES:
+* resoruce/volume: support `comment` update with adding 3 minutes wait time.
 
 
 ## 24.2.0
