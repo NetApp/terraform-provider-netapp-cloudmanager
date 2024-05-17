@@ -1,3 +1,7 @@
+BUG FIXES:
+* resource/volume: support update comment with adding the missing bits in the volume update control path.
+
+
 ## 24.2.0
 NEW FEATURES:
 * resource/connector_aws: support `instance_metadata` block.
