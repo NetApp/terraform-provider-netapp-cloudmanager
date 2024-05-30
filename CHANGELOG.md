@@ -1,4 +1,8 @@
-## 24.3.0
+## 24.5.1
+ENHANCEMENTS:
+* remove duplicated volume documentation page.
+
+## 24.5.0
 BUG FIXES:
 * resoruce/volume: support `comment` update with adding 3 minutes wait time.
 

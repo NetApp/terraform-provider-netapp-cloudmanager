@@ -117,7 +117,7 @@ The following arguments are supported:
 * `enable_compression` - (Optional) Enable compression.
 * `enable_deduplication` - (Optional) Enable deduplication.
 * `aggregate_name ` - (Optional) The aggregate in which the volume will be created. If not provided, Cloud Manager chooses the best aggregate for you. For OnPrem, aggregate input is required.
-* `volume_protocol` - (Optional) The protocol for the volume: ['nfs', 'cifs', 'iscsi']. This affects the provided parameters. The default is 'nfs'
+* `volume_protocol` - (Optional) The protocol for the volume: ['nfs', 'cifs', 'iscsi']. This affects the provided parameters. The default is 'nfs'.
 * `working_environment_id` - (Optional) The public ID of the working environment where the volume will be created. The ID can be optional if working_environment_name is provided. You can find the ID from the previous create Cloud Volumes ONTAP action as shown in the example, or from the Information page of the Cloud Volumes ONTAP working environment on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
 * `working_environment_name` - (Optional) The working environment name where the aggregate will be created. It will be ignored if working_environment_id is provided.
 * `capacity_tier` - (Optional) The volume's capacity tier for tiering cold data to object storage: ['S3', 'Blob', 'cloudStorage']. The default values for each cloud provider are as follows: Amazon => 'S3', Azure => 'Blob', GCP => 'cloudStorage'. If none, the capacity tier won't be set on volume creation.
@@ -129,14 +129,14 @@ The following arguments are supported:
 * `export_policy_rule_super_user` - (Optional) Boolean option to sepecify super user or not. (NFS protocol parameters)
   `export__policy_type`, `export_policy_ip`, `export_policy_nfs_version`, `export_policy_nfs_version` and  `export_policy_rule_super_user` are required together for export policy.
 * `snapshot_policy_name` - (Optional) Snapshot policy name. The default is 'default'. (NFS protocol parameters)
-* `iops` - (Optional) Provisioned IOPS. Needed only when 'provider_volume_type' is 'io1' or 'gp3'
+* `iops` - (Optional) Provisioned IOPS. Needed only when 'provider_volume_type' is 'io1' or 'gp3'.
 * `throughput` - (Optional) Required only when 'provider_volume_type' is 'gp3'.
 * `share_name` (Optional) Share name. (CIFS protocol parameters)
 * `permission` (Optional) CIFS share permission type. (CIFS protocol parameters)
 * `users` (Optional) List of users with the permission. (CIFS protocol parameters)
 * `igroups` (Optional) List of igroups. (iSCSI protocol parameters)
 * `os_name` (Optional) Operating system. (iSCSI protocol parameters)
-* `comment` - (Optional) Sets a comment associated with the volume 
+* `comment` - (Optional) Sets a comment associated with the volume. 
 * `initiator` (Optional) Set of attributes of Initiator. (iSCSI protocol parameters)
 *  `tags` - (Optional) Set tags for the volume during creation. The API doesn't contain any information about tags so the provider doesn't guarantee tags will be added successfully and detect any drift after create.
 
