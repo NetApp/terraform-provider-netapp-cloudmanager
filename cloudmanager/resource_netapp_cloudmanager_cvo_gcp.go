@@ -652,6 +652,7 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 
 func resourceCVOGCPRead(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("Reading CVO: %#v", d)
+	log.Print("Test Branch in read cvo gcp")
 	client := meta.(*Client)
 
 	id := d.Id()
@@ -833,6 +834,7 @@ func resourceCVOGCPCustomizeDiff(diff *schema.ResourceDiff, v interface{}) error
 }
 
 func resourceCVOGCPExists(d *schema.ResourceData, meta interface{}) (bool, error) {
+	log.Print("test branch in exists cvo gcp")
 	log.Printf("Checking existence of CVO: %#v", d)
 	client := meta.(*Client)
 
