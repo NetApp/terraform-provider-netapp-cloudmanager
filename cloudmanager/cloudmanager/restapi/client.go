@@ -66,7 +66,7 @@ func (c *Client) Do(baseURL string, hostType string, token string, paramsNil boo
 		log.Print("HTTP req failed")
 		return statusCode, res, onCloudRequestID, err
 	}
-
+	log.Printf("Response header: %#v", httpRes.Header)
 	if httpRes.Header.Get("OnCloud-Request-Id") != "" {
 		log.Print("OnCloud-Request-Id ", httpRes.Header.Get("OnCloud-Request-Id"))
 		onCloudRequestID = httpRes.Header.Get("OnCloud-Request-Id")

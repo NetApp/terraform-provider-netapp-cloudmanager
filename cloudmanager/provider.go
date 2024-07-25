@@ -72,6 +72,10 @@ func Provider() terraform.ResourceProvider {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"cloudmanager_host": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 		},
 
 		ResourcesMap: map[string]*schema.Resource{
@@ -143,5 +147,10 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.ConnectorIP = v.(string)
 	}
 	log.Printf("Configuring provider with: %#v", config.ConnectorIP)
-	return config.clientFun()
+
+	c, error := config.clientFun()
+	if v, ok := d.GetOk("cloudmanager_host"); ok {
+		c.CloudManagerHost = v.(string)
+	}
+	return c, error
 }
