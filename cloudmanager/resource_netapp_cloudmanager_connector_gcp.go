@@ -283,17 +283,25 @@ func resourceOCCMGCPCreate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
+	account, err := client.getAccountDetails(res.ClientID)
+	if err != nil {
+		log.Print("Error creating instance")
+		return err
+	}
+
 	d.SetId(occmDetails.Name)
 	if err := d.Set("client_id", res.ClientID); err != nil {
 		return fmt.Errorf("error reading occm client_id: %s", err)
 	}
 
-	if err := d.Set("account_id", res.AccountID); err != nil {
+	if err := d.Set("account_id", account.AccountID); err != nil {
 		return fmt.Errorf("error reading occm account_id: %s", err)
 	}
 
-	if err := client.setOCCMConfig(occmConfig, res.ClientID); err != nil {
-		return fmt.Errorf("error set occm config: %s", err)
+	if len(occmDetails.Tags) > 0 {
+		if err := client.setOCCMConfig(occmConfig, res.ClientID, account.IsSAAS, occmDetails); err != nil {
+			return fmt.Errorf("error set occm config: %s", err)
+		}
 	}
 
 	log.Printf("Created occm: %v", res)
@@ -500,6 +508,10 @@ func resourceOCCMGCPUpdate(d *schema.ResourceData, meta interface{}) error {
 		}
 
 	}
+	client.GCPServiceAccountKey, err = getGCPServiceAccountKey(d)
+	if err != nil {
+		return err
+	}
 	occmDetails.Company = d.Get("company").(string)
 	clientID := d.Get("client_id").(string)
 	client.AccountID = d.Get("account_id").(string)
@@ -521,8 +533,19 @@ func resourceOCCMGCPUpdate(d *schema.ResourceData, meta interface{}) error {
 	if o, ok := d.GetOk("gcp_enable_os_login_sk"); ok {
 		occmConfig.GcpEnableOsLoginSk = o.(bool)
 	}
-	if err := client.setOCCMConfig(occmConfig, clientID); err != nil {
-		return fmt.Errorf("error set occm config: %s", err)
+
+	accesTokenResult, err := client.getAccessToken()
+	if err != nil {
+		log.Print("Error Updating OCCM")
+		return err
+	}
+	log.Print("getAccessToken  ", accesTokenResult.Token)
+	client.Token = accesTokenResult.Token
+
+	account, err := client.getAccountDetails(clientID)
+	if err != nil {
+		log.Print("Error Updating OCCM")
+		return err
 	}
 
 	if d.HasChange("tags") {
@@ -564,6 +587,12 @@ func resourceOCCMGCPUpdate(d *schema.ResourceData, meta interface{}) error {
 		err = client.setDiskLabels(occmDetails, updateLabels, clientID)
 		if err != nil {
 			return err
+		}
+	}
+
+	if len(occmDetails.Tags) > 0 {
+		if err := client.setOCCMConfig(occmConfig, clientID, account.IsSAAS, occmDetails); err != nil {
+			return fmt.Errorf("error set occm config: %s", err)
 		}
 	}
 

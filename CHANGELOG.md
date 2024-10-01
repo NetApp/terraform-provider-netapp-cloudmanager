@@ -1,3 +1,7 @@
+## 24.2.0
+NEW FEATURES:
+* Azure and GCP connectors now support Restricted mode.
+
 ## 24.3.0
 BUG FIXES:
 * resoruce/volume: support `comment` update with adding 3 minutes wait time.
