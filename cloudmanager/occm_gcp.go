@@ -494,7 +494,7 @@ func (c *Client) setVMInstaceTags(occmDetails createOCCMDetails, fingerprint str
 	if err != nil {
 		return err
 	}
-	baseURL := fmt.Sprintf("/compute/v1/projects/%s/zones/%s/instances/%s-vm/setTags", occmDetails.GCPProject, occmDetails.Region, occmDetails.Name)
+	baseURL := fmt.Sprintf("/compute/v1/projects/%s/zones/%s/instances/%s-vm/setTags", occmDetails.GCPProject, occmDetails.Zone, occmDetails.Name)
 	hostType := "GCPDeploymentManager"
 	body := make(map[string]interface{})
 	body["items"] = occmDetails.Tags

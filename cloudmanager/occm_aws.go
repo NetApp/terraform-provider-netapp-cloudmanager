@@ -193,6 +193,7 @@ type accountResult struct {
 type accountIDResult struct {
 	AccountID   string `json:"accountPublicId"`
 	AccountName string `json:"accountName"`
+	IsSAAS      bool   `json:"isSaas"`
 }
 
 // listOCCMResult lists the details for given Client ID
@@ -358,6 +359,45 @@ func (c *Client) getAccount(clientID string) (string, error) {
 	}
 
 	return result[0].AccountID, nil
+}
+
+func (c *Client) getAccountDetails(clientID string) (accountIDResult, error) {
+
+	log.Print("getAccountDetails")
+
+	baseURL := "/tenancy/account"
+
+	hostType := "CloudManagerHost"
+
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
+	if err != nil {
+		log.Print("getAccountDetails request failed ", statusCode)
+		return accountIDResult{}, err
+	}
+
+	responseError := apiResponseChecker(statusCode, response, "getAccountDetails")
+	if responseError != nil {
+		return accountIDResult{}, responseError
+	}
+
+	var result []accountIDResult
+	if err := json.Unmarshal(response, &result); err != nil {
+		log.Print("Failed to unmarshall response from getAccountDetails ", err)
+		return accountIDResult{}, err
+	}
+
+	if len(result) == 0 {
+		return accountIDResult{}, fmt.Errorf("no account found: %s", c.AccountID)
+	}
+
+	var resultAccount accountIDResult
+	for _, account := range result {
+		if account.AccountID == c.AccountID {
+			resultAccount = account
+		}
+	}
+
+	return resultAccount, nil
 }
 
 func (c *Client) createAccount(clientID string) (string, error) {

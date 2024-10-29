@@ -1331,10 +1331,30 @@ func (c *Client) upgradeOntapVersionAvailable(apiRoot string, id string, ontapVe
 	return "", fmt.Errorf("working environment %s: no upgrade version availble", id)
 }
 
-func (c *Client) setOCCMConfig(request configValuesUpdateRequest, clientID string) error {
+func (c *Client) setOCCMConfig(request configValuesUpdateRequest, clientID string, isSAAS bool, occmDetails createOCCMDetails) error {
 	log.Print("setOCCMConfig: set OCCM configuration")
 
-	hostType := "CloudManagerHost"
+	connectorIP := ""
+	if !isSAAS {
+		vm, err := c.getVMInstance(occmDetails, clientID)
+		if err != nil {
+			log.Print("Error creating instance")
+			return err
+		}
+		if len(vm["networkInterfaces"].([]interface{})) > 0 {
+			accessConfigs := vm["networkInterfaces"].([]interface{})[0].(map[string]interface{})["accessConfigs"]
+			if len(accessConfigs.([]interface{})) > 0 {
+				connectorIP = vm["networkInterfaces"].([]interface{})[0].(map[string]interface{})["accessConfigs"].([]interface{})[0].(map[string]interface{})["natIP"].(string)
+			}
+		}
+	}
+
+	hostType := ""
+	if isSAAS {
+		hostType = "CloudManagerHost"
+	} else {
+		hostType = "http://" + connectorIP
+	}
 	if c.Token == "" {
 		accesTokenResult, err := c.getAccessToken()
 		if err != nil {
@@ -1347,15 +1367,14 @@ func (c *Client) setOCCMConfig(request configValuesUpdateRequest, clientID strin
 	params := structs.Map(request)
 	log.Printf("\tparams: %+v", params)
 	statusCode, response, _, err := c.CallAPIMethod("PUT", baseURL, params, c.Token, hostType, clientID)
+	if err != nil {
+		log.Print("setOCCMConfig request failed ", statusCode)
+		return err
+	}
 
 	responseError := apiResponseChecker(statusCode, response, "setOCCMConfig")
 	if responseError != nil {
 		return responseError
-	}
-
-	if err != nil {
-		log.Print("setOCCMConfig request failed ", statusCode)
-		return err
 	}
 
 	var result configValuesResponse
