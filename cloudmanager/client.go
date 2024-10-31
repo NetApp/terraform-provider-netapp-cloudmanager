@@ -311,6 +311,10 @@ func (c *Client) CallDeployAzureVM(occmDetails createOCCMDetails) (string, error
 		"value": occmDetails.Location,
 	}
 
+	(*params)["tags"] = map[string]interface{}{
+		"value": occmDetails.AzureTags,
+	}
+
 	(*params)["adminUsername"] = map[string]string{
 		"value": occmDetails.AdminUsername,
 	}

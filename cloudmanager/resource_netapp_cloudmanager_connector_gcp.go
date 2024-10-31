@@ -73,7 +73,7 @@ func resourceOCCMGCP() *schema.Resource {
 			"machine_type": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Default:  "n2-standard-4",
+				Default:  "n2-standard-8",
 				ForceNew: true,
 			},
 			"subnet_id": {

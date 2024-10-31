@@ -66,6 +66,7 @@ type createOCCMDetails struct {
 	EnableTerminationProtection  *bool
 	AwsTags                      []userTags
 	Tags                         []string
+	AzureTags                    map[string]interface{}
 	StorageAccount               string
 	Labels                       map[string]string
 }

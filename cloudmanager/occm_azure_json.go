@@ -5,6 +5,9 @@ func (c *Client) callParameters() string {
         "location": {
             "value": "string"
         },
+        "tags": {
+            "value": "object"
+        },
         "virtualMachineName": {
             "value": "string"
         },
@@ -45,6 +48,9 @@ func (c *Client) callTemplate() string {
             "location": {
                 "type": "string",
                 "defaultValue": "eastus"
+            },
+            "tags": {
+                "type": "object"
             },
             "virtualMachineName": {
                 "type": "string"
@@ -97,6 +103,7 @@ func (c *Client) callTemplate() string {
                 "type": "Microsoft.Compute/virtualMachines",
                 "apiVersion": "2018-04-01",
                 "location": "[parameters('location')]",
+                "tags": "[parameters('tags')]",
                 "dependsOn": [
                     "[concat('Microsoft.Network/networkInterfaces/', variables('networkInterfaceName'))]",
                     "[concat('Microsoft.Storage/storageAccounts/', variables('diagnosticsStorageAccountName'))]"
@@ -236,6 +243,9 @@ func (c *Client) callTemplateDisablePublicIP() string {
                 "type": "string",
                 "defaultValue": "eastus"
             },
+            "tags": {
+                "type": "object"
+            },
             "virtualMachineName": {
                 "type": "string"
             },
@@ -287,6 +297,7 @@ func (c *Client) callTemplateDisablePublicIP() string {
                 "type": "Microsoft.Compute/virtualMachines",
                 "apiVersion": "2018-04-01",
                 "location": "[parameters('location')]",
+                "tags": "[parameters('tags')]",
                 "dependsOn": [
                     "[concat('Microsoft.Network/networkInterfaces/', variables('networkInterfaceName'))]",
                     "[concat('Microsoft.Storage/storageAccounts/', variables('diagnosticsStorageAccountName'))]"
