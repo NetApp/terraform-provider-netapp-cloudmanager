@@ -147,7 +147,7 @@ type accesTokenRequest struct {
 	Audience     string `structs:"audience"`
 	GrantType    string `structs:"grant_type"`
 	RefreshToken string `structs:"refresh_token"`
-	ClientSecret string `structs:"client_secret"`
+	ClientSecret string `structs:"client_secret,omitempty"`
 	ClientID     string `structs:"client_id"`
 }
 

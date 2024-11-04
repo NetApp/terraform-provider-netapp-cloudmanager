@@ -4,6 +4,9 @@ ENHANCEMENTS:
 * resource/connector_azure: virtual_machines_size default value is set as Standard_D8s_v3
 * resource/connector_gcp: machine_type default value is set as n2-standard-8
 
+BUG FIXES:
+* auth user accesToken: Fix 403 issue with authorizer API token 
+
 ## 24.5.1
 ENHANCEMENTS:
 * remove duplicated volume documentation page.
