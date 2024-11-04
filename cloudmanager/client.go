@@ -47,6 +47,7 @@ type Client struct {
 	Auth0Client             string
 	ClientID                string
 	AccountID               string
+	IsSaas                  bool
 	Token                   string
 	AMIFilter               string
 	AWSAccount              string
@@ -215,7 +216,7 @@ func (c *Client) CallAWSInstanceUpdate(occmDetails createAWSOCCMDetails) error {
 		return err
 	}
 
-	log.Printf("Updated instance %s", *result.InstanceMetadataOptions, *result.InstanceId)
+	log.Printf("Updated instance %s, InstanceId %s", *result.InstanceMetadataOptions, *result.InstanceId)
 	return nil
 }
 
@@ -308,6 +309,15 @@ func (c *Client) CallDeployAzureVM(occmDetails createOCCMDetails) (string, error
 
 	(*params)["location"] = map[string]string{
 		"value": occmDetails.Location,
+	}
+
+	tags := make(map[string]interface{})
+	if occmDetails.AzureTags != nil {
+		tags = occmDetails.AzureTags
+
+	}
+	(*params)["tags"] = map[string]interface{}{
+		"value": tags,
 	}
 
 	(*params)["adminUsername"] = map[string]string{

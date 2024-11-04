@@ -51,6 +51,8 @@ func (c *Client) Do(baseURL string, hostType string, token string, paramsNil boo
 	} else if hostType == "GCPCompute" {
 		host = c.GCPCompute
 		gcpType = true
+	} else {
+		host = hostType
 	}
 	httpReq, err := req.BuildHTTPReq(host, token, c.Audience, baseURL, paramsNil, accountID, clientID, gcpType, simulator)
 	if err != nil {
@@ -77,7 +79,7 @@ func (c *Client) Do(baseURL string, hostType string, token string, paramsNil boo
 	}
 
 	if res == nil {
-		return statusCode, res, onCloudRequestID, errors.New("No result returned in REST response")
+		return statusCode, res, onCloudRequestID, errors.New("no result returned in REST response")
 	}
 
 	statusCode = httpRes.StatusCode

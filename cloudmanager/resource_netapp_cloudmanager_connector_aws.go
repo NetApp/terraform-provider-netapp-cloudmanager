@@ -46,7 +46,7 @@ func resourceOCCMAWS() *schema.Resource {
 			"instance_type": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Default:  "t3.xlarge",
+				Default:  "t3.2xlarge",
 				ForceNew: true,
 			},
 			"subnet_id": {

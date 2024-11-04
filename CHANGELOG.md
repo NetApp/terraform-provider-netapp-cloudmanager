@@ -1,4 +1,21 @@
-## 24.3.0
+## 24.11.0
+ENHANCEMENTS:
+* resource/connector_aws: instance_type default value is set as t3.2xlarge
+* resource/connector_azure: virtual_machines_size default value is set as Standard_D8s_v3
+* resource/connector_gcp: machine_type default value is set as n2-standard-8
+
+BUG FIXES:
+* auth user accesToken: Fix 403 issue with authorizer API token 
+
+## 24.5.1
+ENHANCEMENTS:
+* remove duplicated volume documentation page.
+* resource/connector_azure: adding `azure_tag` option, now supports tags.
+
+NEW FEATURES:
+* Azure and GCP connectors now support Restricted mode.
+
+## 24.5.0
 BUG FIXES:
 * resoruce/volume: support `comment` update with adding 3 minutes wait time.
 

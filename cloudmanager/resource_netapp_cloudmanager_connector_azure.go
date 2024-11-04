@@ -67,7 +67,7 @@ func resourceOCCMAzure() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
-				Default:  "Standard_DS3_v2",
+				Default:  "Standard_D8s_v3",
 			},
 			"network_security_group_name": {
 				Type:     schema.TypeString,
@@ -141,6 +141,23 @@ func resourceOCCMAzure() *schema.Resource {
 				Computed: true,
 				Optional: true,
 				ForceNew: true,
+			},
+			"azure_tag": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				ForceNew: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"tag_key": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"tag_value": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+					},
+				},
 			},
 		},
 	}
@@ -221,6 +238,15 @@ func resourceOCCMAzureCreate(d *schema.ResourceData, meta interface{}) error {
 
 	if o, ok := d.GetOk("storage_account"); ok {
 		occmDetails.StorageAccount = o.(string)
+	}
+
+	if o, ok := d.GetOk("azure_tag"); ok {
+		tags := make(map[string]interface{})
+		for _, v := range o.(*schema.Set).List() {
+			tag := v.(map[string]interface{})
+			tags[tag["tag_key"].(string)] = tag["tag_value"].(string)
+		}
+		occmDetails.AzureTags = tags
 	}
 
 	res, err := client.createOCCMAzure(occmDetails, proxyCertificates, "")
