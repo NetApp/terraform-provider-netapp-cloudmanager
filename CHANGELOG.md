@@ -1,8 +1,15 @@
+## 24.11.1
+BREAKING CHANGE:
+* resource/connector_aws: update `instance_type` default value from `t3.xlarge` to `t3.2xlarge`
+* resource/connector_azure: update `virtual_machines_size` default value from `Standard_DS3_v2` to `Standard_D8s_v3`
+* resource/connector_gcp: update `machine_type` default value from `n2-standard-4` to  `n2-standard-8`
+
 ## 24.11.0
 ENHANCEMENTS:
-* resource/connector_aws: instance_type default value is set as t3.2xlarge
-* resource/connector_azure: virtual_machines_size default value is set as Standard_D8s_v3
-* resource/connector_gcp: machine_type default value is set as n2-standard-8
+* resource/connector_azure: adding `azure_tag` option, now supports tags.
+
+NEW FEATURES:
+* Azure and GCP connectors now support Restricted mode.
 
 BUG FIXES:
 * auth user accesToken: Fix 403 issue with authorizer API token 
@@ -10,10 +17,6 @@ BUG FIXES:
 ## 24.5.1
 ENHANCEMENTS:
 * remove duplicated volume documentation page.
-* resource/connector_azure: adding `azure_tag` option, now supports tags.
-
-NEW FEATURES:
-* Azure and GCP connectors now support Restricted mode.
 
 ## 24.5.0
 BUG FIXES:
@@ -25,7 +28,7 @@ NEW FEATURES:
 
 ## 24.1.0
 ENHANCEMENTS:
-* resource/cvo_gcp: fix typo on vpc3_firewall_rule_tag_name.
+* resource/cvo_gcp: fix typo on `vpc3_firewall_rule_tag_name`.
 * add logging to API calls.
 
 
@@ -99,7 +102,7 @@ NEW FEATURES:
 * resource/volume: add new option`comment`.
 
 BUG FIXES:
-* resource/connector for GCP: Make service_account_key optional.
+* resource/connector for GCP: Make `service_account_key` optional.
 
 ## 23.3.3
 BUG FIXES:
