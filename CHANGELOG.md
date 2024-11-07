@@ -1,3 +1,7 @@
+## 24.11.2
+BUG FIXES:
+* add `azure_tag` option in documentation.
+
 ## 24.11.1
 BREAKING CHANGE:
 * resource/connector_aws: update `instance_type` default value from `t3.xlarge` to `t3.2xlarge`
