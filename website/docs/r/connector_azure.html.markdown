@@ -38,6 +38,14 @@ resource "netapp-cloudmanager_connector_azure" "cl-occm-azure" {
   account_id = "account-ABCNJGB0X"
   admin_password = "P@ssword123456"
   admin_username = "vmadmin"
+  azure_tag {
+              tag_key = "abcd"
+              tag_value = "ABCD"
+            }
+  azure_tag {
+              tag_key = "xxx"
+              tag_value = "YYY"
+            }
 }
 ```
 
@@ -66,6 +74,9 @@ The following arguments are supported:
 * `account_id` - (Optional) The NetApp account ID that the Connector will be associated with. If not provided, Cloud Manager uses the first account. If no account exists, Cloud Manager creates a new account. You can find the account ID in the account tab of Cloud Manager at [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
 * `storage_account` - (Optional) The storage account can be created automatically. When `storage_account` is not set, the name is constructed by appending 'sa' to the connector `name`. Storage account name must be between 3 and 24 characters in length and use numbers and lower-case letters only.
 
+The `azure_tag` block supports the following:
+* `tag_key` - (Required) The key of the tag.
+* `tag_value` - (Required) The tag value.
 
 ## Attributes Reference
 
