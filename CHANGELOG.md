@@ -1,3 +1,7 @@
+## 24.11.3
+BUG FIXES:
+* * resource/connector_gcp: Fix schema structure while creating Restricted mode.
+
 ## 24.11.2
 BUG FIXES:
 * add `azure_tag` option in documentation.
