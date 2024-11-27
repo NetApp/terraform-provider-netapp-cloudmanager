@@ -1,6 +1,10 @@
 ## 24.11.3
+ENHANCEMENTS:
+* Update GCP storage package to support GCP identity federation. This version requries terraform 1.1 and the Go 1.21.
+* Update document: indicate the minimum required terraform version
+
 BUG FIXES:
-* * resource/connector_gcp: Fix schema structure while creating Restricted mode.
+* resource/connector_gcp: Fix schema structure while creating Restricted mode.
 
 ## 24.11.2
 BUG FIXES:
