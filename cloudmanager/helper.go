@@ -273,6 +273,21 @@ type policySchedule struct {
 	Retention int    `json:"retention"`
 }
 
+// vmInstance
+type vmInstance struct {
+	NetworkInterfaces []networkInterfaces `json:"networkInterfaces"`
+}
+
+// networkInterfaces
+type networkInterfaces struct {
+	AccessConfigs []accessConfigs `json:"accessConfigs"`
+}
+
+// accessConfigs
+type accessConfigs struct {
+	NatIP string `json:"natIP"`
+}
+
 // Check HTTP response code, return error if HTTP request is not successed.
 func apiResponseChecker(statusCode int, response []byte, funcName string) error {
 
@@ -1341,10 +1356,20 @@ func (c *Client) setOCCMConfig(request configValuesUpdateRequest, clientID strin
 			log.Print("Error creating instance")
 			return err
 		}
-		if len(vm["networkInterfaces"].([]interface{})) > 0 {
-			accessConfigs := vm["networkInterfaces"].([]interface{})[0].(map[string]interface{})["accessConfigs"]
-			if len(accessConfigs.([]interface{})) > 0 {
-				connectorIP = vm["networkInterfaces"].([]interface{})[0].(map[string]interface{})["accessConfigs"].([]interface{})[0].(map[string]interface{})["natIP"].(string)
+		var vmInstance vmInstance
+		vmjsonbody, err := json.Marshal(vm)
+		if err != nil {
+			log.Print("Failed to marshall response from getVMInstance ", err)
+			return err
+		}
+		if err := json.Unmarshal(vmjsonbody, &vmInstance); err != nil {
+			log.Print("Failed to unmarshall response from getVMInstance ", err)
+			return err
+		}
+
+		if len(vmInstance.NetworkInterfaces) > 0 {
+			if len(vmInstance.NetworkInterfaces[0].AccessConfigs) > 0 {
+				connectorIP = vmInstance.NetworkInterfaces[0].AccessConfigs[0].NatIP
 			}
 		}
 	}
