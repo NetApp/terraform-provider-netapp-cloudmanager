@@ -24,10 +24,10 @@ conflicts if the rule is not respected outside of Terraform.
 
 # Using the Provider
 
-The current version of this provider requires Terraform 0.13 or higher to
+The current version of this provider requires Terraform 1.1.0 or higher to
 run.
 
-Terraform 0.13 introduces a registry, and you can use directly the provider without
+Terraform 1.1.0 introduces a registry, and you can use directly the provider without
 building it yourself.
 See https://registry.terraform.io/providers/NetApp/netapp-cloudmanager
 
@@ -58,11 +58,11 @@ The syntax is as follows:
 
 ```hcl
 terraform {
-  required_version = ">= 1.1"
+  required_version = ">= 1.1.0"
   required_providers {
     netapp-cloudmanager = {
       source = "NetApp/netapp-cloudmanager"
-      version = "20.10.0"
+      version = "24.12.0"
     }
   }
 }
@@ -77,7 +77,7 @@ terraform {
 ## Prerequisites
 
 If you wish to work on the provider, you'll first need [Go][go-website]
-installed on your machine (version 1.11+ is **required**). You'll also need to
+installed on your machine (version 1.21+ is **required**). You'll also need to
 correctly setup a [GOPATH][gopath], as well as adding `$GOPATH/bin` to your
 `$PATH`.
 
@@ -122,7 +122,7 @@ Note: go install will move the binary to $GOPATH/bin
 
 ## Installing the Local Plugin
 
-With Terraform 0.13 or newer, see the [sanity check](#sanity-check) section under **Walkthrough example**.
+With Terraform 1.1.0 or newer, see the [sanity check](#sanity-check) section under **Walkthrough example**.
 
 With earlier versions of Terraform, after
 the build is complete, copy the `terraform-provider-netapp-cloudmanager` binary into
@@ -206,26 +206,26 @@ export GO_INSTALL_DIR=/usr/local
 #### linux
 
 ```
-curl -O https://dl.google.com/go/go1.15.2.linux-amd64.tar.gz
-tar -C $GO_INSTALL_DIR -xvf go1.15.2.linux-amd64.tar.gz
+curl -O https://go.dev/dl/go1.21.0.linux-amd64.tar.gz
+tar -C $GO_INSTALL_DIR -xvf go1.21.0.linux-amd64.tar.gz
 
 export PATH=$PATH:$GO_INSTALL_DIR/go/bin
 
-curl -O https://releases.hashicorp.com/terraform/0.13.4/terraform_0.13.4_linux_amd64.zip
-unzip terraform_0.13.4_linux_amd64.zip
+curl -O https://releases.hashicorp.com/terraform/1.1.0/terraform_1.1.0_linux_amd64.zip
+unzip terraform_1.1.0_linux_amd64.zip
 mv terraform $GO_INSTALL_DIR/go/bin
 ```
 
 #### mac
 
 ```
-curl -O https://dl.google.com/go/go1.15.2.darwin-amd64.tar.gz
-tar -C $GO_INSTALL_DIR -xvf go1.15.2.darwin-amd64.tar.gz
+curl -O https://go.dev/dl/go1.21.0.darwin-amd64.tar.gz
+tar -C $GO_INSTALL_DIR -xvf go1.21.0.darwin-amd64.tar.gz
 
 export PATH=$PATH:$GO_INSTALL_DIR/go/bin
 
-curl -O https://releases.hashicorp.com/terraform/0.13.4/terraform_0.13.4_darwin_amd64.zip
-unzip terraform_0.13.4_darwin_amd64.zip
+curl -O https://releases.hashicorp.com/terraform/1.1.0/terraform_1.1.0_darwin_amd64.zip
+unzip terraform_1.1.0_darwin_amd64.zip
 mv terraform $GO_INSTALL_DIR/go/bin
 ```
 
@@ -256,15 +256,15 @@ The build step will install the provider in the $GOPATH/bin directory.
 #### Local installation - linux
 
 ```
-mkdir -p /tmp/terraform/netapp.com/netapp/netapp-cloudmanager/20.10.0/linux_amd64
-cp $GOPATH/bin/terraform-provider-netapp-cloudmanager /tmp/terraform/netapp.com/netapp/netapp-cloudmanager/20.10.0/linux_amd64
+mkdir -p /tmp/terraform/netapp.com/netapp/netapp-cloudmanager/24.12.0/linux_amd64
+cp $GOPATH/bin/terraform-provider-netapp-cloudmanager /tmp/terraform/netapp.com/netapp/netapp-cloudmanager/24.12.0/linux_amd64
 ```
 
 #### Local installation - mac
 
 ```
-mkdir -p ~/.terraform.d/plug-in/netapp.com/netapp/netapp-cloudmanager/20.10.0/darwin_amd64
-cp $GOPATH/bin/terraform-provider-netapp-cloudmanager ~/.terraform.d/plug-in/netapp.com/netapp/netapp-cloudmanager/20.10.0/darwin_amd64
+mkdir -p ~/.terraform.d/plug-in/netapp.com/netapp/netapp-cloudmanager/24.12.0/darwin_amd64
+cp $GOPATH/bin/terraform-provider-netapp-cloudmanager ~/.terraform.d/plug-in/netapp.com/netapp/netapp-cloudmanager/24.12.0/darwin_amd64
 ```
 
 #### Check the provider can be loaded

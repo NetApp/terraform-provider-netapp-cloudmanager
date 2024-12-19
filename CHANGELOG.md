@@ -1,3 +1,7 @@
+## 24.12.0
+BUG FIXES:
+* Update document with proper version terraform 1.1.0 and Go 1.21
+
 ## 24.11.3
 ENHANCEMENTS:
 * Update GCP storage package to support GCP identity federation. This version requries terraform 1.1 and the Go 1.21.
