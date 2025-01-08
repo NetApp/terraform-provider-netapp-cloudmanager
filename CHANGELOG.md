@@ -1,6 +1,7 @@
-## 24.12.0
+## 25.1.0 (unrelease)
 BUG FIXES:
 * Update document with proper version terraform 1.1.0 and Go 1.21
+* resource/aggregate: fix `number_of_disks` update failure
 
 ## 24.11.3
 ENHANCEMENTS:
