@@ -2,10 +2,11 @@
 BUG FIXES:
 * Update document with proper version terraform 1.1.0 and Go 1.21
 * resource/aggregate: fix `number_of_disks` update failure
+* Fix document typo and aggregate disk size description
 
 ## 24.11.3
 ENHANCEMENTS:
-* Update GCP storage package to support GCP identity federation. This version requries terraform 1.1 and the Go 1.21.
+* Update GCP storage package to support GCP identity federation. This version requires terraform 1.1 and the Go 1.21.
 * Update document: indicate the minimum required terraform version
 
 BUG FIXES:

@@ -110,7 +110,7 @@ The following arguments are supported:
 * `workspace_id` - (Optional) The ID of the Cloud Manager workspace where you want to deploy Cloud Volumes ONTAP. If not provided, Cloud Manager uses the first workspace. You can find the ID from the Workspace tab on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
 * `data_encryption_type` - (Optional) The type of encryption to use for the working environment: ['AWS', 'NONE']. The default is 'AWS'.
 * `aws_encryption_kms_key_id` - (Optional) AWS encryption parameters. It is required if using aws encryption. Only one of KMS key id or KMS arn should be specified.
-* `aws_encryption_kms_key_arn` - (Optional) AWS encryption parameters. It is requried if using aws encryption. Only one of KMS key id or KMS arn should be specified.
+* `aws_encryption_kms_key_arn` - (Optional) AWS encryption parameters. It is required if using aws encryption. Only one of KMS key id or KMS arn should be specified.
 * `ebs_volume_size` - (Optional) EBS volume size for the first data aggregate. For GB, the unit can be: [100 or 500]. For TB, the unit can be: [1,2,4,8,16]. The default is '1'.
 * `ebs_volume_size_unit` - (Optional) ['GB' or 'TB']. The default is 'TB'.
 * `ebs_volume_type` - (Optional) The EBS volume type for the first data aggregate ['gp3', 'gp2','io1','st1','sc1']. The default is 'gp2'.
