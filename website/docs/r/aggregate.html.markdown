@@ -35,7 +35,7 @@ The following arguments are supported:
 * `working_environment_name` - (Optional) The working environment name where the aggregate will be created. This argument will be ignored if working_environment_id is provided.
 * `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
 * `number_of_disks` - (Required) The required number of disks in the new aggregate.
-* `disk_size_size` - (Optional) The required size of the disks. For GB, the unit can be: [100 or 500]. For TB, the unit can be: [1,2,4,8,16]. The default is '1'
+* `disk_size_size` - (Optional) The required size of the disks. The default is '1'. The max number depends on the `provider_volume_type`. Details in this document: AWS: [https://docs.netapp.com/us-en/cloud-volumes-ontap-relnotes/reference-limits-aws.html#aggregate-limits] Azure: [https://docs.netapp.com/us-en/cloud-volumes-ontap-relnotes/reference-limits-azure.html#aggregate-limits] GCP: [https://docs.netapp.com/us-en/cloud-volumes-ontap-relnotes/reference-limits-gcp.html#disk-and-tiering-limits]
 * `disk_size_unit` - (Optional) The disk size unit ['GB' or 'TB']. The default is 'TB'
 * `home_node` - (Optional) The home node that the new aggregate should belong to. The default is the first node.
 * `provider_volume_type` - (Optional) The cloud provider volume type. For AWS: ['gp3', 'gp2', 'io1', 'st1', 'sc1']. For Azure: ['Premium_LRS','Standard_LRS','StandardSSD_LRS']. For GCP: ['pd-balanced', 'pd-ssd','pd-standard']
@@ -48,4 +48,3 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `id` - will be the aggregate name.
-

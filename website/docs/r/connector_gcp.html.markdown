@@ -60,7 +60,7 @@ The following arguments are supported:
 * `account_id` - (Optional, non-modifiable) The NetApp account ID that the Connector will be associated with. If not provided, Cloud Manager uses the first account. If no account exists, Cloud Manager creates a new account. You can find the account ID in the account tab of Cloud Manager at [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
 * `tags` - (Optional) The list of network tags.
 * `labels` - (Optional) The map of labels.
-* `gcp_block_project_ssh_keys` - (Optional) Block project-wide SSH keys. Default value is false. Referece: [Block project SSH keys from a VM after VM creation](https://cloud.google.com/compute/docs/connect/restrict-ssh-keys#after-vm-creation)
+* `gcp_block_project_ssh_keys` - (Optional) Block project-wide SSH keys. Default value is false. Reference: [Block project SSH keys from a VM after VM creation](https://cloud.google.com/compute/docs/connect/restrict-ssh-keys#after-vm-creation)
 * `gcp_serial_port_enable` - (Optional) Enable the Serial Console Port. Default value is true. Reference: [Disabling interactive serial console access](https://cloud.google.com/compute/docs/troubleshooting/troubleshooting-using-serial-console#disabling_interactive_serial_console_on_a_particular_instance_or_project)
 * `gcp_enable_os_login` - (Optional) Enable OS login. Default value is true. Reference: [Enable OS Login](https://cloud.google.com/compute/docs/oslogin/set-up-oslogin#enable_os_login)
 * `gcp_enable_os_login_sk` - (Optional) Enable OS login with security keys. Default value is true. Reference: [Enable security keys with OS Login](https://cloud.google.com/compute/docs/oslogin/security-keys)

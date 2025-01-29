@@ -8,7 +8,7 @@ description: |-
 
 # netapp-cloudmanager_cbs
 
-Provides a netapp-cloudmanager_cbs resource. This can be used to enable cloud backup on a specific working environment Cloud Volumes ONTAP on AWS and Aure.
+Provides a netapp-cloudmanager_cbs resource. This can be used to enable cloud backup on a specific working environment Cloud Volumes ONTAP on AWS and Azure.
 Requires existence of a Cloud Manager Connector and a Cloud Volumes ONTAP system.
 
 ## Example Usages
@@ -136,20 +136,20 @@ The `azure_cbs_parameters` block supports the following:
 * `key_vault_id` - (Optional) The id can be found with key vault JSON View in Azure. e.g. "/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/xxxxxxxxx/providers/Microsoft.KeyVault/vaults/xxxxxx"
 * `key_name` - (Optional) Key vault name.
 
-The `backup_policy` block suports the followings:
+The `backup_policy` block supports the followings:
 * `name` - (Required)
 * `policy_rules` - (Optional)
 * `archive_after_days` - (Optional)
 * `object_lock` - (Optional) For AWS, DataLock and Ransomware Protection can be enabled in the "GOVERNANCE" mode or "COMPLIANCE" mode. For Azure, DataLock and Ransomware Protection can be enabled in the "UNLOCKED" mode or "LOCKED" mode.
 
-The `policy_rules` block suports the folowings:
+The `policy_rules` block supports the followings:
 * `rule` - (Optional)
 
 The `rule` blocks support the followings:
 * `label` - (Optional) ['Hourly', 'Daily', 'Weekly', 'Monthly', 'Yearly']
 * `retention` - (Optional) The number value goes with the `label`
 
-The `volumes` block suports the followings:
+The `volumes` block supports the followings:
 * `volume_name` - (Required) Name of the volume to enable backup.
 * `mode` - (Optional) type of mode to create snapshot copies.
 * `backup_policy` - (Optional)

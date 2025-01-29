@@ -145,7 +145,7 @@ The following arguments are supported:
 * `flash_cache` - (Optional) Enable Flash Cache. In GCP HA (version 9.13.0), HIGH write speed and FlashCache are coupled together both needs to be activated, one cannot be activated without the other. For GCP single (version 9.13.1) is supported. Only the instance_type is one of the followings: n2-standard-16,32,48,64
 * `firewall_rule` - (Optional) The name of the firewall rule for a single node cluster. If not provided, the rule will be generated automatically.
 * `firewall_tag_name_rule` - (Optional) Target tag of the firewall when creating a CVO with an existing firewall. It is used for a single node cluster.
-* `firewall_ip_ranges` - (Optional) Define the allowed inbound traffic for the generated policy. It is used when selecting create a new firewall. Recommanded set false: Allow traffice within the selected VPC only. Allow inbound traffic only from the cluster node VPCs.
+* `firewall_ip_ranges` - (Optional) Define the allowed inbound traffic for the generated policy. It is used when selecting create a new firewall. Recommend set false: Allow traffic within the selected VPC only. Allow inbound traffic only from the cluster node VPCs.
 * `backup_volumes_to_cbs` - (Optional) Automatically enable back up of all volumes to Google Cloud buckets [true, false].
 * `enable_compliance` - (Optional) Enable the Cloud Compliance service on the working environment [true, false].
 * `is_ha` - (Optional) Indicate whether the working environment is an HA pair or not [true, false]. The default is false.
@@ -158,7 +158,7 @@ The following arguments are supported:
 * `vpc1_cluster_connectivity` - (Optional) VPC path for nic2, required for cluster connectivity.
 * `vpc2_ha_connectivity` - (Optional) VPC path for nic3, required for HA connectivity.
 * `vpc3_data_replication` - (Optional) VPC path for nic4, required for data replication.
-* `subnet0_node_and_data_connectivity` - (Optional) Subnet path for nic1, requered for node and data connectivity. If using shared VPC, netwrok_project_id must be provided.
+* `subnet0_node_and_data_connectivity` - (Optional) Subnet path for nic1, required for node and data connectivity. If using shared VPC, netwrok_project_id must be provided.
 * `subnet1_cluster_connectivity` - (Optional) Subnet path for nic2, required for cluster connectivity.
 * `subnet2_ha_connectivity` - (Optional) Subnet path for nic3, required for HA connectivity.
 * `subnet3_data_replication` - (Optional) Subnet path for nic4, required for data replication.

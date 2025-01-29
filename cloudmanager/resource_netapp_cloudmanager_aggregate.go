@@ -98,7 +98,7 @@ func resourceAggregateCreate(d *schema.ResourceData, meta interface{}) error {
 
 	workingEnv, err := client.getWorkingEnvironmentDetail(d, clientID)
 	if err != nil {
-		return fmt.Errorf("Cannot find working environment")
+		return fmt.Errorf("cannot find working environment")
 	}
 	aggregate.WorkingEnvironmentID = workingEnv.PublicID
 
@@ -162,7 +162,7 @@ func resourceAggregateCreate(d *schema.ResourceData, meta interface{}) error {
 	return resourceAggregateRead(d, meta)
 }
 
-// read the specific aggregate with working environemnt Id and aggregate name
+// read the specific aggregate with working environment Id and aggregate name
 func resourceAggregateRead(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("Reading Aggregate: %#v", d)
 	client := meta.(*Client)
@@ -172,7 +172,7 @@ func resourceAggregateRead(d *schema.ResourceData, meta interface{}) error {
 
 	workingEnv, err := client.getWorkingEnvironmentDetail(d, clientID)
 	if err != nil {
-		return fmt.Errorf("Cannot find working environment")
+		return fmt.Errorf("cannot find working environment")
 	}
 	aggregate.WorkingEnvironmentID = workingEnv.PublicID
 
@@ -185,7 +185,7 @@ func resourceAggregateRead(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	if aggr.Name != id {
-		return fmt.Errorf("Expected aggregate name %v, Response could not find", aggr.Name)
+		return fmt.Errorf("expected aggregate name %v, Response could not find", aggr.Name)
 	}
 
 	return nil
@@ -200,7 +200,7 @@ func resourceAggregateDelete(d *schema.ResourceData, meta interface{}) error {
 
 	workingEnvDetail, err := client.getWorkingEnvironmentDetail(d, clientID)
 	if err != nil {
-		return fmt.Errorf("Cannot find working environment")
+		return fmt.Errorf("cannot find working environment")
 	}
 	request.WorkingEnvironmentID = workingEnvDetail.PublicID
 
@@ -222,23 +222,33 @@ func resourceAggregateUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	workingEnvDetail, err := client.getWorkingEnvironmentDetail(d, clientID)
 	if err != nil {
-		return fmt.Errorf("Cannot find working environment")
+		return fmt.Errorf("cannot find working environment")
 	}
 	request.WorkingEnvironmentID = workingEnvDetail.PublicID
 
+	aggregate := aggregateRequest{}
+	aggregate.WorkingEnvironmentID = workingEnvDetail.PublicID
+	id := d.Id()
+	aggr, err := client.getAggregate(aggregate, id, workingEnvDetail.WorkingEnvironmentType, clientID)
+	if err != nil {
+		log.Printf("Error getting aggregate. id = %v", id)
+		return err
+	}
+	currentNumber := len(aggr.Disks)
 	request.Name = d.Get("name").(string)
 
 	if d.HasChange("number_of_disks") {
-		currentNumber, expectNumber := d.GetChange("number_of_disks")
-		if expectNumber.(int) > currentNumber.(int) {
-			request.NumberOfDisks = expectNumber.(int) - currentNumber.(int)
+		expectNumber := d.Get("number_of_disks")
+		if expectNumber.(int) > currentNumber {
+			request.NumberOfDisks = expectNumber.(int) - currentNumber
 		} else {
 			d.Set("number_of_disks", currentNumber)
-			return fmt.Errorf("Aggregate: number_of_disks cannot be reduced")
+			return fmt.Errorf("aggregate: number_of_disks cannot be reduced")
 		}
 	}
 	updateErr := client.updateAggregate(request, clientID)
 	if updateErr != nil {
+		d.Set("number_of_disks", currentNumber)
 		return updateErr
 	}
 
@@ -256,7 +266,7 @@ func resourceAggregateExists(d *schema.ResourceData, meta interface{}) (bool, er
 
 	workingEnv, err := client.getWorkingEnvironmentDetail(d, clientID)
 	if err != nil {
-		return false, fmt.Errorf("Cannot find working environment")
+		return false, fmt.Errorf("cannot find working environment")
 	}
 	aggregate.WorkingEnvironmentID = workingEnv.PublicID
 	id := d.Id()

@@ -83,7 +83,7 @@ The `rule` block supports:
 * `rule_index` - (Optional) rule index.
 * `nfsv3` - (Optional) Boolean.
 * `unix_read_only` - (Optional) Boolean.
-* `unix_read_wrtie` - (Optional) Boolean.
+* `unix_read_write` - (Optional) Boolean.
 
 ## Attributes Reference
 

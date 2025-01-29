@@ -298,8 +298,10 @@ func resourceOCCMGCPCreate(d *schema.ResourceData, meta interface{}) error {
 		return fmt.Errorf("error reading occm account_id: %s", err)
 	}
 
-	if err := client.setOCCMConfig(occmConfig, res.ClientID, account.IsSAAS, occmDetails); err != nil {
-		return fmt.Errorf("error set occm config: %s", err)
+	if occmDetails.AssociatePublicIP {
+		if err := client.setOCCMConfig(occmConfig, res.ClientID, account.IsSAAS, occmDetails); err != nil {
+			return fmt.Errorf("error set occm config: %s", err)
+		}
 	}
 
 	log.Printf("Created occm: %v", res)
@@ -587,8 +589,10 @@ func resourceOCCMGCPUpdate(d *schema.ResourceData, meta interface{}) error {
 		}
 	}
 
-	if err := client.setOCCMConfig(occmConfig, clientID, account.IsSAAS, occmDetails); err != nil {
-		return fmt.Errorf("error set occm config: %s", err)
+	if occmDetails.AssociatePublicIP {
+		if err := client.setOCCMConfig(occmConfig, clientID, account.IsSAAS, occmDetails); err != nil {
+			return fmt.Errorf("error set occm config: %s", err)
+		}
 	}
 
 	return resourceOCCMGCPRead(d, meta)

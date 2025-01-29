@@ -126,7 +126,7 @@ The following arguments are supported:
 * `export_policy_ip` - (Optional) Custom export policy list of IPs. Order matters. (NFS protocol parameters)
 * `export_policy_nfs_version` - (Optional) Export policy protocol. (NFS protocol parameters)
 * `export_policy_rule_access_control` (Optional) Choice of 'readonly', 'readwrite', 'none'. (NFS protocol parameters) 
-* `export_policy_rule_super_user` - (Optional) Boolean option to sepecify super user or not. (NFS protocol parameters)
+* `export_policy_rule_super_user` - (Optional) Boolean option to specify super user or not. (NFS protocol parameters)
   `export__policy_type`, `export_policy_ip`, `export_policy_nfs_version`, `export_policy_nfs_version` and  `export_policy_rule_super_user` are required together for export policy.
 * `snapshot_policy_name` - (Optional) Snapshot policy name. The default is 'default'. (NFS protocol parameters)
 * `iops` - (Optional) Provisioned IOPS. Needed only when 'provider_volume_type' is 'io1' or 'gp3'.
