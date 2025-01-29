@@ -1,13 +1,14 @@
-## 25.1.0 (unrelease)
+## 25.1.0
 BUG FIXES:
-* Update document with proper version terraform 1.1.0 and Go 1.21
-* resource/aggregate: fix `number_of_disks` update failure
-* Fix document typo and aggregate disk size description
+* Update document with proper version terraform 1.1.0 and Go 1.21.
+* resource/aggregate: fix `number_of_disks` update failure.
+* Fix document typo and aggregate disk size description.
+* resource/connector_gcp: Fix error in creation of restricted mode when `associate_public_ip` is false.
 
 ## 24.11.3
 ENHANCEMENTS:
 * Update GCP storage package to support GCP identity federation. This version requires terraform 1.1 and the Go 1.21.
-* Update document: indicate the minimum required terraform version
+* Update document: indicate the minimum required terraform version.
 
 BUG FIXES:
 * resource/connector_gcp: Fix schema structure while creating Restricted mode.
@@ -30,7 +31,7 @@ NEW FEATURES:
 * Azure and GCP connectors now support Restricted mode.
 
 BUG FIXES:
-* auth user accesToken: Fix 403 issue with authorizer API token 
+* auth user accesToken: Fix 403 issue with authorizer API token.
 
 ## 24.5.1
 ENHANCEMENTS:
