@@ -116,7 +116,7 @@ func (c *Client) getAggregate(request aggregateRequest, name string, sourceWorki
 	if sourceWorkingEnvironmentType == "ON_PREM" {
 		baseURL = fmt.Sprintf("/occm/api/onprem/aggregates?workingEnvironmentId=%s", request.WorkingEnvironmentID)
 	} else {
-		rootURL, cloudProviderName, err := c.getAPIRoot(request.WorkingEnvironmentID, clientID)
+		rootURL, cloudProviderName, err := c.getAPIRoot(request.WorkingEnvironmentID, clientID, true, "")
 
 		if err != nil {
 			log.Print("getAggregate: Cannot get API root.")
@@ -169,7 +169,7 @@ func (c *Client) createAggregate(request *createAggregateRequest, clientID strin
 	hostType := "CloudManagerHost"
 
 	var baseURL string
-	rootURL, _, err := c.getAPIRoot(request.WorkingEnvironmentID, clientID)
+	rootURL, _, err := c.getAPIRoot(request.WorkingEnvironmentID, clientID, true, "")
 
 	if err != nil {
 		log.Print("createAggregate: Cannot get API root.")
@@ -211,7 +211,7 @@ func (c *Client) createAggregate(request *createAggregateRequest, clientID strin
 		}
 	}
 
-	workingEnvDetail, err := c.getWorkingEnvironmentInfo(request.WorkingEnvironmentID, clientID)
+	workingEnvDetail, err := c.getWorkingEnvironmentInfo(request.WorkingEnvironmentID, clientID, true, "")
 	if err != nil {
 		log.Print("Cannot get working environment information.")
 		return aggregateResult{}, err
@@ -232,7 +232,7 @@ func (c *Client) deleteAggregate(request deleteAggregateRequest, clientID string
 	hostType := "CloudManagerHost"
 
 	var baseURL string
-	rootURL, _, err := c.getAPIRoot(request.WorkingEnvironmentID, clientID)
+	rootURL, _, err := c.getAPIRoot(request.WorkingEnvironmentID, clientID, true, "")
 
 	if err != nil {
 		log.Print("deleteAggregate: Cannot get API root.")
@@ -267,7 +267,7 @@ func (c *Client) updateAggregate(request updateAggregateRequest, clientID string
 	hostType := "CloudManagerHost"
 
 	var baseURL string
-	rootURL, _, err := c.getAPIRoot(request.WorkingEnvironmentID, clientID)
+	rootURL, _, err := c.getAPIRoot(request.WorkingEnvironmentID, clientID, true, "")
 
 	if err != nil {
 		log.Print("updateAggregate: Cannot get API root.")

@@ -52,13 +52,13 @@ func testAccCheckAggregateDestroy(state *terraform.State) error {
 		if aggr, ok := rs.Primary.Attributes["working_environment_id"]; ok {
 			aggregate.WorkingEnvironmentID = aggr
 		} else if name, ok := rs.Primary.Attributes["working_environment_name"]; ok {
-			info, err := client.findWorkingEnvironmentByName(name, clientID)
+			info, err := client.findWorkingEnvironmentByName(name, clientID, true, "")
 			if err != nil {
 				aggregate.WorkingEnvironmentID = info.PublicID
 			}
 		}
 
-		workingEnvDetail, err := client.getWorkingEnvironmentInfo(aggregate.WorkingEnvironmentID, clientID)
+		workingEnvDetail, err := client.getWorkingEnvironmentInfo(aggregate.WorkingEnvironmentID, clientID, true, "")
 		if err != nil {
 			return err
 		}
@@ -91,7 +91,7 @@ func testAccCheckAggregateExists(name string, aggregate *aggregateResult) resour
 		if a, ok := rs.Primary.Attributes["working_environment_id"]; ok {
 			aggr.WorkingEnvironmentID = a
 		} else if a, ok := rs.Primary.Attributes["working_environment_name"]; ok {
-			info, err := client.findWorkingEnvironmentByName(a, clientID)
+			info, err := client.findWorkingEnvironmentByName(a, clientID, true, "")
 			if err != nil {
 				return err
 			}
@@ -100,7 +100,7 @@ func testAccCheckAggregateExists(name string, aggregate *aggregateResult) resour
 			return fmt.Errorf("Cannot find working environment")
 		}
 
-		workingEnvDetail, err := client.getWorkingEnvironmentInfo(aggr.WorkingEnvironmentID, clientID)
+		workingEnvDetail, err := client.getWorkingEnvironmentInfo(aggr.WorkingEnvironmentID, clientID, true, "")
 		if err != nil {
 			return err
 		}

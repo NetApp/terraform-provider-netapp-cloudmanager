@@ -46,6 +46,7 @@ type createCVOGCPDetails struct {
 	BackupVolumesToCbs      bool                    `structs:"backupVolumesToCbs"`
 	EnableCompliance        bool                    `structs:"enableCompliance"`
 	IsHA                    bool
+	ConnectorIP             string
 	HAParams                haParamsGCP `structs:"haParams,omitempty"`
 	FlashCache              bool        `structs:"flashCache"`
 }
@@ -92,7 +93,7 @@ type haParamsGCP struct {
 	VPC3FirewallRuleTagName        string `structs:"vpc3FirewallRuleTagName,omitempty"`
 }
 
-func (c *Client) createCVOGCP(cvoDetails createCVOGCPDetails, clientID string) (cvoResult, error) {
+func (c *Client) createCVOGCP(cvoDetails createCVOGCPDetails, clientID string, isSaas bool) (cvoResult, error) {
 	log.Printf("\n\ncreateCVO %s client_id %s", cvoDetails.Name, clientID)
 
 	accessTokenResult, err := c.getAccessToken()
@@ -103,17 +104,27 @@ func (c *Client) createCVOGCP(cvoDetails createCVOGCPDetails, clientID string) (
 	c.Token = accessTokenResult.Token
 
 	if cvoDetails.WorkspaceID == "" {
-		tenantID, err := c.getTenant(clientID)
-		if err != nil {
-			log.Print("getTenant request failed ", err)
-			return cvoResult{}, err
+		if isSaas {
+			tenantID, err := c.getTenant(clientID)
+			if err != nil {
+				log.Print("getTenant request failed ", err)
+				return cvoResult{}, err
+			}
+			log.Print("tenant result ", tenantID)
+			cvoDetails.WorkspaceID = tenantID
+		} else {
+			tenantID, err := c.getTenantForNotSaas(clientID, cvoDetails.ConnectorIP)
+			if err != nil {
+				log.Print("getTenant request failed ", err)
+				return cvoResult{}, err
+			}
+			log.Print("tenant result ", tenantID)
+			cvoDetails.WorkspaceID = tenantID
 		}
-		log.Print("tenant result ", tenantID)
-		cvoDetails.WorkspaceID = tenantID
 	}
 
 	if cvoDetails.NssAccount == "" && (cvoDetails.VsaMetadata.LicenseType == "gcp-cot-premium-byol" || cvoDetails.VsaMetadata.LicenseType == "gcp-ha-cot-premium-byol") && !strings.HasPrefix(cvoDetails.SerialNumber, "Eval-") {
-		nssAccount, err := c.getNSS(clientID)
+		nssAccount, err := c.getNSS(clientID, isSaas, cvoDetails.ConnectorIP)
 		if err != nil {
 			log.Print("getNSS request failed ", err)
 			return cvoResult{}, err
@@ -124,7 +135,13 @@ func (c *Client) createCVOGCP(cvoDetails createCVOGCPDetails, clientID string) (
 
 	baseURL := getAPIRootForWorkingEnvironment(cvoDetails.IsHA, "")
 
-	hostType := "CloudManagerHost"
+	hostType := ""
+	if isSaas {
+		hostType = "CloudManagerHost"
+	} else {
+		hostType = "http://" + cvoDetails.ConnectorIP
+	}
+
 	params := structs.Map(cvoDetails)
 
 	log.Printf("Create GCP CVO: %#v", params)
@@ -147,9 +164,16 @@ func (c *Client) createCVOGCP(cvoDetails createCVOGCPDetails, clientID string) (
 		CreationRetries = c.Retries + 30
 	}
 
-	err = c.waitOnCompletion(onCloudRequestID, "CVO", "create", CreationRetries, 60, clientID)
-	if err != nil {
-		return cvoResult{}, err
+	if isSaas {
+		err = c.waitOnCompletion(onCloudRequestID, "CVO", "create", CreationRetries, 60, clientID)
+		if err != nil {
+			return cvoResult{}, err
+		}
+	} else {
+		err = c.waitOnCompletionForNotSaas(onCloudRequestID, "CVO", "create", CreationRetries, 60, clientID, cvoDetails.ConnectorIP)
+		if err != nil {
+			return cvoResult{}, err
+		}
 	}
 
 	var result cvoResult
@@ -162,7 +186,7 @@ func (c *Client) createCVOGCP(cvoDetails createCVOGCPDetails, clientID string) (
 	return result, nil
 }
 
-func (c *Client) deleteCVOGCP(id string, isHA bool, clientID string) error {
+func (c *Client) deleteCVOGCP(id string, isHA bool, clientID string, isSaas bool, connectorIP string) error {
 
 	log.Printf("deleteCVO: id %s client %s", id, clientID)
 
@@ -175,7 +199,12 @@ func (c *Client) deleteCVOGCP(id string, isHA bool, clientID string) error {
 
 	baseURL := getAPIRootForWorkingEnvironment(isHA, id)
 
-	hostType := "CloudManagerHost"
+	hostType := ""
+	if isSaas {
+		hostType = "CloudManagerHost"
+	} else {
+		hostType = "http://" + connectorIP
+	}
 	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("DELETE", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
 		log.Printf("deleteCVO %s request failed %#v", id, statusCode)
@@ -187,7 +216,12 @@ func (c *Client) deleteCVOGCP(id string, isHA bool, clientID string) error {
 		return responseError
 	}
 
-	err = c.waitOnCompletion(onCloudRequestID, "CVO", "delete", 40, 60, clientID)
+	if isSaas {
+		err = c.waitOnCompletion(onCloudRequestID, "CVO", "delete", 60, 60, clientID)
+	} else {
+		err = c.waitOnCompletionForNotSaas(onCloudRequestID, "CVO", "delete", 40, 60, clientID, connectorIP)
+	}
+
 	if err != nil {
 		return err
 	}
@@ -196,7 +230,7 @@ func (c *Client) deleteCVOGCP(id string, isHA bool, clientID string) error {
 }
 
 // This is used on GCP CVO HA only
-func (c *Client) addSVMtoCVO(id string, clientID string, svmName string) error {
+func (c *Client) addSVMtoCVO(id string, clientID string, svmName string, isSaas bool, connectorIP string) error {
 	log.Printf("addSVMtoCVO: id %s client %s svm %s", id, clientID, svmName)
 
 	accessTokenResult, err := c.getAccessToken()
@@ -208,7 +242,12 @@ func (c *Client) addSVMtoCVO(id string, clientID string, svmName string) error {
 
 	// GCP CVO SVM add and deletion only support HA
 	baseURL := getAPIRootForWorkingEnvironment(true, id) + "/svm"
-	hostType := "CloudManagerHost"
+	hostType := ""
+	if isSaas {
+		hostType = "CloudManagerHost"
+	} else {
+		hostType = "http://" + connectorIP
+	}
 
 	var svm gcpSVM
 	svm.SvmName = svmName
@@ -225,12 +264,16 @@ func (c *Client) addSVMtoCVO(id string, clientID string, svmName string) error {
 		return responseError
 	}
 
-	err = c.waitOnCompletion(onCloudRequestID, "CVO_SVM", "add", 60, 60, clientID)
+	if isSaas {
+		err = c.waitOnCompletion(onCloudRequestID, "CVO_SVM", "add", 60, 60, clientID)
+	} else {
+		err = c.waitOnCompletionForNotSaas(onCloudRequestID, "CVO_SVM", "add", 60, 60, clientID, connectorIP)
+	}
 
 	return err
 }
 
-func (c *Client) deleteSVMfromCVO(id string, clientID string, svmName string) error {
+func (c *Client) deleteSVMfromCVO(id string, clientID string, svmName string, isSaas bool, connectorIP string) error {
 	log.Printf("deleteSVMfromCVO: id %s client %s svm %s", id, clientID, svmName)
 
 	accessTokenResult, err := c.getAccessToken()
@@ -244,7 +287,13 @@ func (c *Client) deleteSVMfromCVO(id string, clientID string, svmName string) er
 	baseURL := getAPIRootForWorkingEnvironment(true, id)
 	baseURL = fmt.Sprintf("%s/svm/%s", baseURL, svmName)
 	log.Print("\tDelete svm url: ", baseURL)
-	hostType := "CloudManagerHost"
+
+	hostType := ""
+	if isSaas {
+		hostType = "CloudManagerHost"
+	} else {
+		hostType = "http://" + connectorIP
+	}
 
 	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("DELETE", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
@@ -257,9 +306,14 @@ func (c *Client) deleteSVMfromCVO(id string, clientID string, svmName string) er
 		return responseError
 	}
 
-	err = c.waitOnCompletion(onCloudRequestID, "CVO_SVM", "delete", 40, 60, clientID)
+	if isSaas {
+		err = c.waitOnCompletion(onCloudRequestID, "CVO_SVM", "delete", 40, 60, clientID)
+	} else {
+		err = c.waitOnCompletionForNotSaas(onCloudRequestID, "CVO_SVM", "delete", 40, 60, clientID, connectorIP)
+	}
 
 	return err
+
 }
 
 // expandGCPLabels converts set to gcpLabels struct

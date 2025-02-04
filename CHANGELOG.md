@@ -1,3 +1,7 @@
+## 25.2.0 (unrelease)
+NEW FEATURES:
+* GCP CVO now supports Restricted mode.
+
 ## 25.1.0
 BUG FIXES:
 * Update document with proper version terraform 1.1.0 and Go 1.21.

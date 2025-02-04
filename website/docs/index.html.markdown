@@ -3,12 +3,12 @@ layout: "netapp-cloudmanager"
 page_title: "Provider: NetApp_CloudManager"
 sidebar_current: "docs-netapp-cloudmanager-index"
 description: |-
-  The netapp-cloudmanager provider is used to interact with NetApp Cloud Manager in order to create and manage Cloud Volumes ONTAP in AWS, Azure, and GCP. The provider needs to be configured with the proper credentials before it can be used.
+  The netapp-cloudmanager provider is used to interact with NetApp BlueXP(Cloud Manager) in order to create and manage Cloud Volumes ONTAP in AWS, Azure, and GCP. The provider needs to be configured with the proper credentials before it can be used.
 ---
 
 # netapp-cloudmanager Provider
 
-The netapp-cloudmanager provider is used to interact with NetApp Cloud Manager in order to create and manage Cloud Volumes ONTAP in AWS, Azure, and GCP.
+The netapp-cloudmanager provider is used to interact with NetApp BlueXP(Cloud Manager) in order to create and manage Cloud Volumes ONTAP in AWS, Azure, and GCP.
 The provider needs to be configured with the proper credentials before it can be used.
 
 
@@ -26,6 +26,15 @@ and therefore may undergo significant changes as the community improves it.
 * Create snapmirror relationship
 * Create Netapp Support Site account
 * Create a AWS working environment for FSX
+
+## Deployment Modes
+
+### Standard Mode
+* Supported in all available resources.
+
+### Restricted Mode
+* Supported in GCP and Azure connector resources.
+* Supported in GCP CVO resource.
 
 ## Example Usage
 

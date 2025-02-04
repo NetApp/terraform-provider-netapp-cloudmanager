@@ -299,7 +299,7 @@ func resourceOCCMGCPCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	if occmDetails.AssociatePublicIP {
-		if err := client.setOCCMConfig(occmConfig, res.ClientID, account.IsSAAS, occmDetails); err != nil {
+		if err := client.setOCCMConfig(occmConfig, res.ClientID, account.IsSaas, occmDetails); err != nil {
 			return fmt.Errorf("error set occm config: %s", err)
 		}
 	}
@@ -590,7 +590,7 @@ func resourceOCCMGCPUpdate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	if occmDetails.AssociatePublicIP {
-		if err := client.setOCCMConfig(occmConfig, clientID, account.IsSAAS, occmDetails); err != nil {
+		if err := client.setOCCMConfig(occmConfig, clientID, account.IsSaas, occmDetails); err != nil {
 			return fmt.Errorf("error set occm config: %s", err)
 		}
 	}

@@ -348,6 +348,54 @@ func (c *Client) checkTaskStatus(id string, clientID string) (int, string, error
 	return result.Status, result.Error, nil
 }
 
+func (c *Client) checkTaskStatusForNotSaas(id string, clientID string, connectorIP string) (int, string, error) {
+
+	log.Printf("checkTaskStatus: %s", id)
+
+	baseURL := fmt.Sprintf("/occm/api/audit/activeTask/%s", id)
+
+	hostType := "http://" + connectorIP
+
+	var statusCode int
+	var response []byte
+	networkRetries := 6
+	for {
+		code, result, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
+		if err != nil || code == 504 {
+			if networkRetries > 0 {
+				if code == 504 {
+					time.Sleep(15 * time.Second)
+				} else {
+					time.Sleep(1 * time.Second)
+				}
+				networkRetries--
+				log.Printf("checkTaskStatus id=%s code=%v error=%v Retries %v client=%s", id, code, err, networkRetries, clientID)
+			} else {
+				log.Printf("checkTaskStatus request failed after 3 retries: %v, %v", code, err)
+				return 0, "", err
+			}
+		} else {
+			log.Printf("checkTaskStatus get request %s response code %v clientID %s", id, code, clientID)
+			statusCode = code
+			response = result
+			break
+		}
+	}
+
+	responseError := apiResponseChecker(statusCode, response, "checkTaskStatus")
+	if responseError != nil {
+		return 0, "", responseError
+	}
+
+	var result cvoStatusResult
+	if err := json.Unmarshal(response, &result); err != nil {
+		log.Print("Failed to unmarshall response from checkTaskStatus ", err)
+		return 0, "", err
+	}
+
+	return result.Status, result.Error, nil
+}
+
 func (c *Client) waitOnCompletion(id string, actionName string, task string, retries int, waitInterval int, clientID string) error {
 	for {
 		cvoStatus, failureErrorMessage, err := c.checkTaskStatus(id, clientID)
@@ -371,11 +419,39 @@ func (c *Client) waitOnCompletion(id string, actionName string, task string, ret
 	}
 }
 
+func (c *Client) waitOnCompletionForNotSaas(id string, actionName string, task string, retries int, waitInterval int, clientID string, connectorIP string) error {
+	for {
+		cvoStatus, failureErrorMessage, err := c.checkTaskStatusForNotSaas(id, clientID, connectorIP)
+		if err != nil {
+			return err
+		}
+		if cvoStatus == 1 {
+			return nil
+		} else if cvoStatus == -1 {
+			return fmt.Errorf("failed to %s %s, error: %s", task, actionName, failureErrorMessage)
+		} else if cvoStatus == 0 {
+			if retries == 0 {
+				log.Print("Taking too long to ", task, actionName)
+				return fmt.Errorf("taking too long for %s to %s or not properly setup", actionName, task)
+			}
+			log.Printf("Sleep for %d seconds", waitInterval)
+			time.Sleep(time.Duration(waitInterval) * time.Second)
+			retries--
+		}
+
+	}
+}
+
 // get working environment information by working environment id
 // response: publicId, name, isHA, providerName, workingEnvironmentType, ...
-func (c *Client) getWorkingEnvironmentInfo(id string, clientID string) (workingEnvironmentInfo, error) {
+func (c *Client) getWorkingEnvironmentInfo(id string, clientID string, isSaas bool, connectorIP string) (workingEnvironmentInfo, error) {
 	baseURL := fmt.Sprintf("/occm/api/ontaps/working-environments/%s", id)
-	hostType := "CloudManagerHost"
+	hostType := ""
+	if isSaas {
+		hostType = "CloudManagerHost"
+	} else {
+		hostType = "http://" + connectorIP
+	}
 
 	if c.Token == "" {
 		accesTokenResult, err := c.getAccessToken()
@@ -442,10 +518,15 @@ func findWEForID(id string, weList []workingEnvironmentInfo) (workingEnvironment
 	return workingEnvironmentInfo{}, fmt.Errorf("cannot find working environment %s in the list", id)
 }
 
-func (c *Client) findWorkingEnvironmentByName(name string, clientID string) (workingEnvironmentInfo, error) {
+func (c *Client) findWorkingEnvironmentByName(name string, clientID string, isSaas bool, connectorIP string) (workingEnvironmentInfo, error) {
 	// check working environment exists or not
 	baseURL := fmt.Sprintf("/occm/api/working-environments/exists/%s", name)
-	hostType := "CloudManagerHost"
+	hostType := ""
+	if isSaas {
+		hostType = "CloudManagerHost"
+	} else {
+		hostType = "http://" + connectorIP
+	}
 
 	if c.Token == "" {
 		accesTokenResult, err := c.getAccessToken()
@@ -510,11 +591,11 @@ func (c *Client) findWorkingEnvironmentByName(name string, clientID string) (wor
 // get WE directly from REST API using a given ID
 func (c *Client) findWorkingEnvironmentByID(id string, clientID string) (workingEnvironmentInfo, error) {
 
-	workingEnvInfo, err := c.getWorkingEnvironmentInfo(id, clientID)
+	workingEnvInfo, err := c.getWorkingEnvironmentInfo(id, clientID, true, "")
 	if err != nil {
 		return workingEnvironmentInfo{}, fmt.Errorf("cannot find working environment by working_environment_id %s", id)
 	}
-	workingEnvDetail, err := c.findWorkingEnvironmentByName(workingEnvInfo.Name, clientID)
+	workingEnvDetail, err := c.findWorkingEnvironmentByName(workingEnvInfo.Name, clientID, true, "")
 	if err != nil {
 		return workingEnvironmentInfo{}, fmt.Errorf("cannot find working environment by working_environment_name %s", workingEnvInfo.Name)
 	}
@@ -572,7 +653,7 @@ func (c *Client) getFSXWorkingEnvironmentInfo(tenantID string, id string, client
 	return result, nil
 }
 
-func (c *Client) getAPIRoot(workingEnvironmentID string, clientID string) (string, string, error) {
+func (c *Client) getAPIRoot(workingEnvironmentID string, clientID string, isSaas bool, connectorIP string) (string, string, error) {
 
 	if c.Token == "" {
 		accesTokenResult, err := c.getAccessToken()
@@ -591,7 +672,7 @@ func (c *Client) getAPIRoot(workingEnvironmentID string, clientID string) (strin
 	if strings.HasPrefix(workingEnvironmentID, "OnPrem") {
 		return "/occm/api/onprem", "", nil
 	}
-	workingEnvDetail, err := c.getWorkingEnvironmentInfo(workingEnvironmentID, clientID)
+	workingEnvDetail, err := c.getWorkingEnvironmentInfo(workingEnvironmentID, clientID, isSaas, connectorIP)
 	if err != nil {
 		log.Print("Cannot get working environment information.")
 		return "", "", err
@@ -658,7 +739,7 @@ func (c *Client) getWorkingEnvironmentDetail(d *schema.ResourceData, clientID st
 			return workingEnvironmentInfo{}, fmt.Errorf("cannot find working environment by working_environment_id %s", WorkingEnvironmentID)
 		}
 	} else if a, ok = d.GetOk("working_environment_name"); ok {
-		workingEnvDetail, err = c.findWorkingEnvironmentByName(a.(string), clientID)
+		workingEnvDetail, err = c.findWorkingEnvironmentByName(a.(string), clientID, true, "")
 		if err != nil {
 			return workingEnvironmentInfo{}, fmt.Errorf("cannot find working environment by working_environment_name %s", a.(string))
 		}
@@ -780,7 +861,7 @@ func (c *Client) getWorkingEnvironmentDetailForSnapMirror(d *schema.ResourceData
 			}
 		}
 	} else if a, ok = d.GetOk("source_working_environment_name"); ok {
-		sourceWorkingEnvDetail, err = c.findWorkingEnvironmentByName(a.(string), clientID)
+		sourceWorkingEnvDetail, err = c.findWorkingEnvironmentByName(a.(string), clientID, true, "")
 		if sourceWorkingEnvDetail.PublicID == "" {
 			if b, ok := d.GetOk("tenant_id"); ok {
 				workingEnvironmentName := a.(string)
@@ -840,7 +921,7 @@ func (c *Client) getWorkingEnvironmentDetailForSnapMirror(d *schema.ResourceData
 			log.Print("findWorkingEnvironmentForID", destWorkingEnvDetail)
 		}
 	} else if a, ok = d.GetOk("destination_working_environment_name"); ok {
-		destWorkingEnvDetail, err = c.findWorkingEnvironmentByName(a.(string), clientID)
+		destWorkingEnvDetail, err = c.findWorkingEnvironmentByName(a.(string), clientID, true, "")
 		log.Printf("Get environment id %v by %v", destWorkingEnvDetail.PublicID, a.(string))
 		if destWorkingEnvDetail.PublicID == "" {
 			if b, ok := d.GetOk("tenant_id"); ok {
@@ -923,8 +1004,13 @@ func (c *Client) findWorkingEnvironmentForID(id string, clientID string) (workin
 }
 
 // get working environment properties
-func (c *Client) getWorkingEnvironmentProperties(apiRoot string, id string, field string, clientID string) (workingEnvironmentOntapClusterPropertiesResponse, error) {
-	hostType := "CloudManagerHost"
+func (c *Client) getWorkingEnvironmentProperties(apiRoot string, id string, field string, clientID string, isSaas bool, connectorIP string) (workingEnvironmentOntapClusterPropertiesResponse, error) {
+	hostType := ""
+	if isSaas {
+		hostType = "CloudManagerHost"
+	} else {
+		hostType = "http://" + connectorIP
+	}
 	baseURL := fmt.Sprintf("%s/working-environments/%s?fields=%s", apiRoot, id, field)
 	log.Printf("Call %s", baseURL)
 
@@ -1018,14 +1104,19 @@ func expandUserTags(set *schema.Set) []userTags {
 	return tags
 }
 
-func (c *Client) callCMUpdateAPI(method string, request interface{}, baseURL string, id string, functionName string, clientID string) error {
-	apiRoot, _, err := c.getAPIRoot(id, clientID)
+func (c *Client) callCMUpdateAPI(method string, request interface{}, baseURL string, id string, functionName string, clientID string, isSaas bool, connectorIP string) error {
+	apiRoot, _, err := c.getAPIRoot(id, clientID, isSaas, connectorIP)
 	if err != nil {
 		return err
 	}
 	baseURL = apiRoot + baseURL
 
-	hostType := "CloudManagerHost"
+	hostType := ""
+	if isSaas {
+		hostType = "CloudManagerHost"
+	} else {
+		hostType = "http://" + connectorIP
+	}
 	params := structs.Map(request)
 
 	if c.Token == "" {
@@ -1052,7 +1143,7 @@ func (c *Client) callCMUpdateAPI(method string, request interface{}, baseURL str
 }
 
 // modify CVO SVM name
-func (c *Client) updateCVOSVMName(d *schema.ResourceData, clientID string, svmName string, svmNewName string) error {
+func (c *Client) updateCVOSVMName(d *schema.ResourceData, clientID string, svmName string, svmNewName string, isSaas bool, connectorIP string) error {
 	var request svmNameModificationRequest
 	// Update svm name
 	id := d.Id()
@@ -1060,7 +1151,7 @@ func (c *Client) updateCVOSVMName(d *schema.ResourceData, clientID string, svmNa
 	request.SvmNewName = svmNewName
 	baseURL := fmt.Sprintf("/working-environments/%s/svm", id)
 	log.Printf("Modify %s SVM %s with %s", id, svmName, svmNewName)
-	updateErr := c.callCMUpdateAPI("PUT", request, baseURL, id, "updateCVOSVMName", clientID)
+	updateErr := c.callCMUpdateAPI("PUT", request, baseURL, id, "updateCVOSVMName", clientID, isSaas, connectorIP)
 	if updateErr != nil {
 		return updateErr
 	}
@@ -1069,7 +1160,7 @@ func (c *Client) updateCVOSVMName(d *schema.ResourceData, clientID string, svmNa
 }
 
 // update CVO user-tags
-func updateCVOUserTags(d *schema.ResourceData, meta interface{}, tagName string, clientID string) error {
+func updateCVOUserTags(d *schema.ResourceData, meta interface{}, tagName string, clientID string, isSaas bool, connectorIP string) error {
 	client := meta.(*Client)
 	var request modifyUserTagsRequest
 	if c, ok := d.GetOk(tagName); ok {
@@ -1086,7 +1177,7 @@ func updateCVOUserTags(d *schema.ResourceData, meta interface{}, tagName string,
 	// Update tags
 	id := d.Id()
 	baseURL := fmt.Sprintf("/working-environments/%s/user-tags", id)
-	updateErr := client.callCMUpdateAPI("PUT", request, baseURL, id, "updateCVOUserTags", clientID)
+	updateErr := client.callCMUpdateAPI("PUT", request, baseURL, id, "updateCVOUserTags", clientID, isSaas, connectorIP)
 	if updateErr != nil {
 		return updateErr
 	}
@@ -1095,14 +1186,14 @@ func updateCVOUserTags(d *schema.ResourceData, meta interface{}, tagName string,
 }
 
 // set the cluster password of a specific cloud volumes ONTAP
-func updateCVOSVMPassword(d *schema.ResourceData, meta interface{}, clientID string) error {
+func updateCVOSVMPassword(d *schema.ResourceData, meta interface{}, clientID string, isSaas bool, connectorIP string) error {
 	client := meta.(*Client)
 	var request setPasswordRequest
 	request.Password = d.Get("svm_password").(string)
 	// Update password
 	id := d.Id()
 	baseURL := fmt.Sprintf("/working-environments/%s/set-password", id)
-	updateErr := client.callCMUpdateAPI("PUT", request, baseURL, id, "updateCVOSVMPassword", clientID)
+	updateErr := client.callCMUpdateAPI("PUT", request, baseURL, id, "updateCVOSVMPassword", clientID, isSaas, connectorIP)
 	if updateErr != nil {
 		return updateErr
 	}
@@ -1111,7 +1202,7 @@ func updateCVOSVMPassword(d *schema.ResourceData, meta interface{}, clientID str
 }
 
 // update SVMs on GCP CVO HA
-func (c *Client) updateCVOSVMs(d *schema.ResourceData, clientID string) error {
+func (c *Client) updateCVOSVMs(d *schema.ResourceData, clientID string, isSaas bool, connectorIP string) error {
 	id := d.Id()
 	currentSVMs, expectSVMs := d.GetChange("svm")
 	cSVMs := expandGCPSVMs(currentSVMs.(*schema.Set))
@@ -1144,7 +1235,7 @@ func (c *Client) updateCVOSVMs(d *schema.ResourceData, clientID string) error {
 	for svmName := range expectList {
 		if len(currentList) > 0 {
 			// update SVM
-			respErr := c.updateCVOSVMName(d, clientID, currentList[j], svmName)
+			respErr := c.updateCVOSVMName(d, clientID, currentList[j], svmName, isSaas, connectorIP)
 			if respErr != nil {
 				return respErr
 			}
@@ -1152,7 +1243,7 @@ func (c *Client) updateCVOSVMs(d *schema.ResourceData, clientID string) error {
 			j++
 		} else {
 			// add SVM
-			respErr := c.addSVMtoCVO(id, clientID, svmName)
+			respErr := c.addSVMtoCVO(id, clientID, svmName, isSaas, connectorIP)
 			if respErr != nil {
 				log.Printf("Error adding SVM %v: %v", svmName, respErr)
 				return respErr
@@ -1162,7 +1253,7 @@ func (c *Client) updateCVOSVMs(d *schema.ResourceData, clientID string) error {
 	if len(currentList) > 0 {
 		for _, svmName := range currentList {
 			// delete SVM
-			respErr := c.deleteSVMfromCVO(id, clientID, svmName)
+			respErr := c.deleteSVMfromCVO(id, clientID, svmName, isSaas, connectorIP)
 			if respErr != nil {
 				log.Printf("Error deleting SVM %v: %v", svmName, respErr)
 				return respErr
@@ -1172,17 +1263,17 @@ func (c *Client) updateCVOSVMs(d *schema.ResourceData, clientID string) error {
 	return nil
 }
 
-func (c *Client) waitOnCompletionCVOUpdate(id string, retryCount int, waitInterval int, clientID string) error {
+func (c *Client) waitOnCompletionCVOUpdate(id string, retryCount int, waitInterval int, clientID string, isSaas bool, connectorIP string) error {
 	// check upgrade status
 	log.Print("Check CVO update status")
 	// check upgrade status
-	apiRoot, _, err := c.getAPIRoot(id, clientID)
+	apiRoot, _, err := c.getAPIRoot(id, clientID, isSaas, connectorIP)
 	if err != nil {
 		return fmt.Errorf("cannot get root API")
 	}
 
 	for {
-		cvoResp, err := c.getWorkingEnvironmentProperties(apiRoot, id, "status,ontapClusterProperties", clientID)
+		cvoResp, err := c.getWorkingEnvironmentProperties(apiRoot, id, "status,ontapClusterProperties", clientID, isSaas, connectorIP)
 		if err != nil {
 			return err
 		}
@@ -1200,12 +1291,12 @@ func (c *Client) waitOnCompletionCVOUpdate(id string, retryCount int, waitInterv
 	}
 }
 
-func (c *Client) getCVOProperties(id string, clientID string) (workingEnvironmentOntapClusterPropertiesResponse, error) {
-	apiRoot, _, err := c.getAPIRoot(id, clientID)
+func (c *Client) getCVOProperties(id string, clientID string, isSaas bool, connectorIP string) (workingEnvironmentOntapClusterPropertiesResponse, error) {
+	apiRoot, _, err := c.getAPIRoot(id, clientID, isSaas, connectorIP)
 	if err != nil {
 		return workingEnvironmentOntapClusterPropertiesResponse{}, fmt.Errorf("cannot get root API")
 	}
-	cvoResp, err := c.getWorkingEnvironmentProperties(apiRoot, id, "*", clientID)
+	cvoResp, err := c.getWorkingEnvironmentProperties(apiRoot, id, "*", clientID, isSaas, connectorIP)
 	if err != nil {
 		return workingEnvironmentOntapClusterPropertiesResponse{}, err
 	}
@@ -1213,7 +1304,7 @@ func (c *Client) getCVOProperties(id string, clientID string) (workingEnvironmen
 }
 
 // set the license_type and instance type of a specific cloud volumes ONTAP
-func updateCVOLicenseInstanceType(d *schema.ResourceData, meta interface{}, clientID string) error {
+func updateCVOLicenseInstanceType(d *schema.ResourceData, meta interface{}, clientID string, isSaas bool, connectorIP string) error {
 	client := meta.(*Client)
 	var request licenseAndInstanceTypeModificationRequest
 	if c, ok := d.GetOk("instance_type"); ok {
@@ -1230,7 +1321,7 @@ func updateCVOLicenseInstanceType(d *schema.ResourceData, meta interface{}, clie
 	id := d.Id()
 	baseURL := fmt.Sprintf("/working-environments/%s/license-instance-type", id)
 	log.Printf("Update license and instance type: %#v", request)
-	updateErr := client.callCMUpdateAPI("PUT", request, baseURL, id, "updateCVOLicenseInstanceType", clientID)
+	updateErr := client.callCMUpdateAPI("PUT", request, baseURL, id, "updateCVOLicenseInstanceType", clientID, isSaas, connectorIP)
 	if updateErr != nil {
 		return updateErr
 	}
@@ -1239,7 +1330,7 @@ func updateCVOLicenseInstanceType(d *schema.ResourceData, meta interface{}, clie
 	if d.Get("is_ha").(bool) {
 		retryCount = retryCount * 2
 	}
-	err := client.waitOnCompletionCVOUpdate(id, retryCount, 60, clientID)
+	err := client.waitOnCompletionCVOUpdate(id, retryCount, 60, clientID, isSaas, connectorIP)
 	if err != nil {
 		return fmt.Errorf("update CVO failed %v", err)
 	}
@@ -1248,7 +1339,7 @@ func updateCVOLicenseInstanceType(d *schema.ResourceData, meta interface{}, clie
 }
 
 // update tier_level of a specific cloud volumes ONTAP
-func updateCVOTierLevel(d *schema.ResourceData, meta interface{}, clientID string) error {
+func updateCVOTierLevel(d *schema.ResourceData, meta interface{}, clientID string, isSaas bool, connectorIP string) error {
 	client := meta.(*Client)
 	var request changeTierLevelRequest
 	if c, ok := d.GetOk("tier_level"); ok {
@@ -1256,7 +1347,7 @@ func updateCVOTierLevel(d *schema.ResourceData, meta interface{}, clientID strin
 	}
 	id := d.Id()
 	baseURL := fmt.Sprintf("/working-environments/%s/change-tier-level", id)
-	updateErr := client.callCMUpdateAPI("POST", request, baseURL, id, "updateCVOTierLevel", clientID)
+	updateErr := client.callCMUpdateAPI("POST", request, baseURL, id, "updateCVOTierLevel", clientID, isSaas, connectorIP)
 	if updateErr != nil {
 		return updateErr
 	}
@@ -1265,7 +1356,7 @@ func updateCVOTierLevel(d *schema.ResourceData, meta interface{}, clientID strin
 }
 
 // update writing_speed_state of a specific CVO
-func updateCVOWritingSpeedState(d *schema.ResourceData, meta interface{}, clientID string) error {
+func updateCVOWritingSpeedState(d *schema.ResourceData, meta interface{}, clientID string, isSaas bool, connectorIP string) error {
 	client := meta.(*Client)
 	var request changeWritingSpeedStateRequest
 	if c, ok := d.GetOk("writing_speed_state"); ok {
@@ -1274,7 +1365,7 @@ func updateCVOWritingSpeedState(d *schema.ResourceData, meta interface{}, client
 	log.Printf("writing_speed_state value %s", request.WritingSpeedState)
 	id := d.Id()
 	baseURL := fmt.Sprintf("/working-environments/%s/writing-speed", id)
-	updateErr := client.callCMUpdateAPI("PUT", request, baseURL, id, "updateCVOWritingSpeedState", clientID)
+	updateErr := client.callCMUpdateAPI("PUT", request, baseURL, id, "updateCVOWritingSpeedState", clientID, isSaas, connectorIP)
 	if updateErr != nil {
 		return updateErr
 	}
@@ -1285,7 +1376,7 @@ func updateCVOWritingSpeedState(d *schema.ResourceData, meta interface{}, client
 		retryCount = retryCount * 2
 	}
 
-	err := client.waitOnCompletionCVOUpdate(id, retryCount, 60, clientID)
+	err := client.waitOnCompletionCVOUpdate(id, retryCount, 60, clientID, isSaas, connectorIP)
 	if err != nil {
 		return fmt.Errorf("update CVO failed %v", err)
 	}
@@ -1293,12 +1384,12 @@ func updateCVOWritingSpeedState(d *schema.ResourceData, meta interface{}, client
 	return nil
 }
 
-func (c *Client) waitOnCompletionOntapImageUpgrade(apiRoot string, id string, targetVersion string, retryCount int, waitInterval int, clientID string) error {
+func (c *Client) waitOnCompletionOntapImageUpgrade(apiRoot string, id string, targetVersion string, retryCount int, waitInterval int, clientID string, isSaas bool, connectorIP string) error {
 	// check upgrade status
 	log.Print("Check CVO ontap image upgrade status")
 
 	for {
-		cvoResp, err := c.getWorkingEnvironmentProperties(apiRoot, id, "status,ontapClusterProperties", clientID)
+		cvoResp, err := c.getWorkingEnvironmentProperties(apiRoot, id, "status,ontapClusterProperties", clientID, isSaas, connectorIP)
 		if err != nil {
 			return err
 		}
@@ -1321,12 +1412,12 @@ func (c *Client) waitOnCompletionOntapImageUpgrade(apiRoot string, id string, ta
 }
 
 // check if ontap_version is the list of upgrade available versions
-func (c *Client) upgradeOntapVersionAvailable(apiRoot string, id string, ontapVersion string, clientID string) (string, error) {
+func (c *Client) upgradeOntapVersionAvailable(apiRoot string, id string, ontapVersion string, clientID string, isSaas bool, connectorIP string) (string, error) {
 	log.Print("upgradeOntapVersionAvailable: Check if target version is in the upgrade version list")
 
 	var upgradeOntapVersions []upgradeVersion
 
-	WEProperties, err := c.getWorkingEnvironmentProperties(apiRoot, id, "ontapClusterProperties.fields(upgradeVersions)", clientID)
+	WEProperties, err := c.getWorkingEnvironmentProperties(apiRoot, id, "ontapClusterProperties.fields(upgradeVersions)", clientID, isSaas, connectorIP)
 	if err != nil {
 		return "", fmt.Errorf("upgradeOntapVersionAvailable %s not able to get the properties %v", id, err)
 	}
@@ -1346,11 +1437,11 @@ func (c *Client) upgradeOntapVersionAvailable(apiRoot string, id string, ontapVe
 	return "", fmt.Errorf("working environment %s: no upgrade version availble", id)
 }
 
-func (c *Client) setOCCMConfig(request configValuesUpdateRequest, clientID string, isSAAS bool, occmDetails createOCCMDetails) error {
+func (c *Client) setOCCMConfig(request configValuesUpdateRequest, clientID string, isSaas bool, occmDetails createOCCMDetails) error {
 	log.Print("setOCCMConfig: set OCCM configuration")
 
 	connectorIP := ""
-	if !isSAAS {
+	if !isSaas {
 		vm, err := c.getVMInstance(occmDetails, clientID)
 		if err != nil {
 			log.Print("Error creating instance")
@@ -1375,7 +1466,7 @@ func (c *Client) setOCCMConfig(request configValuesUpdateRequest, clientID strin
 	}
 
 	hostType := ""
-	if isSAAS {
+	if isSaas {
 		hostType = "CloudManagerHost"
 	} else {
 		hostType = "http://" + connectorIP
@@ -1411,10 +1502,15 @@ func (c *Client) setOCCMConfig(request configValuesUpdateRequest, clientID strin
 	return nil
 }
 
-func (c *Client) setConfigFlag(request setFlagRequest, keyPath string, clientID string) error {
+func (c *Client) setConfigFlag(request setFlagRequest, keyPath string, clientID string, isSaas bool, connectorIP string) error {
 	log.Print("setConfigFlag: set flag to allow ONTAP image upgrade")
 
-	hostType := "CloudManagerHost"
+	hostType := ""
+	if isSaas {
+		hostType = "CloudManagerHost"
+	} else {
+		hostType = "http://" + connectorIP
+	}
 
 	baseURL := fmt.Sprintf("/occm/api/occm/config/%s", keyPath)
 	params := structs.Map(request)
@@ -1434,14 +1530,14 @@ func (c *Client) setConfigFlag(request setFlagRequest, keyPath string, clientID 
 }
 
 // upgrade CVO ontap version
-func (c *Client) upgradeCVOOntapImage(apiRoot string, id string, ontapVersion string, isHa bool, clientID string) error {
+func (c *Client) upgradeCVOOntapImage(apiRoot string, id string, ontapVersion string, isHa bool, clientID string, isSaas bool, connectorIP string) error {
 	// set config flag to skip the upgrade check
 	var setFlag setFlagRequest
 	setFlag.Value = true
 	setFlag.ValueType = "BOOLEAN"
 
 	log.Printf("Set config flag")
-	setFlagErr := c.setConfigFlag(setFlag, "skip-eligibility-paygo-upgrade", clientID)
+	setFlagErr := c.setConfigFlag(setFlag, "skip-eligibility-paygo-upgrade", clientID, isSaas, connectorIP)
 	if setFlagErr != nil {
 		log.Printf("upgradeCVOOntapVersion failed on setConfigFlag call %v", setFlagErr)
 		return setFlagErr
@@ -1454,7 +1550,7 @@ func (c *Client) upgradeCVOOntapImage(apiRoot string, id string, ontapVersion st
 
 	baseURL := fmt.Sprintf("/working-environments/%s/update-image", id)
 	log.Printf("upgradeCVOOntapVersion - %s %v", baseURL, request)
-	updateErr := c.callCMUpdateAPI("POST", request, baseURL, id, "upgradeCVOOntapVersion", clientID)
+	updateErr := c.callCMUpdateAPI("POST", request, baseURL, id, "upgradeCVOOntapVersion", clientID, isSaas, connectorIP)
 	if updateErr != nil {
 		log.Printf("upgradeCVOOntapVersion failed on API call %v", updateErr)
 		return updateErr
@@ -1465,7 +1561,7 @@ func (c *Client) upgradeCVOOntapImage(apiRoot string, id string, ontapVersion st
 	if isHa {
 		retryCount = retryCount * 2
 	}
-	err := c.waitOnCompletionOntapImageUpgrade(apiRoot, id, ontapVersion, retryCount, 60, clientID)
+	err := c.waitOnCompletionOntapImageUpgrade(apiRoot, id, ontapVersion, retryCount, 60, clientID, isSaas, connectorIP)
 	if err != nil {
 		return fmt.Errorf("upgrade ontap image %s failed %v", ontapVersion, err)
 	}
@@ -1473,20 +1569,20 @@ func (c *Client) upgradeCVOOntapImage(apiRoot string, id string, ontapVersion st
 	return nil
 }
 
-func (c *Client) doUpgradeCVOOntapVersion(id string, isHA bool, ontapVersion string, clientID string) error {
+func (c *Client) doUpgradeCVOOntapVersion(id string, isHA bool, ontapVersion string, clientID string, isSaas bool, connectorIP string) error {
 	// only when the upgrade_ontap_version is true, use_latest_version is false and the ontap_version is not "latest"
 	log.Print("Check CVO ontap image upgrade status ... ")
-	apiRoot, _, err := c.getAPIRoot(id, clientID)
+	apiRoot, _, err := c.getAPIRoot(id, clientID, isSaas, connectorIP)
 	if err != nil {
 		return fmt.Errorf("cannot get root API")
 	}
 
-	upgradeVersion, err := c.upgradeOntapVersionAvailable(apiRoot, id, ontapVersion, clientID)
+	upgradeVersion, err := c.upgradeOntapVersionAvailable(apiRoot, id, ontapVersion, clientID, isSaas, connectorIP)
 	if err != nil {
 		return err
 	}
 
-	return c.upgradeCVOOntapImage(apiRoot, id, upgradeVersion, isHA, clientID)
+	return c.upgradeCVOOntapImage(apiRoot, id, upgradeVersion, isHA, clientID, isSaas, connectorIP)
 }
 
 func checkOntapVersionChangeWithoutUpgrade(d *schema.ResourceData) error {
@@ -1508,7 +1604,7 @@ func checkOntapVersionChangeWithoutUpgrade(d *schema.ResourceData) error {
 	return nil
 }
 
-func (c *Client) checkAndDoUpgradeOntapVersion(d *schema.ResourceData, clientID string) error {
+func (c *Client) checkAndDoUpgradeOntapVersion(d *schema.ResourceData, clientID string, isSaas bool, connectorIP string) error {
 	upgradeOntapVersion := d.Get("upgrade_ontap_version").(bool)
 	if upgradeOntapVersion {
 		ontapVersion := d.Get("ontap_version").(string)
@@ -1521,7 +1617,7 @@ func (c *Client) checkAndDoUpgradeOntapVersion(d *schema.ResourceData, clientID 
 			return fmt.Errorf("ontap_version cannot be upgraded with \"use_latest_version\" true")
 		}
 		id := d.Id()
-		respErr := c.doUpgradeCVOOntapVersion(id, d.Get("is_ha").(bool), ontapVersion, clientID)
+		respErr := c.doUpgradeCVOOntapVersion(id, d.Get("is_ha").(bool), ontapVersion, clientID, isSaas, connectorIP)
 		if respErr != nil {
 			currentVersion, _ := d.GetChange("ontap_version")
 			d.Set("ontap_version", currentVersion)

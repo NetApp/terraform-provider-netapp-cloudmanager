@@ -194,7 +194,7 @@ type accountResult struct {
 type accountIDResult struct {
 	AccountID   string `json:"accountPublicId"`
 	AccountName string `json:"accountName"`
-	IsSAAS      bool   `json:"isSaas"`
+	IsSaas      bool   `json:"isSaas"`
 }
 
 // listOCCMResult lists the details for given Client ID
@@ -396,6 +396,10 @@ func (c *Client) getAccountDetails(clientID string) (accountIDResult, error) {
 		if account.AccountID == c.AccountID {
 			resultAccount = account
 		}
+	}
+
+	if resultAccount == (accountIDResult{}) {
+		return accountIDResult{}, fmt.Errorf("no account found: %s", c.AccountID)
 	}
 
 	return resultAccount, nil

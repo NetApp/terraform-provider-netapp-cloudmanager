@@ -62,7 +62,6 @@ type Client struct {
 	Retries                 int
 
 	initOnce           sync.Once
-	instanceInput      *restapi.Client
 	restapiClient      *restapi.Client
 	requestSlots       chan int
 	Simulator          bool

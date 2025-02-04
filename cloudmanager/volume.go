@@ -209,7 +209,7 @@ func (c *Client) createVolume(vol volumeRequest, createAggregateIfNotFound bool,
 	} else {
 		id = vol.WorkingEnvironmentID
 	}
-	baseURL, _, err := c.getAPIRoot(id, clientID)
+	baseURL, _, err := c.getAPIRoot(id, clientID, true, "")
 	if err != nil {
 		return err
 	}
@@ -244,7 +244,7 @@ func (c *Client) deleteVolume(vol volumeRequest, clientID string) error {
 	} else {
 		id = vol.WorkingEnvironmentID
 	}
-	baseURL, _, err := c.getAPIRoot(id, clientID)
+	baseURL, _, err := c.getAPIRoot(id, clientID, true, "")
 	if err != nil {
 		return err
 	}
@@ -279,7 +279,7 @@ func (c *Client) getVolume(vol volumeRequest, clientID string) ([]volumeResponse
 	} else {
 		id = vol.WorkingEnvironmentID
 	}
-	baseURL, _, err := c.getAPIRoot(id, clientID)
+	baseURL, _, err := c.getAPIRoot(id, clientID, true, "")
 	if err != nil {
 		return result, err
 	}
@@ -349,7 +349,7 @@ func (c *Client) updateVolume(request volumeRequest, clientID string) error {
 	} else {
 		id = request.WorkingEnvironmentID
 	}
-	baseURL, _, err := c.getAPIRoot(id, clientID)
+	baseURL, _, err := c.getAPIRoot(id, clientID, true, "")
 	if err != nil {
 		return err
 	}
@@ -376,7 +376,7 @@ func (c *Client) updateVolume(request volumeRequest, clientID string) error {
 
 func (c *Client) quoteVolume(request quoteRequest, clientID string) (map[string]interface{}, error) {
 	hostType := "CloudManagerHost"
-	baseURL, _, err := c.getAPIRoot(request.WorkingEnvironmentID, clientID)
+	baseURL, _, err := c.getAPIRoot(request.WorkingEnvironmentID, clientID, true, "")
 	if err != nil {
 		return nil, err
 	}
@@ -400,7 +400,7 @@ func (c *Client) quoteVolume(request quoteRequest, clientID string) (map[string]
 
 func (c *Client) createInitiator(request initiator, clientID string) error {
 	hostType := "CloudManagerHost"
-	baseURL, _, err := c.getAPIRoot(request.WorkingEnvironmentID, clientID)
+	baseURL, _, err := c.getAPIRoot(request.WorkingEnvironmentID, clientID, true, "")
 	if err != nil {
 		return err
 	}
@@ -420,7 +420,7 @@ func (c *Client) createInitiator(request initiator, clientID string) error {
 
 func (c *Client) getInitiator(request initiator, clientID string) ([]initiator, error) {
 	hostType := "CloudManagerHost"
-	baseURL, _, err := c.getAPIRoot(request.WorkingEnvironmentID, clientID)
+	baseURL, _, err := c.getAPIRoot(request.WorkingEnvironmentID, clientID, true, "")
 	var result []initiator
 	if err != nil {
 		return result, err
@@ -455,7 +455,7 @@ type igroup struct {
 
 func (c *Client) getIgroups(request igroup, clientID string) ([]igroup, error) {
 	hostType := "CloudManagerHost"
-	baseURL, _, err := c.getAPIRoot(request.WorkingEnvironmentID, clientID)
+	baseURL, _, err := c.getAPIRoot(request.WorkingEnvironmentID, clientID, true, "")
 	var result []igroup
 	if err != nil {
 		return result, err
@@ -484,7 +484,7 @@ func (c *Client) getIgroups(request igroup, clientID string) ([]igroup, error) {
 
 func (c *Client) checkCifsExists(workingEnvironmentType string, id string, svm string, clientID string) (bool, error) {
 	hostType := "CloudManagerHost"
-	baseURL, _, err := c.getAPIRoot(id, clientID)
+	baseURL, _, err := c.getAPIRoot(id, clientID, true, "")
 	var result []map[string]interface{}
 	if err != nil {
 		return false, err
@@ -606,7 +606,7 @@ func (c *Client) createSnapshotPolicy(workingEnviromentID string, snapshotPolicy
 		}
 		snapshotPolicy.Schedules = scheduleConfigs
 	}
-	baseURL, _, err := c.getAPIRoot(snapshotPolicy.WorkingEnvironmentID, clientID)
+	baseURL, _, err := c.getAPIRoot(snapshotPolicy.WorkingEnvironmentID, clientID, true, "")
 	hostType := "CloudManagerHost"
 	if err != nil {
 		return err
@@ -635,7 +635,7 @@ func (c *Client) createSnapshotPolicy(workingEnviromentID string, snapshotPolicy
 
 // findSnapshotPolicy
 func (c *Client) findSnapshotPolicy(workingEnviromentID string, snapshotPolicyName string, clientID string) bool {
-	resp, err := c.getCVOProperties(workingEnviromentID, clientID)
+	resp, err := c.getCVOProperties(workingEnviromentID, clientID, true, "")
 	if err != nil {
 		log.Print("cannot find working environment ", workingEnviromentID)
 		return false

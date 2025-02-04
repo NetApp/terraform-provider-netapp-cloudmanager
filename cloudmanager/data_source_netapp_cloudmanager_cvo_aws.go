@@ -43,7 +43,7 @@ func dataSourceCVOAWSRead(d *schema.ResourceData, meta interface{}) error {
 		d.Set("name", workingEnvDetail.Name)
 		d.Set("svm_name", workingEnvDetail.SvmName)
 	} else if a, ok = d.GetOk("name"); ok {
-		workingEnvDetail, err := client.findWorkingEnvironmentByName(a.(string), clientID)
+		workingEnvDetail, err := client.findWorkingEnvironmentByName(a.(string), clientID, true, "")
 		if err != nil {
 			return fmt.Errorf("Cannot find working environment by working_environment_name %s", a.(string))
 		}

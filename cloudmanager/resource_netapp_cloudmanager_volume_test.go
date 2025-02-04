@@ -103,7 +103,7 @@ func testAccCheckGCPVolumeDestroy(state *terraform.State) error {
 		if v, ok := rs.Primary.Attributes["working_environment_id"]; ok {
 			vol.WorkingEnvironmentID = v
 		} else if v, ok := rs.Primary.Attributes["working_environment_name"]; ok {
-			info, err := client.findWorkingEnvironmentByName(v, rs.Primary.Attributes["client_id"])
+			info, err := client.findWorkingEnvironmentByName(v, rs.Primary.Attributes["client_id"], true, "")
 			if err != nil {
 				return err
 			}
@@ -136,13 +136,13 @@ func testAccCheckVolumeExists(name string, volume *volumeResponse) resource.Test
 		vol.ID = rs.Primary.ID
 		if v, ok := rs.Primary.Attributes["working_environment_id"]; ok {
 			vol.WorkingEnvironmentID = v
-			info, err := client.getWorkingEnvironmentInfo(v, rs.Primary.Attributes["client_id"])
+			info, err := client.getWorkingEnvironmentInfo(v, rs.Primary.Attributes["client_id"], true, "")
 			if err != nil {
 				return err
 			}
 			vol.WorkingEnvironmentType = info.WorkingEnvironmentType
 		} else if v, ok := rs.Primary.Attributes["working_environment_name"]; ok {
-			info, err := client.findWorkingEnvironmentByName(v, rs.Primary.Attributes["client_id"])
+			info, err := client.findWorkingEnvironmentByName(v, rs.Primary.Attributes["client_id"], true, "")
 			if err != nil {
 				return err
 			}

@@ -158,6 +158,34 @@ func (c *Client) getTenant(clientID string) (string, error) {
 	return result[0].PublicID, nil
 }
 
+func (c *Client) getTenantForNotSaas(clientID string, connectorIP string) (string, error) {
+
+	log.Print("getTenant client=", clientID)
+
+	baseURL := "/occm/api/tenants"
+
+	hostType := "http://" + connectorIP
+
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
+	if err != nil {
+		log.Print("getTenant request failed ", statusCode)
+		return "", err
+	}
+
+	responseError := apiResponseChecker(statusCode, response, "getTenant")
+	if responseError != nil {
+		return "", responseError
+	}
+
+	var result []tenantResult
+	if err := json.Unmarshal(response, &result); err != nil {
+		log.Print("Failed to unmarshall response from getTenant ", err)
+		return "", err
+	}
+
+	return result[0].PublicID, nil
+}
+
 func (c *Client) getCVOAWS(id string, clientID string) (string, error) {
 
 	log.Print("getCVOAWS")
@@ -223,7 +251,7 @@ func (c *Client) createCVOAWS(cvoDetails createCVOAWSDetails, clientID string) (
 	if cvoDetails.NssAccount == "" {
 		if cvoDetails.VsaMetadata.PlatformSerialNumber != "" {
 			if !strings.HasPrefix(cvoDetails.VsaMetadata.PlatformSerialNumber, "Eval-") && cvoDetails.VsaMetadata.LicenseType == "cot-premium-byol" {
-				nssAccount, err := c.getNSS(clientID)
+				nssAccount, err := c.getNSS(clientID, true, "")
 				if err != nil {
 					log.Print("getNSS request failed ", err)
 					return cvoResult{}, err
@@ -233,7 +261,7 @@ func (c *Client) createCVOAWS(cvoDetails createCVOAWSDetails, clientID string) (
 			}
 		} else if cvoDetails.HAParams.PlatformSerialNumberNode1 != "" && cvoDetails.HAParams.PlatformSerialNumberNode2 != "" {
 			if !strings.HasPrefix(cvoDetails.HAParams.PlatformSerialNumberNode1, "Eval-") && !strings.HasPrefix(cvoDetails.HAParams.PlatformSerialNumberNode2, "Eval-") && cvoDetails.VsaMetadata.LicenseType == "ha-cot-premium-byol" {
-				nssAccount, err := c.getNSS(clientID)
+				nssAccount, err := c.getNSS(clientID, true, "")
 				if err != nil {
 					log.Print("getNSS request failed ", err)
 					return cvoResult{}, err

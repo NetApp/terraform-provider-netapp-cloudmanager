@@ -369,6 +369,20 @@ func resourceCVOGCP() *schema.Resource {
 				Optional: true,
 				Default:  60,
 			},
+			"connector_ip": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"tenant_account_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"deployment_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Standard", "Restricted"}, false),
+				Default:      "Standard",
+			},
 		},
 	}
 }
@@ -377,10 +391,53 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("Creating CVO GCP: %#v", d)
 
 	client := meta.(*Client)
-	clientID := d.Get("client_id").(string)
-	client.Retries = d.Get("retries").(int)
-
 	cvoDetails := createCVOGCPDetails{}
+
+	clientID := d.Get("client_id").(string)
+	if c, ok := d.GetOk("tenant_account_id"); ok {
+		client.AccountID = c.(string)
+	}
+	deploymentMode := d.Get("deployment_mode").(string)
+	if deploymentMode == "Restricted" && client.AccountID == "" {
+		return fmt.Errorf("tenant_account_id is required for Restricted account")
+	}
+
+	if c, ok := d.GetOk("connector_ip"); ok {
+		cvoDetails.ConnectorIP = c.(string)
+	}
+
+	account := accountIDResult{}
+
+	if client.AccountID != "" {
+		accessTokenResult, err := client.getAccessToken()
+		if err != nil {
+			return err
+		}
+		client.Token = accessTokenResult.Token
+
+		account, err = client.getAccountDetails(clientID)
+		if err != nil {
+			log.Print("Error creating instance")
+			return err
+		}
+	}
+
+	if deploymentMode == "Restricted" && account.IsSaas {
+		return fmt.Errorf("tenant_account_id %s is not a Restricted account", client.AccountID)
+	}
+	if deploymentMode == "Standard" && account != (accountIDResult{}) && !account.IsSaas {
+		return fmt.Errorf("tenant_account_id %s is not a Standard account", client.AccountID)
+	}
+
+	if !account.IsSaas && deploymentMode == "Restricted" && cvoDetails.ConnectorIP == "" {
+		return fmt.Errorf("connector_ip is required for Restricted account")
+	}
+
+	if account == (accountIDResult{}) && deploymentMode == "Standard" {
+		account.IsSaas = true
+	}
+
+	client.Retries = d.Get("retries").(int)
 
 	cvoDetails.Name = d.Get("name").(string)
 	log.Print("Create cvo name ", cvoDetails.Name)
@@ -627,7 +684,7 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	res, err := client.createCVOGCP(cvoDetails, clientID)
+	res, err := client.createCVOGCP(cvoDetails, clientID, account.IsSaas)
 	if err != nil {
 		log.Print("Error creating instance")
 		return err
@@ -640,7 +697,7 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 
 	// Add SVMs on GCP CVO HA
 	for _, svm := range svmList {
-		err := client.addSVMtoCVO(res.PublicID, clientID, svm.SvmName)
+		err := client.addSVMtoCVO(res.PublicID, clientID, svm.SvmName, account.IsSaas, cvoDetails.ConnectorIP)
 		if err != nil {
 			log.Printf("Error adding SVM %v: %v", svm.SvmName, err)
 			return err
@@ -656,9 +713,54 @@ func resourceCVOGCPRead(d *schema.ResourceData, meta interface{}) error {
 
 	id := d.Id()
 
+	connectorIP := ""
 	clientID := d.Get("client_id").(string)
+	if c, ok := d.GetOk("tenant_account_id"); ok {
+		client.AccountID = c.(string)
+	}
+	deploymentMode := d.Get("deployment_mode").(string)
 
-	resp, err := client.getCVOProperties(id, clientID)
+	if deploymentMode == "Restricted" && client.AccountID == "" {
+		return fmt.Errorf("tenant_account_id is required for Restricted account")
+	}
+
+	account := accountIDResult{}
+	// account.IsSaas = true
+
+	if client.AccountID != "" {
+		accessTokenResult, err := client.getAccessToken()
+		if err != nil {
+			return err
+		}
+		client.Token = accessTokenResult.Token
+
+		account, err = client.getAccountDetails(clientID)
+		if err != nil {
+			log.Print("Error creating instance")
+			return err
+		}
+	}
+
+	if deploymentMode == "Restricted" && account.IsSaas {
+		return fmt.Errorf("tenant_account_id %s is not a Restricted account", client.AccountID)
+	}
+	if deploymentMode == "Standard" && account != (accountIDResult{}) && !account.IsSaas {
+		return fmt.Errorf("tenant_account_id %s is not a Standard account", client.AccountID)
+	}
+
+	if c, ok := d.GetOk("connector_ip"); ok {
+		connectorIP = c.(string)
+	}
+
+	if !account.IsSaas && deploymentMode == "Restricted" && connectorIP == "" {
+		return fmt.Errorf("connector_ip is required for Restricted account")
+	}
+
+	if account == (accountIDResult{}) && deploymentMode == "Standard" {
+		account.IsSaas = true
+	}
+
+	resp, err := client.getCVOProperties(id, clientID, account.IsSaas, connectorIP)
 	if err != nil {
 		log.Print("Error reading cvo")
 		return err
@@ -677,8 +779,52 @@ func resourceCVOGCPDelete(d *schema.ResourceData, meta interface{}) error {
 
 	id := d.Id()
 	clientID := d.Get("client_id").(string)
+	if c, ok := d.GetOk("tenant_account_id"); ok {
+		client.AccountID = c.(string)
+	}
+	deploymentMode := d.Get("deployment_mode").(string)
+
+	if deploymentMode == "Restricted" && client.AccountID == "" {
+		return fmt.Errorf("tenant_account_id is required for Restricted account")
+	}
+	connectorIP := ""
+
+	account := accountIDResult{}
+
+	if client.AccountID != "" {
+		accessTokenResult, err := client.getAccessToken()
+		if err != nil {
+			return err
+		}
+		client.Token = accessTokenResult.Token
+
+		account, err = client.getAccountDetails(clientID)
+		if err != nil {
+			log.Print("Error creating instance")
+			return err
+		}
+	}
+
+	if deploymentMode == "Restricted" && account.IsSaas {
+		return fmt.Errorf("tenant_account_id %s is not a Restricted account", client.AccountID)
+	}
+	if deploymentMode == "Standard" && account != (accountIDResult{}) && !account.IsSaas {
+		return fmt.Errorf("tenant_account_id %s is not a Standard account", client.AccountID)
+	}
+
+	if c, ok := d.GetOk("connector_ip"); ok {
+		connectorIP = c.(string)
+	}
+
+	if !account.IsSaas && deploymentMode == "Restricted" && connectorIP == "" {
+		return fmt.Errorf("connector_ip is required for Restricted account")
+	}
+	if account == (accountIDResult{}) && deploymentMode == "Standard" {
+		account.IsSaas = true
+	}
+
 	isHA := d.Get("is_ha").(bool)
-	deleteErr := client.deleteCVOGCP(id, isHA, clientID)
+	deleteErr := client.deleteCVOGCP(id, isHA, clientID, account.IsSaas, connectorIP)
 	if deleteErr != nil {
 		log.Print("Error deleting cvo")
 		return deleteErr
@@ -692,10 +838,54 @@ func resourceCVOGCPUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*Client)
 	clientID := d.Get("client_id").(string)
+	if c, ok := d.GetOk("tenant_account_id"); ok {
+		client.AccountID = c.(string)
+	}
+	deploymentMode := d.Get("deployment_mode").(string)
+
+	if deploymentMode == "Restricted" && client.AccountID == "" {
+		return fmt.Errorf("tenant_account_id is required for Restricted account")
+	}
+
+	connectorIP := ""
+
+	account := accountIDResult{}
+
+	if client.AccountID != "" {
+		accessTokenResult, err := client.getAccessToken()
+		if err != nil {
+			return err
+		}
+		client.Token = accessTokenResult.Token
+
+		account, err = client.getAccountDetails(clientID)
+		if err != nil {
+			log.Print("Error creating instance")
+			return err
+		}
+	}
+
+	if deploymentMode == "Restricted" && account.IsSaas {
+		return fmt.Errorf("tenant_account_id %s is not a Restricted account", client.AccountID)
+	}
+	if deploymentMode == "Standard" && account != (accountIDResult{}) && !account.IsSaas {
+		return fmt.Errorf("tenant_account_id %s is not a Standard account", client.AccountID)
+	}
+
+	if c, ok := d.GetOk("connector_ip"); ok {
+		connectorIP = c.(string)
+	}
+
+	if !account.IsSaas && deploymentMode == "Restricted" && connectorIP == "" {
+		return fmt.Errorf("connector_ip is required for Restricted account")
+	}
+	if account == (accountIDResult{}) && deploymentMode == "Standard" {
+		account.IsSaas = true
+	}
 
 	// check if svm_password is changed
 	if d.HasChange("svm_password") {
-		respErr := updateCVOSVMPassword(d, meta, clientID)
+		respErr := updateCVOSVMPassword(d, meta, clientID, account.IsSaas, connectorIP)
 		if respErr != nil {
 			return respErr
 		}
@@ -704,7 +894,7 @@ func resourceCVOGCPUpdate(d *schema.ResourceData, meta interface{}) error {
 	//  check if svm_name is changed
 	if d.HasChange("svm_name") {
 		svmName, svmNewName := d.GetChange("svm_name")
-		respErr := client.updateCVOSVMName(d, clientID, svmName.(string), svmNewName.(string))
+		respErr := client.updateCVOSVMName(d, clientID, svmName.(string), svmNewName.(string), account.IsSaas, connectorIP)
 		if respErr != nil {
 			return respErr
 		}
@@ -712,7 +902,7 @@ func resourceCVOGCPUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	// check if svm list changes
 	if d.Get("is_ha").(bool) && d.HasChange("svm") {
-		respErr := client.updateCVOSVMs(d, clientID)
+		respErr := client.updateCVOSVMs(d, clientID, account.IsSaas, connectorIP)
 		if respErr != nil {
 			return respErr
 		}
@@ -732,7 +922,7 @@ func resourceCVOGCPUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	// check if license_type and instance type are changed
 	if d.HasChange("instance_type") || d.HasChange("license_type") {
-		respErr := updateCVOLicenseInstanceType(d, meta, clientID)
+		respErr := updateCVOLicenseInstanceType(d, meta, clientID, account.IsSaas, connectorIP)
 		if respErr != nil {
 			return respErr
 		}
@@ -740,7 +930,7 @@ func resourceCVOGCPUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	// check if tier_level is changed
 	if d.HasChange("tier_level") {
-		respErr := updateCVOTierLevel(d, meta, clientID)
+		respErr := updateCVOTierLevel(d, meta, clientID, account.IsSaas, connectorIP)
 		if respErr != nil {
 			return respErr
 		}
@@ -754,7 +944,7 @@ func resourceCVOGCPUpdate(d *schema.ResourceData, meta interface{}) error {
 			log.Print("writing_speed_state: default value is NORMAL. No change call is needed.")
 			return nil
 		}
-		respErr := updateCVOWritingSpeedState(d, meta, clientID)
+		respErr := updateCVOWritingSpeedState(d, meta, clientID, account.IsSaas, connectorIP)
 		if respErr != nil {
 			return respErr
 		}
@@ -763,14 +953,14 @@ func resourceCVOGCPUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	// check if gcp_label has changes
 	if d.HasChange("gcp_label") {
-		respErr := updateCVOUserTags(d, meta, "gcp_label", clientID)
+		respErr := updateCVOUserTags(d, meta, "gcp_label", clientID, account.IsSaas, connectorIP)
 		if respErr != nil {
 			return respErr
 		}
 		return resourceCVOGCPRead(d, meta)
 	}
 	// upgrade ontap version
-	upgradeErr := client.checkAndDoUpgradeOntapVersion(d, clientID)
+	upgradeErr := client.checkAndDoUpgradeOntapVersion(d, clientID, account.IsSaas, connectorIP)
 	if upgradeErr != nil {
 		return upgradeErr
 	}
@@ -838,9 +1028,55 @@ func resourceCVOGCPExists(d *schema.ResourceData, meta interface{}) (bool, error
 
 	id := d.Id()
 	clientID := d.Get("client_id").(string)
-	name := d.Get("name").(string)
+	if c, ok := d.GetOk("tenant_account_id"); ok {
+		client.AccountID = c.(string)
+	}
+	deploymentMode := d.Get("deployment_mode").(string)
 
-	resID, err := client.findWorkingEnvironmentByName(name, clientID)
+	if deploymentMode == "Restricted" && client.AccountID == "" {
+		return false, fmt.Errorf("tenant_account_id is required for Restricted account")
+	}
+	name := d.Get("name").(string)
+	connectorIP := ""
+
+	account := accountIDResult{}
+	// account.IsSaas = true
+
+	if client.AccountID != "" {
+		accessTokenResult, err := client.getAccessToken()
+		if err != nil {
+			return false, err
+		}
+		client.Token = accessTokenResult.Token
+
+		account, err = client.getAccountDetails(clientID)
+		if err != nil {
+			log.Print("Error creating instance")
+			return false, err
+		}
+	}
+
+	if deploymentMode == "Standard" && account != (accountIDResult{}) && !account.IsSaas {
+		return false, fmt.Errorf("tenant_account_id %s is not a Standard account", client.AccountID)
+	}
+
+	if deploymentMode == "Restricted" && account.IsSaas {
+		return false, fmt.Errorf("tenant_account_id %s is not a Restricted account", client.AccountID)
+	}
+
+	if c, ok := d.GetOk("connector_ip"); ok {
+		connectorIP = c.(string)
+	}
+
+	if !account.IsSaas && deploymentMode == "Restricted" && connectorIP == "" {
+		return false, fmt.Errorf("connector_ip is required for Restricted account, %t, %s", account.IsSaas, deploymentMode)
+	}
+
+	if account == (accountIDResult{}) && deploymentMode == "Standard" {
+		account.IsSaas = true
+	}
+
+	resID, err := client.findWorkingEnvironmentByName(name, clientID, account.IsSaas, connectorIP)
 	if err != nil {
 		log.Print("Error getting cvo")
 		return false, err
