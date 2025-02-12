@@ -725,7 +725,7 @@ func resourceCVOGCPRead(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	account := accountIDResult{}
-	// account.IsSaas = true
+	account.IsSaas = true
 
 	if client.AccountID != "" {
 		accessTokenResult, err := client.getAccessToken()
@@ -1040,7 +1040,7 @@ func resourceCVOGCPExists(d *schema.ResourceData, meta interface{}) (bool, error
 	connectorIP := ""
 
 	account := accountIDResult{}
-	// account.IsSaas = true
+	account.IsSaas = true
 
 	if client.AccountID != "" {
 		accessTokenResult, err := client.getAccessToken()

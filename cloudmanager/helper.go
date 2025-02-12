@@ -288,6 +288,79 @@ type accessConfigs struct {
 	NatIP string `json:"natIP"`
 }
 
+// check deployment mode and validate the input
+func (c *Client) checkDeploymentMode(d *schema.ResourceData, clientID string) (bool, string, error) {
+	isSaaS := true
+	// get the deployment_mode
+	deploymentMode := "Standard"
+	if deployment, ok := d.GetOk("deployment_mode"); ok {
+		deploymentMode = deployment.(string)
+	}
+	if acnt, ok := d.GetOk("tenant_account_id"); ok {
+		accessTokenResult, err := c.getAccessToken()
+		if err != nil {
+			c.revertDeploymentModeParameters(d, clientID)
+			return false, "", err
+		}
+		c.Token = accessTokenResult.Token
+		c.AccountID = acnt.(string)
+		// check if the tenant_account_id is SaaS
+		account, err := c.getAccountDetails(clientID)
+		if err != nil {
+			c.revertDeploymentModeParameters(d, clientID)
+			log.Print("not able to get account details")
+			return false, "", err
+		}
+		isSaaS = account.IsSaas
+	}
+	connectorIP := ""
+	if connector, ok := d.GetOk("connector_ip"); ok {
+		connectorIP = connector.(string)
+	}
+	if deploymentMode == "Restricted" {
+		if c.AccountID == "" {
+			c.revertDeploymentModeParameters(d, clientID)
+			return false, "", fmt.Errorf("tenant_account_id is required for deployment_mode Restricted")
+		}
+		if isSaaS {
+			c.revertDeploymentModeParameters(d, clientID)
+			return false, "", fmt.Errorf("the tenant_account_id %s is not a Restricted mode account", c.AccountID)
+		}
+		if connectorIP == "" {
+			c.revertDeploymentModeParameters(d, clientID)
+			return false, "", fmt.Errorf("connector_ip is required for deployment_mode Restricted")
+		}
+	} else if deploymentMode == "Standard" {
+		if connectorIP != "" {
+			c.revertDeploymentModeParameters(d, clientID)
+			return false, "", fmt.Errorf("connector_ip is not required for deployment_mode Standard")
+		}
+		if !isSaaS {
+			c.revertDeploymentModeParameters(d, clientID)
+			return false, "", fmt.Errorf("the tenant_account_id %s is not in Standard mode account", c.AccountID)
+		}
+	}
+	log.Printf("=== deployment_mode: %s ===", deploymentMode)
+	return isSaaS, connectorIP, nil
+}
+
+// revert the configuration of deployment_mode, tenant_account_id, and connector_ip to the previous state
+func (c *Client) revertDeploymentModeParameters(d *schema.ResourceData, clientID string) error {
+	if d.HasChange("deployment_mode") {
+		previous, _ := d.GetChange("deployment_mode")
+		d.Set("deployment_mode", previous)
+	}
+	if d.HasChange("tenant_account_id") {
+		previous, _ := d.GetChange("tenant_account_id")
+		d.Set("tenant_account_id", previous)
+	}
+	if d.HasChange("connector_ip") {
+		previous, _ := d.GetChange("connector_ip")
+		d.Set("connector_ip", previous)
+	}
+	return nil
+}
+
 // Check HTTP response code, return error if HTTP request is not successed.
 func apiResponseChecker(statusCode int, response []byte, funcName string) error {
 
@@ -589,22 +662,27 @@ func (c *Client) findWorkingEnvironmentByName(name string, clientID string, isSa
 }
 
 // get WE directly from REST API using a given ID
-func (c *Client) findWorkingEnvironmentByID(id string, clientID string) (workingEnvironmentInfo, error) {
+func (c *Client) findWorkingEnvironmentByID(id string, clientID string, isSaas bool, connectorIP string) (workingEnvironmentInfo, error) {
 
-	workingEnvInfo, err := c.getWorkingEnvironmentInfo(id, clientID, true, "")
+	workingEnvInfo, err := c.getWorkingEnvironmentInfo(id, clientID, isSaas, connectorIP)
 	if err != nil {
 		return workingEnvironmentInfo{}, fmt.Errorf("cannot find working environment by working_environment_id %s", id)
 	}
-	workingEnvDetail, err := c.findWorkingEnvironmentByName(workingEnvInfo.Name, clientID, true, "")
+	workingEnvDetail, err := c.findWorkingEnvironmentByName(workingEnvInfo.Name, clientID, isSaas, connectorIP)
 	if err != nil {
 		return workingEnvironmentInfo{}, fmt.Errorf("cannot find working environment by working_environment_name %s", workingEnvInfo.Name)
 	}
 	return workingEnvDetail, nil
 }
 
-func (c *Client) getFSXWorkingEnvironmentInfo(tenantID string, id string, clientID string) (workingEnvironmentInfo, error) {
+func (c *Client) getFSXWorkingEnvironmentInfo(tenantID string, id string, clientID string, isSaas bool, connectorIP string) (workingEnvironmentInfo, error) {
 	baseURL := fmt.Sprintf("/fsx-ontap/working-environments/%s/%s", tenantID, id)
-	hostType := "CloudManagerHost"
+	hostType := ""
+	if isSaas {
+		hostType = "CloudManagerHost"
+	} else {
+		hostType = "http://" + connectorIP
+	}
 	var result workingEnvironmentInfo
 
 	if c.Token == "" {
@@ -720,12 +798,12 @@ func getAPIRootForWorkingEnvironment(isHA bool, workingEnvironmentID string) str
 }
 
 // read working environemnt information and return the details
-func (c *Client) getWorkingEnvironmentDetail(d *schema.ResourceData, clientID string) (workingEnvironmentInfo, error) {
+func (c *Client) getWorkingEnvironmentDetail(d *schema.ResourceData, clientID string, isSaas bool, connectorIP string) (workingEnvironmentInfo, error) {
 	var workingEnvDetail workingEnvironmentInfo
 	var err error
 
 	if a, ok := d.GetOk("file_system_id"); ok {
-		workingEnvDetail, err = c.getFSXWorkingEnvironmentInfo(d.Get("tenant_id").(string), a.(string), clientID)
+		workingEnvDetail, err = c.getFSXWorkingEnvironmentInfo(d.Get("tenant_id").(string), a.(string), clientID, isSaas, connectorIP)
 		if err != nil {
 			return workingEnvironmentInfo{}, fmt.Errorf("cannot find working environment by working_environment_id %s", a.(string))
 		}
@@ -734,12 +812,12 @@ func (c *Client) getWorkingEnvironmentDetail(d *schema.ResourceData, clientID st
 
 	if a, ok := d.GetOk("working_environment_id"); ok {
 		WorkingEnvironmentID := a.(string)
-		workingEnvDetail, err = c.findWorkingEnvironmentByID(WorkingEnvironmentID, clientID)
+		workingEnvDetail, err = c.findWorkingEnvironmentByID(WorkingEnvironmentID, clientID, isSaas, connectorIP)
 		if err != nil {
 			return workingEnvironmentInfo{}, fmt.Errorf("cannot find working environment by working_environment_id %s", WorkingEnvironmentID)
 		}
 	} else if a, ok = d.GetOk("working_environment_name"); ok {
-		workingEnvDetail, err = c.findWorkingEnvironmentByName(a.(string), clientID, true, "")
+		workingEnvDetail, err = c.findWorkingEnvironmentByName(a.(string), clientID, isSaas, connectorIP)
 		if err != nil {
 			return workingEnvironmentInfo{}, fmt.Errorf("cannot find working environment by working_environment_name %s", a.(string))
 		}

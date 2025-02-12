@@ -1,6 +1,7 @@
 ## 25.2.0 (unrelease)
 NEW FEATURES:
-* GCP CVO now supports Restricted mode.
+* resource/cvo for GCP CVO now supports Restricted mode.
+* resource/volume for GCP now supports Restricted mode.
 
 ## 25.1.0
 BUG FIXES:

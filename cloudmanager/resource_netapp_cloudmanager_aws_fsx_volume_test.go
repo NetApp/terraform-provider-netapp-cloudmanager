@@ -44,7 +44,7 @@ func testAccCheckFSXVolumeDestroy(state *terraform.State) error {
 		if v, ok := rs.Primary.Attributes["svm_name"]; ok {
 			svm = v
 		} else {
-			weInfo, err := client.getFSXWorkingEnvironmentInfo(rs.Primary.Attributes["tenant_id"], vol.FileSystemID, rs.Primary.Attributes["client_id"])
+			weInfo, err := client.getFSXWorkingEnvironmentInfo(rs.Primary.Attributes["tenant_id"], vol.FileSystemID, rs.Primary.Attributes["client_id"], true, "")
 			if err != nil {
 				return fmt.Errorf("Cannot find working environment")
 			}
@@ -52,7 +52,7 @@ func testAccCheckFSXVolumeDestroy(state *terraform.State) error {
 
 		}
 		vol.SvmName = svm
-		response, err := client.getVolumeByID(vol, rs.Primary.Attributes["client_id"])
+		response, err := client.getVolumeByID(vol, rs.Primary.Attributes["client_id"], true, "")
 		if err == nil {
 			if response.ID != "" {
 				return fmt.Errorf("volume (%s) still exists", response.ID)
@@ -83,7 +83,7 @@ func testAccCheckFSXVolumeExists(name string, volume *volumeResponse) resource.T
 			if v2, ok := rs.Primary.Attributes["svm_name"]; ok {
 				svm = v2
 			} else {
-				weInfo, err := client.getFSXWorkingEnvironmentInfo(rs.Primary.Attributes["tenant_id"], v, rs.Primary.Attributes["client_id"])
+				weInfo, err := client.getFSXWorkingEnvironmentInfo(rs.Primary.Attributes["tenant_id"], v, rs.Primary.Attributes["client_id"], true, "")
 				if err != nil {
 					return fmt.Errorf("Cannot find working environment")
 				}
@@ -93,7 +93,7 @@ func testAccCheckFSXVolumeExists(name string, volume *volumeResponse) resource.T
 
 			volume.SvmName = svm
 		}
-		response, err := client.getVolumeByID(vol, rs.Primary.Attributes["client_id"])
+		response, err := client.getVolumeByID(vol, rs.Primary.Attributes["client_id"], true, "")
 		if err != nil {
 			return err
 		}

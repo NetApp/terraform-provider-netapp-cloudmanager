@@ -109,7 +109,7 @@ func testAccCheckGCPVolumeDestroy(state *terraform.State) error {
 			}
 			vol.WorkingEnvironmentID = info.PublicID
 		}
-		response, err := client.getVolumeByID(vol, rs.Primary.Attributes["client_id"])
+		response, err := client.getVolumeByID(vol, rs.Primary.Attributes["client_id"], true, "")
 		if err == nil {
 			if response.ID != "" {
 				return fmt.Errorf("volume (%s) still exists", response.ID)
@@ -149,7 +149,7 @@ func testAccCheckVolumeExists(name string, volume *volumeResponse) resource.Test
 			vol.WorkingEnvironmentID = info.PublicID
 			vol.WorkingEnvironmentType = info.WorkingEnvironmentType
 		}
-		response, err := client.getVolumeByID(vol, rs.Primary.Attributes["client_id"])
+		response, err := client.getVolumeByID(vol, rs.Primary.Attributes["client_id"], true, "")
 		if err != nil {
 			return err
 		}

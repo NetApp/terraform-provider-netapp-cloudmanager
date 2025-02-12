@@ -111,7 +111,7 @@ func (c *Client) buildSnapMirrorCreate(snapMirror snapMirrorRequest, sourceWorki
 	volumeS.Name = snapMirror.ReplicationVolume.SourceVolumeName
 
 	if sourceWorkingEnvironmentType != "ON_PREM" {
-		volumeSource, err = c.getVolume(volumeS, clientID)
+		volumeSource, err = c.getVolume(volumeS, clientID, true, "")
 		if err != nil {
 			log.Print("Error reading source volume")
 			return snapMirrorRequest{}, err
@@ -152,7 +152,7 @@ func (c *Client) buildSnapMirrorCreate(snapMirror snapMirrorRequest, sourceWorki
 		if quote.ProviderVolumeType == "" {
 			return snapMirrorRequest{}, fmt.Errorf("provider_volume_type is required")
 		}
-		quoteResponse, err := c.quoteVolume(quote, clientID)
+		quoteResponse, err := c.quoteVolume(quote, clientID, true, "")
 		if err != nil {
 			log.Printf("Error quoting destination volume")
 			return snapMirrorRequest{}, err

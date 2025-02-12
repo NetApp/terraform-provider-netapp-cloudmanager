@@ -139,7 +139,7 @@ func resourceCVOCIFSCreate(d *schema.ResourceData, meta interface{}) error {
 	cifs.NetBIOS = d.Get("netbios").(string)
 	cifs.OrganizationalUnit = d.Get("organizational_unit").(string)
 
-	workingEnvDetail, err := client.getWorkingEnvironmentDetail(d, clientID)
+	workingEnvDetail, err := client.getWorkingEnvironmentDetail(d, clientID, true, "")
 	if err != nil {
 		return err
 	}
@@ -167,7 +167,7 @@ func resourceCVOCIFSRead(d *schema.ResourceData, meta interface{}) error {
 	clientID := d.Get("client_id").(string)
 	cifs := cifsRequest{}
 
-	workingEnvDetail, err := client.getWorkingEnvironmentDetail(d, clientID)
+	workingEnvDetail, err := client.getWorkingEnvironmentDetail(d, clientID, true, "")
 	if err != nil {
 		return err
 	}
@@ -205,7 +205,7 @@ func resourceCVOCIFSDelete(d *schema.ResourceData, meta interface{}) error {
 	if v, ok := d.GetOk("working_environment_id"); ok {
 		workingEnvironmentID = v.(string)
 	} else {
-		workingEnvDetail, err := client.getWorkingEnvironmentDetail(d, clientID)
+		workingEnvDetail, err := client.getWorkingEnvironmentDetail(d, clientID, true, "")
 		if err != nil {
 			return err
 		}
@@ -230,7 +230,7 @@ func resourceCVOCIFSExists(d *schema.ResourceData, meta interface{}) (bool, erro
 	clientID := d.Get("client_id").(string)
 	cifs := cifsRequest{}
 
-	workingEnvDetail, err := client.getWorkingEnvironmentDetail(d, clientID)
+	workingEnvDetail, err := client.getWorkingEnvironmentDetail(d, clientID, true, "")
 	if err != nil {
 		return false, err
 	}

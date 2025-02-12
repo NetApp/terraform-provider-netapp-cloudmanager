@@ -96,7 +96,7 @@ func resourceAggregateCreate(d *schema.ResourceData, meta interface{}) error {
 	clientID := d.Get("client_id").(string)
 	aggregate := createAggregateRequest{}
 
-	workingEnv, err := client.getWorkingEnvironmentDetail(d, clientID)
+	workingEnv, err := client.getWorkingEnvironmentDetail(d, clientID, true, "")
 	if err != nil {
 		return fmt.Errorf("cannot find working environment")
 	}
@@ -170,7 +170,7 @@ func resourceAggregateRead(d *schema.ResourceData, meta interface{}) error {
 	clientID := d.Get("client_id").(string)
 	aggregate := aggregateRequest{}
 
-	workingEnv, err := client.getWorkingEnvironmentDetail(d, clientID)
+	workingEnv, err := client.getWorkingEnvironmentDetail(d, clientID, true, "")
 	if err != nil {
 		return fmt.Errorf("cannot find working environment")
 	}
@@ -198,7 +198,7 @@ func resourceAggregateDelete(d *schema.ResourceData, meta interface{}) error {
 	clientID := d.Get("client_id").(string)
 	request := deleteAggregateRequest{}
 
-	workingEnvDetail, err := client.getWorkingEnvironmentDetail(d, clientID)
+	workingEnvDetail, err := client.getWorkingEnvironmentDetail(d, clientID, true, "")
 	if err != nil {
 		return fmt.Errorf("cannot find working environment")
 	}
@@ -220,7 +220,7 @@ func resourceAggregateUpdate(d *schema.ResourceData, meta interface{}) error {
 	clientID := d.Get("client_id").(string)
 	request := updateAggregateRequest{}
 
-	workingEnvDetail, err := client.getWorkingEnvironmentDetail(d, clientID)
+	workingEnvDetail, err := client.getWorkingEnvironmentDetail(d, clientID, true, "")
 	if err != nil {
 		return fmt.Errorf("cannot find working environment")
 	}
@@ -264,7 +264,7 @@ func resourceAggregateExists(d *schema.ResourceData, meta interface{}) (bool, er
 	clientID := d.Get("client_id").(string)
 	aggregate := aggregateRequest{}
 
-	workingEnv, err := client.getWorkingEnvironmentDetail(d, clientID)
+	workingEnv, err := client.getWorkingEnvironmentDetail(d, clientID, true, "")
 	if err != nil {
 		return false, fmt.Errorf("cannot find working environment")
 	}

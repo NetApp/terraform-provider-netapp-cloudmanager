@@ -118,7 +118,7 @@ func resourceFSXVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 	var svm string
 	volume := volumeRequest{}
 
-	weInfo, err := client.getWorkingEnvironmentDetail(d, clientID)
+	weInfo, err := client.getWorkingEnvironmentDetail(d, clientID, true, "")
 	if err != nil {
 		log.Printf("Cannot find working environment: %#v", err)
 		return fmt.Errorf("cannot find working environment: %#v", err)
@@ -148,12 +148,12 @@ func resourceFSXVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	err = client.createVolume(volume, false, clientID)
+	err = client.createVolume(volume, false, clientID, true, "")
 	if err != nil {
 		log.Printf("Error creating volume: %#v", err)
 		return err
 	}
-	res, err := client.getVolume(volume, clientID)
+	res, err := client.getVolume(volume, clientID, true, "")
 	if err != nil {
 		log.Printf("Error reading volume after creation: %#v", err)
 		return err
@@ -177,7 +177,7 @@ func resourceFSXVolumeRead(d *schema.ResourceData, meta interface{}) error {
 	if v, ok := d.GetOk("svm_name"); ok {
 		svm = v.(string)
 	} else {
-		weInfo, err := client.getWorkingEnvironmentDetail(d, clientID)
+		weInfo, err := client.getWorkingEnvironmentDetail(d, clientID, true, "")
 		if err != nil {
 			log.Printf("Cannot find working environment: %#v", err)
 			return fmt.Errorf("Cannot find working environment: %#v", err)
@@ -189,7 +189,7 @@ func resourceFSXVolumeRead(d *schema.ResourceData, meta interface{}) error {
 	volume.SvmName = svm
 	volume.Name = d.Get("name").(string)
 	volume.FileSystemID = d.Get("file_system_id").(string)
-	res, err := client.getVolume(volume, clientID)
+	res, err := client.getVolume(volume, clientID, true, "")
 	if err != nil {
 		log.Printf("Error reading volume: %#v", err)
 		return err
@@ -261,7 +261,7 @@ func resourceFSXVolumeDelete(d *schema.ResourceData, meta interface{}) error {
 	if v, ok := d.GetOk("svm_name"); ok {
 		svm = v.(string)
 	} else {
-		weInfo, err := client.getWorkingEnvironmentDetail(d, clientID)
+		weInfo, err := client.getWorkingEnvironmentDetail(d, clientID, true, "")
 		if err != nil {
 			log.Printf("Cannot find working environment: %#v", err)
 			return fmt.Errorf("Cannot find working environment: %#v", err)
@@ -273,7 +273,7 @@ func resourceFSXVolumeDelete(d *schema.ResourceData, meta interface{}) error {
 
 	volume.Name = d.Get("name").(string)
 
-	err := client.deleteVolume(volume, clientID)
+	err := client.deleteVolume(volume, clientID, true, "")
 	if err != nil {
 		log.Printf("Error deleting volume: %#v", err)
 		return err
@@ -297,7 +297,7 @@ func resourceFSXVolumeUpdate(d *schema.ResourceData, meta interface{}) error {
 		volume.ExportPolicyInfo.Ips = ips
 	}
 
-	weInfo, err := client.getWorkingEnvironmentDetail(d, clientID)
+	weInfo, err := client.getWorkingEnvironmentDetail(d, clientID, true, "")
 	if err != nil {
 		log.Printf("Cannot find working environment: %#v", err)
 		return fmt.Errorf("Cannot find working environment: %#v", err)
@@ -323,7 +323,7 @@ func resourceFSXVolumeUpdate(d *schema.ResourceData, meta interface{}) error {
 		}
 		volume.ShareInfoUpdate.AccessControlList[0].Users = users
 	}
-	err = client.updateVolume(volume, clientID)
+	err = client.updateVolume(volume, clientID, true, "")
 	if err != nil {
 		log.Printf("Error updating volume: %#v", err)
 		return err

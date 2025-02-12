@@ -42,6 +42,7 @@ type volumeRequest struct {
 	VolumeTags                []volumeTag            `structs:"volumeTags,omitempty"`
 	VolumeFSXTags             []volumeTag            `structs:"awsTags,omitempty"`
 	Comment                   string                 `structs:"comment,omitempty"`
+	ConnectorIP               string
 }
 
 type volumeResponse struct {
@@ -136,6 +137,7 @@ type quoteRequest struct {
 	Iops                   int              `structs:"iops,omitempty"`
 	Throughput             int              `structs:"throughput,omitempty"`
 	WorkingEnvironmentType string           `structs:"workingEnvironmentType"`
+	ConnectorIP            string
 }
 
 type shareInfoRequest struct {
@@ -202,14 +204,14 @@ type scheduleReq struct {
 	Retention    int    `structs:"retention"`
 }
 
-func (c *Client) createVolume(vol volumeRequest, createAggregateIfNotFound bool, clientID string) error {
+func (c *Client) createVolume(vol volumeRequest, createAggregateIfNotFound bool, clientID string, isSaas bool, connectorIP string) error {
 	var id string
 	if vol.FileSystemID != "" {
 		id = vol.FileSystemID
 	} else {
 		id = vol.WorkingEnvironmentID
 	}
-	baseURL, _, err := c.getAPIRoot(id, clientID, true, "")
+	baseURL, _, err := c.getAPIRoot(id, clientID, isSaas, connectorIP)
 	if err != nil {
 		return err
 	}
@@ -218,7 +220,14 @@ func (c *Client) createVolume(vol volumeRequest, createAggregateIfNotFound bool,
 	} else {
 		baseURL = fmt.Sprintf("%s/volumes?createAggregateIfNotFound=%s", baseURL, strconv.FormatBool(createAggregateIfNotFound))
 	}
-	hostType := "CloudManagerHost"
+
+	hostType := ""
+	if isSaas {
+		hostType = "CloudManagerHost"
+	} else {
+		hostType = "http://" + connectorIP
+	}
+
 	param := structs.Map(vol)
 	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("POST", baseURL, param, c.Token, hostType, clientID)
 	if err != nil {
@@ -229,27 +238,35 @@ func (c *Client) createVolume(vol volumeRequest, createAggregateIfNotFound bool,
 	if responseError != nil {
 		return responseError
 	}
-	err = c.waitOnCompletion(onCloudRequestID, "volume", "create", 40, 10, clientID)
-	if err != nil {
-		return err
+
+	if isSaas {
+		err = c.waitOnCompletion(onCloudRequestID, "volume", "create", 40, 10, clientID)
+	} else {
+		err = c.waitOnCompletionForNotSaas(onCloudRequestID, "volume", "create", 40, 10, clientID, connectorIP)
 	}
 
-	return nil
+	return err
 }
 
-func (c *Client) deleteVolume(vol volumeRequest, clientID string) error {
+func (c *Client) deleteVolume(vol volumeRequest, clientID string, isSaas bool, connectorIP string) error {
 	var id string
 	if vol.FileSystemID != "" {
 		id = vol.FileSystemID
 	} else {
 		id = vol.WorkingEnvironmentID
 	}
-	baseURL, _, err := c.getAPIRoot(id, clientID, true, "")
+	baseURL, _, err := c.getAPIRoot(id, clientID, isSaas, connectorIP)
 	if err != nil {
 		return err
 	}
 	baseURL = fmt.Sprintf("%s/volumes/%s/%s/%s", baseURL, id, vol.SvmName, vol.Name)
-	hostType := "CloudManagerHost"
+
+	hostType := ""
+	if isSaas {
+		hostType = "CloudManagerHost"
+	} else {
+		hostType = "http://" + connectorIP
+	}
 
 	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("DELETE", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
@@ -262,24 +279,33 @@ func (c *Client) deleteVolume(vol volumeRequest, clientID string) error {
 	}
 
 	log.Print("Wait for volume deletion.")
-	err = c.waitOnCompletion(onCloudRequestID, "volume", "delete", 10, 60, clientID)
-	if err != nil {
-		log.Print("deleteVolume request failed ", statusCode)
-		return err
+
+	if isSaas {
+		err = c.waitOnCompletion(onCloudRequestID, "volume", "delete", 60, 10, clientID)
+	} else {
+		err = c.waitOnCompletionForNotSaas(onCloudRequestID, "volume", "delete", 60, 10, clientID, connectorIP)
 	}
-	return nil
+
+	return err
 }
 
-func (c *Client) getVolume(vol volumeRequest, clientID string) ([]volumeResponse, error) {
+func (c *Client) getVolume(vol volumeRequest, clientID string, isSaas bool, connectorIP string) ([]volumeResponse, error) {
 	var result []volumeResponse
-	hostType := "CloudManagerHost"
+
+	hostType := ""
+	if isSaas {
+		hostType = "CloudManagerHost"
+	} else {
+		hostType = "http://" + connectorIP
+	}
+
 	var id string
 	if vol.FileSystemID != "" {
 		id = vol.FileSystemID
 	} else {
 		id = vol.WorkingEnvironmentID
 	}
-	baseURL, _, err := c.getAPIRoot(id, clientID, true, "")
+	baseURL, _, err := c.getAPIRoot(id, clientID, isSaas, connectorIP)
 	if err != nil {
 		return result, err
 	}
@@ -328,8 +354,8 @@ func (c *Client) getVolumeForOnPrem(vol volumeRequest, clientID string) ([]volum
 	return result, nil
 }
 
-func (c *Client) getVolumeByID(request volumeRequest, clientID string) (volumeResponse, error) {
-	res, err := c.getVolume(request, clientID)
+func (c *Client) getVolumeByID(request volumeRequest, clientID string, isSaas bool, connectorIP string) (volumeResponse, error) {
+	res, err := c.getVolume(request, clientID, isSaas, connectorIP)
 	if err != nil {
 		return volumeResponse{}, err
 	}
@@ -341,15 +367,21 @@ func (c *Client) getVolumeByID(request volumeRequest, clientID string) (volumeRe
 	return volumeResponse{}, fmt.Errorf("error fetching volume: volume doesn't exist")
 }
 
-func (c *Client) updateVolume(request volumeRequest, clientID string) error {
-	hostType := "CloudManagerHost"
+func (c *Client) updateVolume(request volumeRequest, clientID string, isSaas bool, connectorIP string) error {
+	hostType := ""
+	if isSaas {
+		hostType = "CloudManagerHost"
+	} else {
+		hostType = "http://" + connectorIP
+	}
+
 	var id string
 	if request.FileSystemID != "" {
 		id = request.FileSystemID
 	} else {
 		id = request.WorkingEnvironmentID
 	}
-	baseURL, _, err := c.getAPIRoot(id, clientID, true, "")
+	baseURL, _, err := c.getAPIRoot(id, clientID, isSaas, connectorIP)
 	if err != nil {
 		return err
 	}
@@ -367,16 +399,24 @@ func (c *Client) updateVolume(request volumeRequest, clientID string) error {
 		return err
 	}
 
-	err = c.waitOnCompletion(onCloudRequestID, "volume", "update", 40, 10, clientID)
-	if err != nil {
-		return err
+	if isSaas {
+		err = c.waitOnCompletion(onCloudRequestID, "volume", "update", 40, 10, clientID)
+	} else {
+		err = c.waitOnCompletionForNotSaas(onCloudRequestID, "volume", "update", 40, 10, clientID, connectorIP)
 	}
-	return nil
+
+	return err
 }
 
-func (c *Client) quoteVolume(request quoteRequest, clientID string) (map[string]interface{}, error) {
-	hostType := "CloudManagerHost"
-	baseURL, _, err := c.getAPIRoot(request.WorkingEnvironmentID, clientID, true, "")
+func (c *Client) quoteVolume(request quoteRequest, clientID string, isSaas bool, connectorIP string) (map[string]interface{}, error) {
+	hostType := ""
+	if isSaas {
+		hostType = "CloudManagerHost"
+	} else {
+		hostType = "http://" + connectorIP
+	}
+
+	baseURL, _, err := c.getAPIRoot(request.WorkingEnvironmentID, clientID, isSaas, connectorIP)
 	if err != nil {
 		return nil, err
 	}
@@ -398,9 +438,15 @@ func (c *Client) quoteVolume(request quoteRequest, clientID string) (map[string]
 
 }
 
-func (c *Client) createInitiator(request initiator, clientID string) error {
-	hostType := "CloudManagerHost"
-	baseURL, _, err := c.getAPIRoot(request.WorkingEnvironmentID, clientID, true, "")
+func (c *Client) createInitiator(request initiator, clientID string, isSaas bool, connectorIP string) error {
+	hostType := ""
+	if isSaas {
+		hostType = "CloudManagerHost"
+	} else {
+		hostType = "http://" + connectorIP
+	}
+
+	baseURL, _, err := c.getAPIRoot(request.WorkingEnvironmentID, clientID, isSaas, connectorIP)
 	if err != nil {
 		return err
 	}
@@ -418,9 +464,15 @@ func (c *Client) createInitiator(request initiator, clientID string) error {
 	return nil
 }
 
-func (c *Client) getInitiator(request initiator, clientID string) ([]initiator, error) {
-	hostType := "CloudManagerHost"
-	baseURL, _, err := c.getAPIRoot(request.WorkingEnvironmentID, clientID, true, "")
+func (c *Client) getInitiator(request initiator, clientID string, isSaas bool, connectorIP string) ([]initiator, error) {
+	hostType := ""
+	if isSaas {
+		hostType = "CloudManagerHost"
+	} else {
+		hostType = "http://" + connectorIP
+	}
+
+	baseURL, _, err := c.getAPIRoot(request.WorkingEnvironmentID, clientID, isSaas, connectorIP)
 	var result []initiator
 	if err != nil {
 		return result, err
@@ -453,9 +505,15 @@ type igroup struct {
 	WorkingEnvironmentType string   `structs:"workingEnvironmentType,omitempty"`
 }
 
-func (c *Client) getIgroups(request igroup, clientID string) ([]igroup, error) {
-	hostType := "CloudManagerHost"
-	baseURL, _, err := c.getAPIRoot(request.WorkingEnvironmentID, clientID, true, "")
+func (c *Client) getIgroups(request igroup, clientID string, isSaas bool, connectorIP string) ([]igroup, error) {
+	hostType := ""
+	if isSaas {
+		hostType = "CloudManagerHost"
+	} else {
+		hostType = "http://" + connectorIP
+	}
+
+	baseURL, _, err := c.getAPIRoot(request.WorkingEnvironmentID, clientID, isSaas, connectorIP)
 	var result []igroup
 	if err != nil {
 		return result, err
@@ -482,9 +540,15 @@ func (c *Client) getIgroups(request igroup, clientID string) ([]igroup, error) {
 	return result, nil
 }
 
-func (c *Client) checkCifsExists(workingEnvironmentType string, id string, svm string, clientID string) (bool, error) {
-	hostType := "CloudManagerHost"
-	baseURL, _, err := c.getAPIRoot(id, clientID, true, "")
+func (c *Client) checkCifsExists(workingEnvironmentType string, id string, svm string, clientID string, isSaas bool, connectorIP string) (bool, error) {
+	hostType := ""
+	if isSaas {
+		hostType = "CloudManagerHost"
+	} else {
+		hostType = "http://" + connectorIP
+	}
+
+	baseURL, _, err := c.getAPIRoot(id, clientID, isSaas, connectorIP)
 	var result []map[string]interface{}
 	if err != nil {
 		return false, err
@@ -562,7 +626,7 @@ func (c *Client) setCommonAttributes(WorkingEnvironmentType string, d *schema.Re
 	volumeProtocol := d.Get("volume_protocol").(string)
 	if volumeProtocol == "cifs" {
 
-		exist, err := c.checkCifsExists(WorkingEnvironmentType, weid, volume.SvmName, clientID)
+		exist, err := c.checkCifsExists(WorkingEnvironmentType, weid, volume.SvmName, clientID, true, "")
 		if err != nil {
 			return err
 		}
@@ -587,7 +651,7 @@ func (c *Client) setCommonAttributes(WorkingEnvironmentType string, d *schema.Re
 }
 
 // createSnapshotPolicy
-func (c *Client) createSnapshotPolicy(workingEnviromentID string, snapshotPolicyName string, set *schema.Set, clientID string) error {
+func (c *Client) createSnapshotPolicy(workingEnviromentID string, snapshotPolicyName string, set *schema.Set, clientID string, isSaas bool, connectorIP string) error {
 	log.Print("createSnapshotPolicy: ", snapshotPolicyName)
 	snapshotPolicy := createSnapshotPolicyRequest{}
 	snapshotPolicy.SnapshotPolicyName = snapshotPolicyName
@@ -606,8 +670,15 @@ func (c *Client) createSnapshotPolicy(workingEnviromentID string, snapshotPolicy
 		}
 		snapshotPolicy.Schedules = scheduleConfigs
 	}
-	baseURL, _, err := c.getAPIRoot(snapshotPolicy.WorkingEnvironmentID, clientID, true, "")
-	hostType := "CloudManagerHost"
+	baseURL, _, err := c.getAPIRoot(snapshotPolicy.WorkingEnvironmentID, clientID, isSaas, connectorIP)
+
+	hostType := ""
+	if isSaas {
+		hostType = "CloudManagerHost"
+	} else {
+		hostType = "http://" + connectorIP
+	}
+
 	if err != nil {
 		return err
 	}
@@ -622,20 +693,27 @@ func (c *Client) createSnapshotPolicy(workingEnviromentID string, snapshotPolicy
 	if responseError != nil {
 		return responseError
 	}
-	err = c.waitOnCompletion(onCloudRequestID, "snapshotPolicy", "create", 10, 10, clientID)
+
+	if isSaas {
+		err = c.waitOnCompletion(onCloudRequestID, "snapshotPolicy", "create", 10, 10, clientID)
+
+	} else {
+		err = c.waitOnCompletionForNotSaas(onCloudRequestID, "snapshotPolicy", "create", 10, 10, clientID, connectorIP)
+	}
 	if err != nil {
 		return err
 	}
 
-	if c.findSnapshotPolicy(workingEnviromentID, snapshotPolicyName, clientID) {
+	if c.findSnapshotPolicy(workingEnviromentID, snapshotPolicyName, clientID, isSaas, connectorIP) {
 		return nil
 	}
+
 	return fmt.Errorf("create snapshot policy failed")
 }
 
 // findSnapshotPolicy
-func (c *Client) findSnapshotPolicy(workingEnviromentID string, snapshotPolicyName string, clientID string) bool {
-	resp, err := c.getCVOProperties(workingEnviromentID, clientID, true, "")
+func (c *Client) findSnapshotPolicy(workingEnviromentID string, snapshotPolicyName string, clientID string, isSaas bool, connectorIP string) bool {
+	resp, err := c.getCVOProperties(workingEnviromentID, clientID, isSaas, connectorIP)
 	if err != nil {
 		log.Print("cannot find working environment ", workingEnviromentID)
 		return false

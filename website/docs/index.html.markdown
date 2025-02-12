@@ -30,11 +30,13 @@ and therefore may undergo significant changes as the community improves it.
 ## Deployment Modes
 
 ### Standard Mode
-* Supported in all available resources.
+* All available resources.
 
 ### Restricted Mode
-* Supported in GCP and Azure connector resources.
-* Supported in GCP CVO resource.
+* GCP and Azure connector resources.
+* GCP CVO resource.
+* GCP in volume resource.
+* GCP in aggregate resource.
 
 ## Example Usage
 

@@ -166,14 +166,11 @@ func (c *Client) createCVOGCP(cvoDetails createCVOGCPDetails, clientID string, i
 
 	if isSaas {
 		err = c.waitOnCompletion(onCloudRequestID, "CVO", "create", CreationRetries, 60, clientID)
-		if err != nil {
-			return cvoResult{}, err
-		}
 	} else {
 		err = c.waitOnCompletionForNotSaas(onCloudRequestID, "CVO", "create", CreationRetries, 60, clientID, cvoDetails.ConnectorIP)
-		if err != nil {
-			return cvoResult{}, err
-		}
+	}
+	if err != nil {
+		return cvoResult{}, err
 	}
 
 	var result cvoResult
@@ -222,11 +219,7 @@ func (c *Client) deleteCVOGCP(id string, isHA bool, clientID string, isSaas bool
 		err = c.waitOnCompletionForNotSaas(onCloudRequestID, "CVO", "delete", 40, 60, clientID, connectorIP)
 	}
 
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 // This is used on GCP CVO HA only
