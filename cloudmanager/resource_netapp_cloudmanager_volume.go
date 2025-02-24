@@ -332,7 +332,7 @@ func resourceCVOVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 				}
 			}
 		}
-		// exmaple of the export policy info in volume creation from the UI timeline. Be aware that it might be out of date as time changes.
+		// example of the export policy info in volume creation from the UI timeline. Be aware that it might be out of date as time changes.
 		// Note that for update, export policy info has different structure.
 		// "exportPolicyInfo": {
 		// 	"policyType": "custom",

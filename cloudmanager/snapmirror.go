@@ -217,7 +217,7 @@ func (c *Client) buildQuoteRequest(snapMirror snapMirrorRequest, vol volumeRespo
 			quote.Throughput = snapMirror.ReplicationVolume.Throughput
 		}
 	} else {
-		aggregate, err := c.getAggregate(aggregateRequest{WorkingEnvironmentID: sourceWorkingEnvironmentID}, vol.AggregateName, sourceWorkingEnvironmentType, clientID)
+		aggregate, err := c.getAggregate(aggregateRequest{WorkingEnvironmentID: sourceWorkingEnvironmentID}, vol.AggregateName, sourceWorkingEnvironmentType, clientID, true, "")
 		if err != nil {
 			log.Printf("Error getting aggregate. aggregate name = %v", vol.AggregateName)
 		}

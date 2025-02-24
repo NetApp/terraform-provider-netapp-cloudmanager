@@ -2,6 +2,7 @@
 NEW FEATURES:
 * resource/cvo for GCP CVO now supports Restricted mode.
 * resource/volume for GCP now supports Restricted mode.
+* Aggregate resource support Restricted mode.
 
 ## 25.1.0
 BUG FIXES:
@@ -190,7 +191,7 @@ NEW FEATURES:
 NEW ENHANCEMENTS:
 * resource/connector_azure: display the deployed virtual machine principal_id in state file on the connector azure creation.
 * resource/cvo_azure: add `availability_zone_node1` and `availability_zone_node2` to support HA deployment.
-* resoruce/cvo_azure: add new support value "Premium_ZRS" in paramter `storage_type`.
+* resoruce/cvo_azure: add new support value "Premium_ZRS" in parameter `storage_type`.
 
 ## 22.9.1
 NEW FEATURES:

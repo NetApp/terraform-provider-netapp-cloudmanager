@@ -62,7 +62,7 @@ func testAccCheckAggregateDestroy(state *terraform.State) error {
 		if err != nil {
 			return err
 		}
-		response, err := client.getAggregate(aggregate, id, workingEnvDetail.WorkingEnvironmentType, clientID)
+		response, err := client.getAggregate(aggregate, id, workingEnvDetail.WorkingEnvironmentType, clientID, true, "")
 		if err == nil {
 			if response.Name != "" {
 				return fmt.Errorf("aggregate (%s) still exists", id)
@@ -104,7 +104,7 @@ func testAccCheckAggregateExists(name string, aggregate *aggregateResult) resour
 		if err != nil {
 			return err
 		}
-		response, err := client.getAggregate(aggr, id, workingEnvDetail.WorkingEnvironmentType, clientID)
+		response, err := client.getAggregate(aggr, id, workingEnvDetail.WorkingEnvironmentType, clientID, true, "")
 		if err != nil {
 			return err
 		}

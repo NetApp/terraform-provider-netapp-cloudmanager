@@ -96,24 +96,24 @@ type ontapClusterProperties struct {
 	WritingSpeedState                string                `json:"writingSpeedState"`
 }
 
-// commond fields of GCP properties and Azure properties
+// common fields of GCP properties and Azure properties
 type providerProperties struct {
-	RegionName   string `json:"regionrName"`
+	RegionName   string `json:"regionName"`
 	InstanceType string `json:"instanceType"`
 	NumOfNics    int    `json:"numOfNics"`
 }
 
-type gcpProperties struct {
-	Name           string      `json:"name"`
-	RegionName     string      `json:"regionrName"`
-	ZoneName       []string    `json:"zoneName"`
-	InstanceType   string      `json:"instanceType"`
-	SubnetCidr     string      `json:"subnetCidr"`
-	NumOfNics      int         `json:"numOfNics"`
-	Labels         interface{} `json:"labels"`
-	ProjectName    string      `json:"projectName"`
-	DeploymentName string      `json:"deploymentName"`
-}
+// type gcpProperties struct {
+// 	Name           string      `json:"name"`
+// 	RegionName     string      `json:"regionName"`
+// 	ZoneName       []string    `json:"zoneName"`
+// 	InstanceType   string      `json:"instanceType"`
+// 	SubnetCidr     string      `json:"subnetCidr"`
+// 	NumOfNics      int         `json:"numOfNics"`
+// 	Labels         interface{} `json:"labels"`
+// 	ProjectName    string      `json:"projectName"`
+// 	DeploymentName string      `json:"deploymentName"`
+// }
 
 type haProperties struct {
 	FailoverMode             interface{}   `json:"failoverMode"`
@@ -132,7 +132,7 @@ type broadcastDomainInfo struct {
 type capacityTierInfo struct {
 	CapacityTierUsedSize capacityLimit `json:"capacityTierUsedSize"`
 	S3BucketName         string        `json:"s3BucketName"`
-	TierLevel            string        `json:"tierLeve"`
+	TierLevel            string        `json:"tierLevel"`
 }
 
 type node struct {
@@ -217,7 +217,7 @@ type userTags struct {
 	TagValue string `structs:"tagValue,omitempty"`
 }
 
-// modifyUserTagsRequest the input for requesting tags modificaiton
+// modifyUserTagsRequest the input for requesting tags modification
 type modifyUserTagsRequest struct {
 	Tags []userTags `structs:"tags"`
 }
@@ -296,7 +296,7 @@ func (c *Client) checkDeploymentMode(d *schema.ResourceData, clientID string) (b
 	if deployment, ok := d.GetOk("deployment_mode"); ok {
 		deploymentMode = deployment.(string)
 	}
-	if acnt, ok := d.GetOk("tenant_account_id"); ok {
+	if acnt, ok := d.GetOk("tenant_id"); ok {
 		accessTokenResult, err := c.getAccessToken()
 		if err != nil {
 			c.revertDeploymentModeParameters(d, clientID)
@@ -304,7 +304,7 @@ func (c *Client) checkDeploymentMode(d *schema.ResourceData, clientID string) (b
 		}
 		c.Token = accessTokenResult.Token
 		c.AccountID = acnt.(string)
-		// check if the tenant_account_id is SaaS
+		// check if the tenant_id is SaaS
 		account, err := c.getAccountDetails(clientID)
 		if err != nil {
 			c.revertDeploymentModeParameters(d, clientID)
@@ -320,11 +320,11 @@ func (c *Client) checkDeploymentMode(d *schema.ResourceData, clientID string) (b
 	if deploymentMode == "Restricted" {
 		if c.AccountID == "" {
 			c.revertDeploymentModeParameters(d, clientID)
-			return false, "", fmt.Errorf("tenant_account_id is required for deployment_mode Restricted")
+			return false, "", fmt.Errorf("tenant_id is required for deployment_mode Restricted")
 		}
 		if isSaaS {
 			c.revertDeploymentModeParameters(d, clientID)
-			return false, "", fmt.Errorf("the tenant_account_id %s is not a Restricted mode account", c.AccountID)
+			return false, "", fmt.Errorf("the tenant_id %s is not a Restricted mode account", c.AccountID)
 		}
 		if connectorIP == "" {
 			c.revertDeploymentModeParameters(d, clientID)
@@ -337,22 +337,22 @@ func (c *Client) checkDeploymentMode(d *schema.ResourceData, clientID string) (b
 		}
 		if !isSaaS {
 			c.revertDeploymentModeParameters(d, clientID)
-			return false, "", fmt.Errorf("the tenant_account_id %s is not in Standard mode account", c.AccountID)
+			return false, "", fmt.Errorf("the tenant_id %s is not in Standard mode account", c.AccountID)
 		}
 	}
 	log.Printf("=== deployment_mode: %s ===", deploymentMode)
 	return isSaaS, connectorIP, nil
 }
 
-// revert the configuration of deployment_mode, tenant_account_id, and connector_ip to the previous state
+// revert the configuration of deployment_mode, tenant_id, and connector_ip to the previous state
 func (c *Client) revertDeploymentModeParameters(d *schema.ResourceData, clientID string) error {
 	if d.HasChange("deployment_mode") {
 		previous, _ := d.GetChange("deployment_mode")
 		d.Set("deployment_mode", previous)
 	}
-	if d.HasChange("tenant_account_id") {
-		previous, _ := d.GetChange("tenant_account_id")
-		d.Set("tenant_account_id", previous)
+	if d.HasChange("tenant_id") {
+		previous, _ := d.GetChange("tenant_id")
+		d.Set("tenant_id", previous)
 	}
 	if d.HasChange("connector_ip") {
 		previous, _ := d.GetChange("connector_ip")
@@ -361,7 +361,7 @@ func (c *Client) revertDeploymentModeParameters(d *schema.ResourceData, clientID
 	return nil
 }
 
-// Check HTTP response code, return error if HTTP request is not successed.
+// Check HTTP response code, return error if HTTP request is not successful.
 func apiResponseChecker(statusCode int, response []byte, funcName string) error {
 
 	if statusCode >= 300 || statusCode < 200 {
@@ -669,20 +669,20 @@ func (c *Client) findWorkingEnvironmentByID(id string, clientID string, isSaas b
 		return workingEnvironmentInfo{}, fmt.Errorf("cannot find working environment by working_environment_id %s", id)
 	}
 	workingEnvDetail, err := c.findWorkingEnvironmentByName(workingEnvInfo.Name, clientID, isSaas, connectorIP)
+
 	if err != nil {
 		return workingEnvironmentInfo{}, fmt.Errorf("cannot find working environment by working_environment_name %s", workingEnvInfo.Name)
 	}
 	return workingEnvDetail, nil
 }
 
-func (c *Client) getFSXWorkingEnvironmentInfo(tenantID string, id string, clientID string, isSaas bool, connectorIP string) (workingEnvironmentInfo, error) {
+func (c *Client) getFSXWorkingEnvironmentInfo(tenantID string, id string, clientID string, isSaaS bool, connectorIP string) (workingEnvironmentInfo, error) {
 	baseURL := fmt.Sprintf("/fsx-ontap/working-environments/%s/%s", tenantID, id)
-	hostType := ""
-	if isSaas {
-		hostType = "CloudManagerHost"
-	} else {
+	hostType := "CloudManagerHost"
+	if !isSaaS {
 		hostType = "http://" + connectorIP
 	}
+
 	var result workingEnvironmentInfo
 
 	if c.Token == "" {
@@ -797,13 +797,14 @@ func getAPIRootForWorkingEnvironment(isHA bool, workingEnvironmentID string) str
 	return baseURL
 }
 
-// read working environemnt information and return the details
+// read working environment information and return the details
 func (c *Client) getWorkingEnvironmentDetail(d *schema.ResourceData, clientID string, isSaas bool, connectorIP string) (workingEnvironmentInfo, error) {
 	var workingEnvDetail workingEnvironmentInfo
 	var err error
 
 	if a, ok := d.GetOk("file_system_id"); ok {
 		workingEnvDetail, err = c.getFSXWorkingEnvironmentInfo(d.Get("tenant_id").(string), a.(string), clientID, isSaas, connectorIP)
+
 		if err != nil {
 			return workingEnvironmentInfo{}, fmt.Errorf("cannot find working environment by working_environment_id %s", a.(string))
 		}
@@ -813,17 +814,19 @@ func (c *Client) getWorkingEnvironmentDetail(d *schema.ResourceData, clientID st
 	if a, ok := d.GetOk("working_environment_id"); ok {
 		WorkingEnvironmentID := a.(string)
 		workingEnvDetail, err = c.findWorkingEnvironmentByID(WorkingEnvironmentID, clientID, isSaas, connectorIP)
+
 		if err != nil {
 			return workingEnvironmentInfo{}, fmt.Errorf("cannot find working environment by working_environment_id %s", WorkingEnvironmentID)
 		}
 	} else if a, ok = d.GetOk("working_environment_name"); ok {
 		workingEnvDetail, err = c.findWorkingEnvironmentByName(a.(string), clientID, isSaas, connectorIP)
+
 		if err != nil {
 			return workingEnvironmentInfo{}, fmt.Errorf("cannot find working environment by working_environment_name %s", a.(string))
 		}
 		log.Printf("Get environment id %v by %v", workingEnvDetail.PublicID, a.(string))
 	} else {
-		return workingEnvironmentInfo{}, fmt.Errorf("cannot find working environment by working_enviroment_id or working_environment_name")
+		return workingEnvironmentInfo{}, fmt.Errorf("cannot find working environment by working_environment_id or working_environment_name")
 	}
 	return workingEnvDetail, nil
 }
@@ -901,7 +904,7 @@ func (c *Client) getAWSFSXByName(name string, tenantID string, clientID string) 
 	return "", nil
 }
 
-// read working environemnt information and return the details
+// read working environment information and return the details
 func (c *Client) getWorkingEnvironmentDetailForSnapMirror(d *schema.ResourceData, clientID string) (workingEnvironmentInfo, workingEnvironmentInfo, error) {
 	var sourceWorkingEnvDetail workingEnvironmentInfo
 	var destWorkingEnvDetail workingEnvironmentInfo
