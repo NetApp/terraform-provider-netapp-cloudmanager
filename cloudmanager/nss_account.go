@@ -49,11 +49,11 @@ func (c *Client) getNssAccount(nssUserName string, clientID string) (map[string]
 	hostType := "CloudManagerHost"
 	baseURL := fmt.Sprint("/occm/api/accounts")
 	if c.Token == "" {
-		accesTokenResult, err := c.getAccessToken()
+		accessTokenResult, err := c.getAccessToken()
 		if err != nil {
 			return nil, err
 		}
-		c.Token = accesTokenResult.Token
+		c.Token = accessTokenResult.Token
 	}
 	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {

@@ -14,6 +14,30 @@ NFS, CIFS, and iSCSI volumes are supported.
 
 ## Example Usages
 
+**Create netapp-cloudmanager_volume for restricted mode:**
+
+```
+ "netapp-cloudmanager_volume" "cvo-volume-restricted" {
+  provider = netapp-cloudmanager
+  name = "test_vol"
+  size = 10
+  unit = "GB"
+  snapshot_policy_name = "default"
+  working_environment_name = "tfgcprestricted"
+  provider_volume_type = "pd-standard"
+  export_policy_type = "custom"
+  export_policy_ip = ["0.0.0.0/0"]
+  export_policy_nfs_version = ["nfs3"]
+  export_policy_rule_access_control = "readwrite"
+  export_policy_rule_super_user = true
+  comment = "test"
+  client_id = netapp-cloudmanager_connector_gcp.cm-gcp.client_id
+  deployment_mode = "Restricted"
+  connector_ip = "10.10.10.10"
+  tenant_id = "account-22Vu41zs"
+}
+```
+
 **Create netapp-cloudmanager_volume of type NFS:**
 
 ```
@@ -113,6 +137,9 @@ The following arguments are supported:
 * `size_unit` - (Required) ['Byte' or 'KB' or 'MB' or 'GB' or 'TB'].
 * `provider_volume_type` - (Required) The underlying cloud provider volume type. For AWS: ['gp3', 'gp2', 'io1', 'st1', 'sc1'] (ebs_volume_type on AWS CVO). For Azure: ['Premium_LRS','Standard_LRS','StandardSSD_LRS', 'Premium_ZRS'] (storage_type on Azure CVO). For GCP: ['pd-balanced', 'pd-ssd','pd-standard'] (gcp_volume_type on GCP CVO). For onPrem: 'onprem'.
 * `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
+* `connector_ip` - (Optional) The private IP of the connector, this is only required for Restricted mode.
+* `tenant_id` - (Optional) The NetApp tenant ID that the Connector will be associated with.  You can find the tenant ID in the Identity & Access Management in Settings, Organization tab of BlueXP at [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
+* `deployment_mode` - (Optional) The mode of deployment to use for the working environment: ['Standard', 'Restricted']. The default is 'Standard'. To know more on deployment modes [https://docs.netapp.com/us-en/bluexp-setup-admin/concept-modes.html/](https://docs.netapp.com/us-en/bluexp-setup-admin/concept-modes.html/).
 * `enable_thin_provisioning` - (Optional) Enable thin provisioning.
 * `enable_compression` - (Optional) Enable compression.
 * `enable_deduplication` - (Optional) Enable deduplication.

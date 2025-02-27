@@ -1,3 +1,13 @@
+## 25.2.0
+NEW FEATURES:
+* resource/cvo supports Restricted mode for GCP.
+* resource/volume supports Restricted mode for GCP.
+* resource/snapmirror supports Restricted mode for GCP.
+* resource/aggregate supports Restricted mode for GCP.
+
+BUG FIXES:
+* add exponential backoff retries to task status check for handling status 504 case.
+
 ## 25.1.0
 BUG FIXES:
 * Update document with proper version terraform 1.1.0 and Go 1.21.
@@ -185,7 +195,7 @@ NEW FEATURES:
 NEW ENHANCEMENTS:
 * resource/connector_azure: display the deployed virtual machine principal_id in state file on the connector azure creation.
 * resource/cvo_azure: add `availability_zone_node1` and `availability_zone_node2` to support HA deployment.
-* resoruce/cvo_azure: add new support value "Premium_ZRS" in paramter `storage_type`.
+* resoruce/cvo_azure: add new support value "Premium_ZRS" in parameter `storage_type`.
 
 ## 22.9.1
 NEW FEATURES:

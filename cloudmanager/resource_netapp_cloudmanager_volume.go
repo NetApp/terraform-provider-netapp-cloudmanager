@@ -162,6 +162,20 @@ func resourceCVOVolume() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"deployment_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Standard", "Restricted"}, false),
+				Default:      "Standard",
+			},
+			"connector_ip": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"tenant_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"initiator": {
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -221,12 +235,19 @@ func resourceCVOVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*Client)
 	clientID := d.Get("client_id").(string)
+
 	var svm string
 	var workingEnvironmentType string
 	var createAggregateifNotExists bool
 	volume := volumeRequest{}
 	quote := quoteRequest{}
-	// quote volume
+
+	// Check deployment mode
+	isSaas, connectorIP, err := client.checkDeploymentMode(d, clientID)
+	if err != nil {
+		return err
+	}
+
 	quote.Name = d.Get("name").(string)
 	quote.Size.Size = d.Get("size").(float64)
 	quote.Size.Unit = d.Get("unit").(string)
@@ -262,9 +283,9 @@ func resourceCVOVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 		svm = v.(string)
 	}
 
-	weInfo, err := client.getWorkingEnvironmentDetail(d, clientID)
+	weInfo, err := client.getWorkingEnvironmentDetail(d, clientID, isSaas, connectorIP)
 	if err != nil {
-		return fmt.Errorf("cannot find working environment")
+		return err
 	}
 	volume.WorkingEnvironmentID = weInfo.PublicID
 	volume.WorkingEnvironmentType = weInfo.WorkingEnvironmentType
@@ -281,12 +302,12 @@ func resourceCVOVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 
 	if workingEnvironmentType != "ON_PREM" {
 		// Check if snapshot_nolicy_name exists
-		if !client.findSnapshotPolicy(weInfo.PublicID, quote.SnapshotPolicyName, clientID) {
+		if !client.findSnapshotPolicy(weInfo.PublicID, quote.SnapshotPolicyName, clientID, isSaas, connectorIP) {
 			// If snapshot_policy_name does not exist, create the snapshot policy
 			if v, ok := d.GetOk("snapshot_policy"); ok {
 				policy := v.(*schema.Set)
 				if policy.Len() > 0 {
-					err := client.createSnapshotPolicy(weInfo.PublicID, quote.SnapshotPolicyName, policy, clientID)
+					err := client.createSnapshotPolicy(weInfo.PublicID, quote.SnapshotPolicyName, policy, clientID, isSaas, connectorIP)
 					if err != nil {
 						return err
 					}
@@ -307,7 +328,7 @@ func resourceCVOVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 				}
 			}
 		}
-		// exmaple of the export policy info in volume creation from the UI timeline. Be aware that it might be out of date as time changes.
+		// example of the export policy info in volume creation from the UI timeline. Be aware that it might be out of date as time changes.
 		// Note that for update, export policy info has different structure.
 		// "exportPolicyInfo": {
 		// 	"policyType": "custom",
@@ -361,8 +382,7 @@ func resourceCVOVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 			if !exportPolicyTypeOK || !exportPolicyIPOK || !exportPolicyNfsVersionOK || !exportPolicyRuleAccessControlOK || !exportPolicyRuleSuperUserOK {
 				return fmt.Errorf("export_policy_type, export_policy_ip, export_policy_nfs_version, export_policy_rule_access_control and export_policy_rule_super_user are required for export policy")
 			}
-			var rules []ExportPolicyRule
-			rules = make([]ExportPolicyRule, len(policyIps))
+			rules := make([]ExportPolicyRule, len(policyIps))
 			for i, x := range policyIps {
 				rules[i] = ExportPolicyRule{}
 				eachRule := make([]string, 1)
@@ -376,7 +396,7 @@ func resourceCVOVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 			volume.ExportPolicyInfo.Rules = rules
 		}
 
-		response, err := client.quoteVolume(quote, clientID)
+		response, err := client.quoteVolume(quote, clientID, isSaas, connectorIP)
 		if err != nil {
 			log.Printf("Error quoting volume")
 			return err
@@ -412,7 +432,7 @@ func resourceCVOVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 		volume.VolumeTags = tags
 	}
 	if volumeProtocol == "cifs" {
-		exist, err := client.checkCifsExists(workingEnvironmentType, volume.WorkingEnvironmentID, volume.SvmName, clientID)
+		exist, err := client.checkCifsExists(workingEnvironmentType, volume.WorkingEnvironmentID, volume.SvmName, clientID, isSaas, connectorIP)
 		if err != nil {
 			return err
 		}
@@ -433,7 +453,7 @@ func resourceCVOVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 			volume.ShareInfo.AccessControl.Users = users
 		}
 	} else if volumeProtocol == "iscsi" {
-		isNewIgroup, _, err := createIscsiVolumeHelper(d, meta)
+		isNewIgroup, _, err := createIscsiVolumeHelper(d, meta, isSaas, connectorIP)
 		if err != nil {
 			return err
 		}
@@ -471,12 +491,12 @@ func resourceCVOVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 		}
 	}
 	volume.WorkingEnvironmentType = workingEnvironmentType
-	err = client.createVolume(volume, createAggregateifNotExists, clientID)
+	err = client.createVolume(volume, createAggregateifNotExists, clientID, isSaas, connectorIP)
 	if err != nil {
 		log.Print("Error creating volume")
 		return err
 	}
-	res, err := client.getVolume(volume, clientID)
+	res, err := client.getVolume(volume, clientID, isSaas, connectorIP)
 	if err != nil {
 		log.Print("Error reading volume after creation")
 		return err
@@ -496,13 +516,21 @@ func resourceCVOVolumeRead(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*Client)
 	clientID := d.Get("client_id").(string)
+
 	volume := volumeRequest{}
+
+	// Check deployment mode
+	isSaas, connectorIP, err := client.checkDeploymentMode(d, clientID)
+	if err != nil {
+		return err
+	}
+
 	var svm string
 	if v, ok := d.GetOk("svm_name"); ok {
 		svm = v.(string)
 	}
 
-	weInfo, err := client.getWorkingEnvironmentDetail(d, clientID)
+	weInfo, err := client.getWorkingEnvironmentDetail(d, clientID, isSaas, connectorIP)
 	if err != nil {
 		return fmt.Errorf("cannot find working environment")
 	}
@@ -516,7 +544,7 @@ func resourceCVOVolumeRead(d *schema.ResourceData, meta interface{}) error {
 		}
 	}
 	volume.SvmName = svm
-	res, err := client.getVolume(volume, clientID)
+	res, err := client.getVolume(volume, clientID, isSaas, connectorIP)
 	if err != nil {
 		log.Print("Error reading volume")
 		return err
@@ -607,13 +635,21 @@ func resourceCVOVolumeDelete(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("Deleting volume: %s", d.Get("name").(string))
 	client := meta.(*Client)
 	clientID := d.Get("client_id").(string)
+
 	volume := volumeRequest{}
+
+	// Check deployment mode
+	isSaas, connectorIP, err := client.checkDeploymentMode(d, clientID)
+	if err != nil {
+		return err
+	}
+
 	var svm string
 	if v, ok := d.GetOk("svm_name"); ok {
 		svm = v.(string)
 	}
 
-	weInfo, err := client.getWorkingEnvironmentDetail(d, clientID)
+	weInfo, err := client.getWorkingEnvironmentDetail(d, clientID, isSaas, connectorIP)
 	if err != nil {
 		return fmt.Errorf("cannot find working environment")
 	}
@@ -630,7 +666,7 @@ func resourceCVOVolumeDelete(d *schema.ResourceData, meta interface{}) error {
 
 	volume.Name = d.Get("name").(string)
 
-	err = client.deleteVolume(volume, clientID)
+	err = client.deleteVolume(volume, clientID, isSaas, connectorIP)
 	if err != nil {
 		log.Print("Error deleting volume")
 		return err
@@ -642,18 +678,26 @@ func resourceCVOVolumeExists(d *schema.ResourceData, meta interface{}) (bool, er
 	log.Printf("Checking existence of volume: %s", d.Get("name").(string))
 	client := meta.(*Client)
 	clientID := d.Get("client_id").(string)
+
 	volume := volumeRequest{}
+
+	// Check deployment mode
+	isSaas, connectorIP, err := client.checkDeploymentMode(d, clientID)
+	if err != nil {
+		return false, err
+	}
+
 	volume.Name = d.Get("name").(string)
 	volume.ID = d.Id()
 
-	weInfo, err := client.getWorkingEnvironmentDetail(d, clientID)
+	weInfo, err := client.getWorkingEnvironmentDetail(d, clientID, isSaas, connectorIP)
 	if err != nil {
 		return false, fmt.Errorf("cannot find working environment")
 	}
 	volume.WorkingEnvironmentID = weInfo.PublicID
 	volume.WorkingEnvironmentType = weInfo.WorkingEnvironmentType
 
-	res, err := client.getVolumeByID(volume, clientID)
+	res, err := client.getVolumeByID(volume, clientID, isSaas, connectorIP)
 	if err != nil {
 		log.Print("Error reading volume")
 		return false, err
@@ -670,8 +714,16 @@ func resourceCVOVolumeUpdate(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("Updating volume: %s", d.Get("name").(string))
 	client := meta.(*Client)
 	clientID := d.Get("client_id").(string)
+
 	volume := volumeRequest{}
 	var svm string
+
+	// Check deployment mode
+	isSaas, connectorIP, err := client.checkDeploymentMode(d, clientID)
+	if err != nil {
+		return err
+	}
+
 	volume.Name = d.Get("name").(string)
 	if d.HasChange("export_policy_ip") || d.HasChange("export_policy_nfs_version") || d.HasChange("export_policy_rule_super_user") || d.HasChange("export_policy_rule_access_control") {
 		var exportPolicyTypeOK, exportPolicyIPOK, exportPolicyNfsVersionOK, exportPolicyRuleAccessControlOK, exportPolicyRuleSuperUserOK bool
@@ -764,7 +816,7 @@ func resourceCVOVolumeUpdate(d *schema.ResourceData, meta interface{}) error {
 	if v, ok := d.GetOk("svm_name"); ok {
 		svm = v.(string)
 	}
-	weInfo, err := client.getWorkingEnvironmentDetail(d, clientID)
+	weInfo, err := client.getWorkingEnvironmentDetail(d, clientID, isSaas, connectorIP)
 	if err != nil {
 		return fmt.Errorf("cannot find working environment")
 	}
@@ -809,7 +861,7 @@ func resourceCVOVolumeUpdate(d *schema.ResourceData, meta interface{}) error {
 		volume.Comment = d.Get("comment").(string)
 	}
 	log.Printf("###Updating volume: %#v", volume)
-	err = client.updateVolume(volume, clientID)
+	err = client.updateVolume(volume, clientID, isSaas, connectorIP)
 	if err != nil {
 		log.Print("Error updating volume")
 		return err
@@ -826,7 +878,7 @@ func resourceVolumeCustomizeDiff(diff *schema.ResourceDiff, v interface{}) error
 		changeableParams := []string{"volume_protocol", "export_policy_type", "export_policy_ip",
 			"export_policy_name", "export_policy_nfs_version", "share_name", "permission", "users",
 			"tiering_policy", "snapshot_policy_name", "export_policy_rule_access_control",
-			"export_policy_rule_super_user", "comment"}
+			"export_policy_rule_super_user", "comment", "deployment_mode", "connector_ip", "tenant_id"}
 		changedKeys := diff.GetChangedKeysPrefix("")
 		for _, key := range changedKeys {
 			found := false
@@ -837,7 +889,7 @@ func resourceVolumeCustomizeDiff(diff *schema.ResourceDiff, v interface{}) error
 				}
 			}
 			if !found {
-				return fmt.Errorf("change %s is not allowed", key)
+				return fmt.Errorf("%s parameter is not allowed to be modified", key)
 			}
 		}
 	}
@@ -891,7 +943,7 @@ func resourceVolumeCustomizeDiff(diff *schema.ResourceDiff, v interface{}) error
 	return nil
 }
 
-func createIscsiVolumeHelper(d *schema.ResourceData, meta interface{}) (bool, bool, error) {
+func createIscsiVolumeHelper(d *schema.ResourceData, meta interface{}, isSaas bool, connectorIP string) (bool, bool, error) {
 	client := meta.(*Client)
 	clientID := d.Get("client_id").(string)
 	igroup := igroup{}
@@ -905,7 +957,7 @@ func createIscsiVolumeHelper(d *schema.ResourceData, meta interface{}) (bool, bo
 		igroup.IgroupName = v.(string)
 	}
 
-	workingEnvDetail, err := client.getWorkingEnvironmentDetail(d, clientID)
+	workingEnvDetail, err := client.getWorkingEnvironmentDetail(d, clientID, isSaas, connectorIP)
 	if err != nil {
 		return false, false, fmt.Errorf("cannot find working environment")
 	}
@@ -922,7 +974,7 @@ func createIscsiVolumeHelper(d *schema.ResourceData, meta interface{}) (bool, bo
 	igroup.SvmName = svm
 
 	igroup.WorkingEnvironmentType = workingEnvironmentType
-	res, err := client.getIgroups(igroup, clientID)
+	res, err := client.getIgroups(igroup, clientID, isSaas, connectorIP)
 	if err != nil {
 		log.Print("Error reading igroups")
 		return false, false, err
@@ -950,7 +1002,7 @@ func createIscsiVolumeHelper(d *schema.ResourceData, meta interface{}) (bool, bo
 		getAll := initiator{}
 		getAll.WorkingEnvironmentID = workingEnvironmentID
 		getAll.WorkingEnvironmentType = workingEnvironmentType
-		res, err := client.getInitiator(getAll, clientID)
+		res, err := client.getInitiator(getAll, clientID, isSaas, connectorIP)
 		if err != nil {
 			return false, false, err
 		}
@@ -972,7 +1024,7 @@ func createIscsiVolumeHelper(d *schema.ResourceData, meta interface{}) (bool, bo
 		}
 		if isNewInitiator {
 			for _, expectIni := range initiators {
-				client.createInitiator(expectIni, clientID)
+				client.createInitiator(expectIni, clientID, isSaas, connectorIP)
 			}
 		}
 	}

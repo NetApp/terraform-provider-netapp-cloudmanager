@@ -494,7 +494,7 @@ func resourceCVOAzureRead(d *schema.ResourceData, meta interface{}) error {
 
 	clientID := d.Get("client_id").(string)
 
-	resp, err := client.getCVOProperties(id, clientID)
+	resp, err := client.getCVOProperties(id, clientID, true, "")
 	if err != nil {
 		log.Print("Error reading cvo")
 		return err
@@ -535,7 +535,7 @@ func resourceCVOAzureUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	// check if svm_password is changed
 	if d.HasChange("svm_password") {
-		respErr := updateCVOSVMPassword(d, meta, clientID)
+		respErr := updateCVOSVMPassword(d, meta, clientID, true, "")
 		if respErr != nil {
 			return respErr
 		}
@@ -545,7 +545,7 @@ func resourceCVOAzureUpdate(d *schema.ResourceData, meta interface{}) error {
 	if d.HasChange("svm_name") {
 		svmName, svmNewName := d.GetChange("svm_name")
 		if svmNewName.(string) != "" {
-			respErr := client.updateCVOSVMName(d, clientID, svmName.(string), svmNewName.(string))
+			respErr := client.updateCVOSVMName(d, clientID, svmName.(string), svmNewName.(string), true, "")
 			if respErr != nil {
 				return respErr
 			}
@@ -557,7 +557,7 @@ func resourceCVOAzureUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	// check if license_type and instance type are changed
 	if d.HasChange("instance_type") || d.HasChange("license_type") {
-		respErr := updateCVOLicenseInstanceType(d, meta, clientID)
+		respErr := updateCVOLicenseInstanceType(d, meta, clientID, true, "")
 		if respErr != nil {
 			return respErr
 		}
@@ -565,7 +565,7 @@ func resourceCVOAzureUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	// check if tier_level is changed
 	if d.HasChange("tier_level") && d.Get("capacity_tier").(string) == "Blob" {
-		respErr := updateCVOTierLevel(d, meta, clientID)
+		respErr := updateCVOTierLevel(d, meta, clientID, true, "")
 		if respErr != nil {
 			return respErr
 		}
@@ -573,7 +573,7 @@ func resourceCVOAzureUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	// check if aws_tag has changes
 	if d.HasChange("azure_tag") {
-		respErr := updateCVOUserTags(d, meta, "azure_tag", clientID)
+		respErr := updateCVOUserTags(d, meta, "azure_tag", clientID, true, "")
 		if respErr != nil {
 			return respErr
 		}
@@ -588,7 +588,7 @@ func resourceCVOAzureUpdate(d *schema.ResourceData, meta interface{}) error {
 			log.Print("writing_speed_state: default value is NORMAL. No change call is needed.")
 			return nil
 		}
-		respErr := updateCVOWritingSpeedState(d, meta, clientID)
+		respErr := updateCVOWritingSpeedState(d, meta, clientID, true, "")
 		if respErr != nil {
 			return respErr
 		}
@@ -598,7 +598,7 @@ func resourceCVOAzureUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	// upgrade ontap version
 	// only when the upgrade_ontap_version is true and the ontap_version is not "latest"
-	upgradeErr := client.checkAndDoUpgradeOntapVersion(d, clientID)
+	upgradeErr := client.checkAndDoUpgradeOntapVersion(d, clientID, true, "")
 	if upgradeErr != nil {
 		return upgradeErr
 	}

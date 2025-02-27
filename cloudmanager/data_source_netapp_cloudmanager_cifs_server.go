@@ -106,7 +106,7 @@ func dataSourceCVOCIFSRead(d *schema.ResourceData, meta interface{}) error {
 	clientID := d.Get("client_id").(string)
 	cifs := cifsRequest{}
 
-	workingEnvDetail, err := client.getWorkingEnvironmentDetail(d, clientID)
+	workingEnvDetail, err := client.getWorkingEnvironmentDetail(d, clientID, true, "")
 	cifs.WorkingEnvironmentID = workingEnvDetail.PublicID
 	if err != nil {
 		return err

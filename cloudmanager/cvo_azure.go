@@ -83,7 +83,7 @@ type nssAccountResult struct {
 	PublicID string `json:"publicId"`
 }
 
-func (c *Client) getNSS(clientID string) (string, error) {
+func (c *Client) getNSS(clientID string, isSaas bool, connectorIP string) (string, error) {
 
 	log.Print("getNSS")
 
@@ -97,6 +97,9 @@ func (c *Client) getNSS(clientID string) (string, error) {
 	baseURL := "/occm/api/accounts"
 
 	hostType := "CloudManagerHost"
+	if !isSaas {
+		hostType = "http://" + connectorIP
+	}
 
 	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
@@ -192,7 +195,7 @@ func (c *Client) createCVOAzure(cvoDetails createCVOAzureDetails, clientID strin
 	}
 
 	if cvoDetails.NssAccount == "" && !strings.HasPrefix(cvoDetails.SerialNumber, "Eval-") && (cvoDetails.VsaMetadata.LicenseType == "azure-cot-premium-byol" || cvoDetails.VsaMetadata.LicenseType == "azure-ha-cot-premium-byol") {
-		nssAccount, err := c.getNSS(clientID)
+		nssAccount, err := c.getNSS(clientID, true, "")
 		if err != nil {
 			log.Print("getNSS request failed ", err)
 			return cvoResult{}, err

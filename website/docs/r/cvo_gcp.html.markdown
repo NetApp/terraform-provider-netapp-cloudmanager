@@ -23,7 +23,7 @@ resource "netapp-cloudmanager_cvo_gcp" "cl-cvo-gcp" {
   gcp_service_account = "fabric-pool@occm-project.iam.gserviceaccount.com"
   svm_password = "netapp1!"
   client_id = netapp-cloudmanager_connector_gcp.cm-gcp.client_id
-  workspace_id = "workspace-IDz6Nnwl"
+  workspace_id = "workspace-******"
   license_type = "capacity-paygo"
   gcp_label {
         label_key = "abcd"
@@ -35,6 +35,36 @@ resource "netapp-cloudmanager_cvo_gcp" "cl-cvo-gcp" {
   svm {
     svm_name = "svm03"
   }
+}
+```
+
+**Create netapp-cloudmanager_cvo_gcp for restricted mode:**
+
+```
+resource "netapp-cloudmanager_cvo_gcp" "cl-cvo-gcp" {
+  provider = netapp-cloudmanager
+  name = "terraformcvogcp"
+  project_id = "occm-project"
+  zone = "us-east1-b"
+  capacity_package_name = "Freemium"
+  subnet_id = "cvs-terraform-abc"
+  vpc_id = "cvs-terraform-abc"
+  gcp_volume_type = "pd-ssd"
+  data_encryption_type = "GCP"
+  svm_password = "netapp1!"
+  ontap_version = "latest"
+  use_latest_version = true
+  instance_type = "n2-standard-4"
+  client_id = netapp-cloudmanager_connector_gcp.cm-gcp.client_id
+  workspace_id = "workspace-******"
+  writing_speed_state = "NORMAL"
+  license_type = "capacity-paygo"
+  enable_compliance = true
+  gcp_volume_size = 500
+  gcp_volume_size_unit = "GB"
+  deployment_mode = "Restricted"
+  connector_ip = "10.10.10.10"
+  tenant_id = "account-******"
 }
 ```
 
@@ -113,6 +143,9 @@ The following arguments are supported:
 * `gcp_service_account` - (Optional) The gcp_service_account email in order to enable tiering of cold data to Google Cloud Storage.
 * `svm_password` - (Required) The admin password for Cloud Volumes ONTAP.
 * `svm_name` - (Optional) The name of the SVM.
+* `connector_ip` - (Optional) The private IP of the connector, this is only required for Restricted mode.
+* `tenant_id` - (Optional) The NetApp tenant ID that the Connector will be associated with.  You can find the tenant ID in the Identity & Access Management in Settings, Organization tab of BlueXP at [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
+* `deployment_mode` - (Optional) The mode of deployment to use for the working environment: ['Standard', 'Restricted']. The default is 'Standard'. To know more on deployment modes [https://docs.netapp.com/us-en/bluexp-setup-admin/concept-modes.html/](https://docs.netapp.com/us-en/bluexp-setup-admin/concept-modes.html/).
 * `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
 * `workspace_id` - (Optional) The ID of the Cloud Manager workspace where you want to deploy Cloud Volumes ONTAP. If not provided, Cloud Manager uses the first workspace. You can find the ID from the Workspace tab on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
 * `data_encryption_type` - (Optional) The type of data encryption to use for the working environment: ['GCP', 'NONE']. The default is 'GCP'.

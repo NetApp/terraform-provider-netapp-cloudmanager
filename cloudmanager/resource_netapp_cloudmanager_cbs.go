@@ -304,7 +304,7 @@ func resourceCBSCreate(d *schema.ResourceData, meta interface{}) error {
 	createCBSVolumeRequest := &cbsVolumeRequest{}
 	var volumesIDNameMap = map[string]map[string]string{}
 
-	workingEnv, err := client.getWorkingEnvironmentDetail(d, clientID)
+	workingEnv, err := client.getWorkingEnvironmentDetail(d, clientID, true, "")
 	if err != nil {
 		return fmt.Errorf("cannot find working environment")
 	}
@@ -364,7 +364,7 @@ func resourceCBSCreate(d *schema.ResourceData, meta interface{}) error {
 			volumeRequest := volumeRequest{}
 			volumeRequest.Name = volumeName
 			volumeRequest.WorkingEnvironmentID = createCBSRequest.WorkingEnvironmentID
-			getVolmeDetails, err := client.getVolume(volumeRequest, clientID)
+			getVolmeDetails, err := client.getVolume(volumeRequest, clientID, true, "")
 			if err != nil {
 				log.Print("Error getting volumes details ", createCBSVolumeRequest.Volume)
 				return err
@@ -419,7 +419,7 @@ func resourceCBSRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Client)
 	clientID := d.Get("client_id").(string)
 	readCBSRequest := cbsRequest{}
-	workingEnv, err := client.getWorkingEnvironmentDetail(d, clientID)
+	workingEnv, err := client.getWorkingEnvironmentDetail(d, clientID, true, "")
 	if err != nil {
 		return fmt.Errorf("cannot find working environment")
 	}
@@ -441,7 +441,7 @@ func resourceCBSDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Client)
 	clientID := d.Get("client_id").(string)
 
-	workingEnv, err := client.getWorkingEnvironmentDetail(d, clientID)
+	workingEnv, err := client.getWorkingEnvironmentDetail(d, clientID, true, "")
 	if err != nil {
 		return fmt.Errorf("cannot find working environment")
 	}

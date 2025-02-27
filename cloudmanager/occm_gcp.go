@@ -320,7 +320,7 @@ func (c *Client) deployGCPVM(occmDetails createOCCMDetails, proxyCertificates []
 		} else {
 			if retries == 0 {
 				log.Print("Taking too long for status to be active")
-				return OCCMMResult{}, fmt.Errorf("Taking too long for OCCM agent to be active or not properly setup")
+				return OCCMMResult{}, fmt.Errorf("taking too long for OCCM agent to be active or not properly setup")
 			}
 			time.Sleep(time.Duration(30) * time.Second)
 			retries--

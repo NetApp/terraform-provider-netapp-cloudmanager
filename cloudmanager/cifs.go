@@ -36,7 +36,7 @@ type cifsDeleteRequest struct {
 }
 
 func (c *Client) createCIFS(cifs cifsRequest, clientID string) error {
-	baseURL, _, err := c.getAPIRoot(cifs.WorkingEnvironmentID, clientID)
+	baseURL, _, err := c.getAPIRoot(cifs.WorkingEnvironmentID, clientID, true, "")
 	hostType := "CloudManagerHost"
 	if err != nil {
 		return err
@@ -62,7 +62,7 @@ func (c *Client) createCIFS(cifs cifsRequest, clientID string) error {
 
 func (c *Client) getCIFS(cifs cifsRequest, clientID string) ([]cifsResponse, error) {
 	var result []cifsResponse
-	baseURL, _, err := c.getAPIRoot(cifs.WorkingEnvironmentID, clientID)
+	baseURL, _, err := c.getAPIRoot(cifs.WorkingEnvironmentID, clientID, true, "")
 	if err != nil {
 		return result, err
 	}
@@ -86,7 +86,7 @@ func (c *Client) getCIFS(cifs cifsRequest, clientID string) ([]cifsResponse, err
 }
 
 func (c *Client) deleteCIFS(cifs cifsDeleteRequest, workingEnvironmentID, clientID string) error {
-	baseURL, _, err := c.getAPIRoot(workingEnvironmentID, clientID)
+	baseURL, _, err := c.getAPIRoot(workingEnvironmentID, clientID, true, "")
 	hostType := "CloudManagerHost"
 	if err != nil {
 		return err

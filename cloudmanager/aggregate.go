@@ -108,15 +108,18 @@ type updateAggregateRequest struct {
 }
 
 // get aggregate by workingEnvironmentId+aggregate name
-func (c *Client) getAggregate(request aggregateRequest, name string, sourceWorkingEnvironmentType string, clientID string) (aggregateResult, error) {
+func (c *Client) getAggregate(request aggregateRequest, name string, sourceWorkingEnvironmentType string, clientID string, isSaaS bool, connectorIP string) (aggregateResult, error) {
 	log.Printf("getAggregate %s", name)
 	hostType := "CloudManagerHost"
+	if !isSaaS {
+		hostType = "http://" + connectorIP
+	}
 
 	var baseURL string
 	if sourceWorkingEnvironmentType == "ON_PREM" {
 		baseURL = fmt.Sprintf("/occm/api/onprem/aggregates?workingEnvironmentId=%s", request.WorkingEnvironmentID)
 	} else {
-		rootURL, cloudProviderName, err := c.getAPIRoot(request.WorkingEnvironmentID, clientID)
+		rootURL, cloudProviderName, err := c.getAPIRoot(request.WorkingEnvironmentID, clientID, isSaaS, connectorIP)
 
 		if err != nil {
 			log.Print("getAggregate: Cannot get API root.")
@@ -163,13 +166,16 @@ func (c *Client) getAggregate(request aggregateRequest, name string, sourceWorki
 }
 
 // create aggregate
-func (c *Client) createAggregate(request *createAggregateRequest, clientID string) (aggregateResult, error) {
+func (c *Client) createAggregate(request *createAggregateRequest, clientID string, isSaaS bool, connectorIP string) (aggregateResult, error) {
 	log.Printf("createAggregate %v... ", (*request).Name)
 	params := structs.Map(request)
 	hostType := "CloudManagerHost"
+	if !isSaaS {
+		hostType = "http://" + connectorIP
+	}
 
 	var baseURL string
-	rootURL, _, err := c.getAPIRoot(request.WorkingEnvironmentID, clientID)
+	rootURL, _, err := c.getAPIRoot(request.WorkingEnvironmentID, clientID, isSaaS, connectorIP)
 
 	if err != nil {
 		log.Print("createAggregate: Cannot get API root.")
@@ -202,7 +208,11 @@ func (c *Client) createAggregate(request *createAggregateRequest, clientID strin
 		} else {
 			// wait for creation
 			log.Print("Wait for aggregate creation... ", (*request).Name)
-			err = c.waitOnCompletion(onCloudRequestID, "Aggregate", "create", 15, 60, clientID)
+			if isSaaS {
+				err = c.waitOnCompletion(onCloudRequestID, "Aggregate", "create", 15, 60, clientID)
+			} else {
+				err = c.waitOnCompletionForNotSaas(onCloudRequestID, "Aggregate", "create", 15, 60, clientID, connectorIP)
+			}
 			log.Print("Finish waiting... ", (*request).Name)
 			if err != nil {
 				return aggregateResult{}, err
@@ -211,14 +221,14 @@ func (c *Client) createAggregate(request *createAggregateRequest, clientID strin
 		}
 	}
 
-	workingEnvDetail, err := c.getWorkingEnvironmentInfo(request.WorkingEnvironmentID, clientID)
+	workingEnvDetail, err := c.getWorkingEnvironmentInfo(request.WorkingEnvironmentID, clientID, isSaaS, connectorIP)
 	if err != nil {
 		log.Print("Cannot get working environment information.")
 		return aggregateResult{}, err
 	}
 
 	var aggregate aggregateResult
-	aggregate, err = c.getAggregate(aggregateRequest{WorkingEnvironmentID: request.WorkingEnvironmentID}, request.Name, workingEnvDetail.WorkingEnvironmentType, clientID)
+	aggregate, err = c.getAggregate(aggregateRequest{WorkingEnvironmentID: request.WorkingEnvironmentID}, request.Name, workingEnvDetail.WorkingEnvironmentType, clientID, isSaaS, connectorIP)
 	if err != nil {
 		return aggregateResult{}, err
 	}
@@ -227,12 +237,14 @@ func (c *Client) createAggregate(request *createAggregateRequest, clientID strin
 }
 
 // delete aggregate
-func (c *Client) deleteAggregate(request deleteAggregateRequest, clientID string) error {
+func (c *Client) deleteAggregate(request deleteAggregateRequest, clientID string, isSaaS bool, connectorIP string) error {
 	log.Print("On deleteAggregate... ")
 	hostType := "CloudManagerHost"
-
+	if !isSaaS {
+		hostType = "http://" + connectorIP
+	}
 	var baseURL string
-	rootURL, _, err := c.getAPIRoot(request.WorkingEnvironmentID, clientID)
+	rootURL, _, err := c.getAPIRoot(request.WorkingEnvironmentID, clientID, isSaaS, connectorIP)
 
 	if err != nil {
 		log.Print("deleteAggregate: Cannot get API root.")
@@ -253,21 +265,24 @@ func (c *Client) deleteAggregate(request deleteAggregateRequest, clientID string
 	}
 
 	log.Print("Wait for aggregate deletion.")
-	err = c.waitOnCompletion(onCloudRequestID, "Aggregate", "delete", 10, 60, clientID)
-	if err != nil {
-		return err
+	if isSaaS {
+		err = c.waitOnCompletion(onCloudRequestID, "Aggregate", "delete", 15, 60, clientID)
+	} else {
+		err = c.waitOnCompletionForNotSaas(onCloudRequestID, "Aggregate", "delete", 15, 60, clientID, connectorIP)
 	}
 
-	return nil
+	return err
 }
 
-func (c *Client) updateAggregate(request updateAggregateRequest, clientID string) error {
+func (c *Client) updateAggregate(request updateAggregateRequest, clientID string, isSaaS bool, connectorIP string) error {
 	log.Print("updateAggregate... ")
 	params := structs.Map(request)
 	hostType := "CloudManagerHost"
-
+	if !isSaaS {
+		hostType = "http://" + connectorIP
+	}
 	var baseURL string
-	rootURL, _, err := c.getAPIRoot(request.WorkingEnvironmentID, clientID)
+	rootURL, _, err := c.getAPIRoot(request.WorkingEnvironmentID, clientID, isSaaS, connectorIP)
 
 	if err != nil {
 		log.Print("updateAggregate: Cannot get API root.")
@@ -287,12 +302,13 @@ func (c *Client) updateAggregate(request updateAggregateRequest, clientID string
 	}
 
 	log.Print("Wait for aggregate update.")
-	err = c.waitOnCompletion(onCloudRequestID, "Aggregate", "update", 10, 60, clientID)
-	if err != nil {
-		return err
+	if isSaaS {
+		err = c.waitOnCompletion(onCloudRequestID, "Aggregate", "update", 10, 60, clientID)
+	} else {
+		err = c.waitOnCompletionForNotSaas(onCloudRequestID, "Aggregate", "update", 10, 60, clientID, connectorIP)
 	}
 
-	return nil
+	return err
 }
 
 // flattenCapacity: convert struct size + unit
