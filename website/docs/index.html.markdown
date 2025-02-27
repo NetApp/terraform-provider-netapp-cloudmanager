@@ -37,6 +37,7 @@ and therefore may undergo significant changes as the community improves it.
 * GCP CVO resource.
 * GCP in volume resource.
 * GCP in aggregate resource.
+* GCP in snapmirror resource.
 
 ## Example Usage
 

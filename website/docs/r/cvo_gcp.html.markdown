@@ -64,7 +64,7 @@ resource "netapp-cloudmanager_cvo_gcp" "cl-cvo-gcp" {
   gcp_volume_size_unit = "GB"
   deployment_mode = "Restricted"
   connector_ip = "10.10.10.10"
-  tenant_account_id = "account-******"
+  tenant_id = "account-******"
 }
 ```
 
@@ -143,8 +143,8 @@ The following arguments are supported:
 * `gcp_service_account` - (Optional) The gcp_service_account email in order to enable tiering of cold data to Google Cloud Storage.
 * `svm_password` - (Required) The admin password for Cloud Volumes ONTAP.
 * `svm_name` - (Optional) The name of the SVM.
-* `connector_ip` - (Optional) The private IP of the connector, this is only required for Restricted mode account.
-* `tenant_account_id` - (Optional) The NetApp account ID that the Connector will be associated with. You can find the account ID in the account tab of Cloud Manager at [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
+* `connector_ip` - (Optional) The private IP of the connector, this is only required for Restricted mode.
+* `tenant_id` - (Optional) The NetApp tenant ID that the Connector will be associated with.  You can find the tenant ID in the Identity & Access Management in Settings, Organization tab of BlueXP at [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
 * `deployment_mode` - (Optional) The mode of deployment to use for the working environment: ['Standard', 'Restricted']. The default is 'Standard'. To know more on deployment modes [https://docs.netapp.com/us-en/bluexp-setup-admin/concept-modes.html/](https://docs.netapp.com/us-en/bluexp-setup-admin/concept-modes.html/).
 * `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
 * `workspace_id` - (Optional) The ID of the Cloud Manager workspace where you want to deploy Cloud Volumes ONTAP. If not provided, Cloud Manager uses the first workspace. You can find the ID from the Workspace tab on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).

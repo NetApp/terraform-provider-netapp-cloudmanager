@@ -96,10 +96,8 @@ func (c *Client) getNSS(clientID string, isSaas bool, connectorIP string) (strin
 
 	baseURL := "/occm/api/accounts"
 
-	hostType := ""
-	if isSaas {
-		hostType = "CloudManagerHost"
-	} else {
+	hostType := "CloudManagerHost"
+	if !isSaas {
 		hostType = "http://" + connectorIP
 	}
 

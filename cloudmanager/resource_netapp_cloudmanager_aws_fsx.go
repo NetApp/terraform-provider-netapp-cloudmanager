@@ -244,7 +244,7 @@ func resourceAWSFSXRead(d *schema.ResourceData, meta interface{}) error {
 
 	tenantID := d.Get("tenant_id").(string)
 
-	_, err := client.getAWSFSX(id, tenantID)
+	_, err := client.getAWSFSX(id, tenantID, true, "")
 	if err != nil {
 		log.Print("Error getting AWS FSX")
 		return err
@@ -287,7 +287,7 @@ func resourceAWSFSXExists(d *schema.ResourceData, meta interface{}) (bool, error
 
 	tenantID := d.Get("tenant_id").(string)
 
-	resID, err := client.getAWSFSX(id, tenantID)
+	resID, err := client.getAWSFSX(id, tenantID, true, "")
 	if err != nil {
 		log.Print("Error getting AWS FSX")
 		return false, err

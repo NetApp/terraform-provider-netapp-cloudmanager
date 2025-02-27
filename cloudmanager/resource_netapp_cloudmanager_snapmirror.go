@@ -95,6 +95,16 @@ func resourceCVOSnapMirror() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"deployment_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Standard", "Restricted"}, false),
+				Default:      "Standard",
+			},
+			"connector_ip": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"tenant_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -111,7 +121,13 @@ func resourceCVOSnapMirrorCreate(d *schema.ResourceData, meta interface{}) error
 	clientID := d.Get("client_id").(string)
 	snapMirror := snapMirrorRequest{}
 
-	sourceWEInfo, destWEInfo, err := client.getWorkingEnvironmentDetailForSnapMirror(d, clientID)
+	// Check deployment mode
+	isSaas, connectorIP, err := client.checkDeploymentMode(d, clientID)
+	if err != nil {
+		return err
+	}
+
+	sourceWEInfo, destWEInfo, err := client.getWorkingEnvironmentDetailForSnapMirror(d, clientID, isSaas, connectorIP)
 	if err != nil {
 		log.Print("Cannot find working environment")
 		return err
@@ -172,7 +188,7 @@ func resourceCVOSnapMirrorCreate(d *schema.ResourceData, meta interface{}) error
 		snapMirror.ReplicationVolume.DestinationSvmName = destWEInfo.SvmName
 	}
 
-	res, err := client.buildSnapMirrorCreate(snapMirror, sourceWEInfo.WorkingEnvironmentType, destWEInfo.WorkingEnvironmentType, clientID)
+	res, err := client.buildSnapMirrorCreate(snapMirror, sourceWEInfo.WorkingEnvironmentType, destWEInfo.WorkingEnvironmentType, clientID, isSaas, connectorIP)
 	if err != nil {
 		log.Print("Error creating SnapMirrorCreate")
 		return err
@@ -196,7 +212,13 @@ func resourceCVOSnapMirrorRead(d *schema.ResourceData, meta interface{}) error {
 
 	snapMirror := snapMirrorRequest{}
 
-	sourceWEInfo, destWEInfo, err := client.getWorkingEnvironmentDetailForSnapMirror(d, clientID)
+	// Check deployment mode
+	isSaas, connectorIP, err := client.checkDeploymentMode(d, clientID)
+	if err != nil {
+		return err
+	}
+
+	sourceWEInfo, destWEInfo, err := client.getWorkingEnvironmentDetailForSnapMirror(d, clientID, isSaas, connectorIP)
 	if err != nil {
 		log.Print("Cannot find working environment")
 		return err
@@ -206,7 +228,7 @@ func resourceCVOSnapMirrorRead(d *schema.ResourceData, meta interface{}) error {
 	snapMirror.ReplicationRequest.DestinationWorkingEnvironmentID = destWEInfo.PublicID
 	snapMirror.ReplicationVolume.SourceVolumeName = d.Get("source_volume_name").(string)
 	snapMirror.ReplicationVolume.DestinationVolumeName = d.Get("destination_volume_name").(string)
-	_, err = client.getSnapMirror(snapMirror, d.Id(), clientID)
+	_, err = client.getSnapMirror(snapMirror, d.Id(), clientID, isSaas, connectorIP)
 	if err != nil {
 		log.Print("Error getting SnapMirror")
 		return err
@@ -221,7 +243,13 @@ func resourceCVOSnapMirrorDelete(d *schema.ResourceData, meta interface{}) error
 	clientID := d.Get("client_id").(string)
 	snapMirror := snapMirrorRequest{}
 
-	sourceWEInfo, destWEInfo, err := client.getWorkingEnvironmentDetailForSnapMirror(d, clientID)
+	// Check deployment mode
+	isSaas, connectorIP, err := client.checkDeploymentMode(d, clientID)
+	if err != nil {
+		return err
+	}
+
+	sourceWEInfo, destWEInfo, err := client.getWorkingEnvironmentDetailForSnapMirror(d, clientID, isSaas, connectorIP)
 	if err != nil {
 		log.Print("Cannot find working environment")
 		return err
@@ -239,7 +267,7 @@ func resourceCVOSnapMirrorDelete(d *schema.ResourceData, meta interface{}) error
 		snapMirror.ReplicationVolume.SourceSvmName = s.(string)
 	}
 
-	err = client.deleteSnapMirror(snapMirror, clientID)
+	err = client.deleteSnapMirror(snapMirror, clientID, isSaas, connectorIP)
 	if err != nil {
 		log.Print("Error deleting SnapMirror")
 		return err
@@ -251,9 +279,16 @@ func resourceCVOSnapMirrorExists(d *schema.ResourceData, meta interface{}) (bool
 	log.Printf("Checking existence of SnapMirror: %#v", d)
 	client := meta.(*Client)
 	clientID := d.Get("client_id").(string)
+
 	snapMirror := snapMirrorRequest{}
 
-	sourceWEInfo, destWEInfo, err := client.getWorkingEnvironmentDetailForSnapMirror(d, clientID)
+	// Check deployment mode
+	isSaas, connectorIP, err := client.checkDeploymentMode(d, clientID)
+	if err != nil {
+		return false, err
+	}
+
+	sourceWEInfo, destWEInfo, err := client.getWorkingEnvironmentDetailForSnapMirror(d, clientID, isSaas, connectorIP)
 	if err != nil {
 		log.Print("Cannot find working environment")
 		return false, err
@@ -264,7 +299,7 @@ func resourceCVOSnapMirrorExists(d *schema.ResourceData, meta interface{}) (bool
 	snapMirror.ReplicationVolume.SourceVolumeName = d.Get("source_volume_name").(string)
 	snapMirror.ReplicationVolume.DestinationVolumeName = d.Get("destination_volume_name").(string)
 	snapMirror.ReplicationVolume.DestinationSvmName = d.Get("destination_svm_name").(string)
-	res, err := client.getSnapMirror(snapMirror, d.Id(), clientID)
+	res, err := client.getSnapMirror(snapMirror, d.Id(), clientID, isSaas, connectorIP)
 	if err != nil {
 		log.Print("Error getting SnapMirror")
 		return false, err

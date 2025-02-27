@@ -145,7 +145,7 @@ func (c *Client) getAWSCredentialsID(name string, tenantID string) (string, erro
 	return "", fmt.Errorf("aws_credentials_name not found")
 }
 
-func (c *Client) getAWSFSX(id string, tenantID string) (string, error) {
+func (c *Client) getAWSFSX(id string, tenantID string, isSaas bool, connectorIP string) (string, error) {
 
 	log.Print("getAWSFSX")
 

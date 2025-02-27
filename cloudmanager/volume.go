@@ -42,7 +42,6 @@ type volumeRequest struct {
 	VolumeTags                []volumeTag            `structs:"volumeTags,omitempty"`
 	VolumeFSXTags             []volumeTag            `structs:"awsTags,omitempty"`
 	Comment                   string                 `structs:"comment,omitempty"`
-	ConnectorIP               string
 }
 
 type volumeResponse struct {
@@ -137,7 +136,6 @@ type quoteRequest struct {
 	Iops                   int              `structs:"iops,omitempty"`
 	Throughput             int              `structs:"throughput,omitempty"`
 	WorkingEnvironmentType string           `structs:"workingEnvironmentType"`
-	ConnectorIP            string
 }
 
 type shareInfoRequest struct {
@@ -221,10 +219,8 @@ func (c *Client) createVolume(vol volumeRequest, createAggregateIfNotFound bool,
 		baseURL = fmt.Sprintf("%s/volumes?createAggregateIfNotFound=%s", baseURL, strconv.FormatBool(createAggregateIfNotFound))
 	}
 
-	hostType := ""
-	if isSaas {
-		hostType = "CloudManagerHost"
-	} else {
+	hostType := "CloudManagerHost"
+	if !isSaas {
 		hostType = "http://" + connectorIP
 	}
 
@@ -261,10 +257,8 @@ func (c *Client) deleteVolume(vol volumeRequest, clientID string, isSaas bool, c
 	}
 	baseURL = fmt.Sprintf("%s/volumes/%s/%s/%s", baseURL, id, vol.SvmName, vol.Name)
 
-	hostType := ""
-	if isSaas {
-		hostType = "CloudManagerHost"
-	} else {
+	hostType := "CloudManagerHost"
+	if !isSaas {
 		hostType = "http://" + connectorIP
 	}
 
@@ -292,10 +286,8 @@ func (c *Client) deleteVolume(vol volumeRequest, clientID string, isSaas bool, c
 func (c *Client) getVolume(vol volumeRequest, clientID string, isSaas bool, connectorIP string) ([]volumeResponse, error) {
 	var result []volumeResponse
 
-	hostType := ""
-	if isSaas {
-		hostType = "CloudManagerHost"
-	} else {
+	hostType := "CloudManagerHost"
+	if !isSaas {
 		hostType = "http://" + connectorIP
 	}
 
@@ -332,9 +324,14 @@ func (c *Client) getVolume(vol volumeRequest, clientID string, isSaas bool, conn
 	return result, nil
 }
 
-func (c *Client) getVolumeForOnPrem(vol volumeRequest, clientID string) ([]volumeResponse, error) {
+func (c *Client) getVolumeForOnPrem(vol volumeRequest, clientID string, isSaas bool, connectorIP string) ([]volumeResponse, error) {
 	var result []volumeResponse
+
 	hostType := "CloudManagerHost"
+	if !isSaas {
+		hostType = "http://" + connectorIP
+	}
+
 	baseURL := fmt.Sprintf("/occm/api/onprem/volumes?workingEnvironmentId=%s", vol.WorkingEnvironmentID)
 
 	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
@@ -368,10 +365,8 @@ func (c *Client) getVolumeByID(request volumeRequest, clientID string, isSaas bo
 }
 
 func (c *Client) updateVolume(request volumeRequest, clientID string, isSaas bool, connectorIP string) error {
-	hostType := ""
-	if isSaas {
-		hostType = "CloudManagerHost"
-	} else {
+	hostType := "CloudManagerHost"
+	if !isSaas {
 		hostType = "http://" + connectorIP
 	}
 
@@ -409,10 +404,8 @@ func (c *Client) updateVolume(request volumeRequest, clientID string, isSaas boo
 }
 
 func (c *Client) quoteVolume(request quoteRequest, clientID string, isSaas bool, connectorIP string) (map[string]interface{}, error) {
-	hostType := ""
-	if isSaas {
-		hostType = "CloudManagerHost"
-	} else {
+	hostType := "CloudManagerHost"
+	if !isSaas {
 		hostType = "http://" + connectorIP
 	}
 
@@ -439,10 +432,8 @@ func (c *Client) quoteVolume(request quoteRequest, clientID string, isSaas bool,
 }
 
 func (c *Client) createInitiator(request initiator, clientID string, isSaas bool, connectorIP string) error {
-	hostType := ""
-	if isSaas {
-		hostType = "CloudManagerHost"
-	} else {
+	hostType := "CloudManagerHost"
+	if !isSaas {
 		hostType = "http://" + connectorIP
 	}
 
@@ -465,10 +456,8 @@ func (c *Client) createInitiator(request initiator, clientID string, isSaas bool
 }
 
 func (c *Client) getInitiator(request initiator, clientID string, isSaas bool, connectorIP string) ([]initiator, error) {
-	hostType := ""
-	if isSaas {
-		hostType = "CloudManagerHost"
-	} else {
+	hostType := "CloudManagerHost"
+	if !isSaas {
 		hostType = "http://" + connectorIP
 	}
 
@@ -506,10 +495,8 @@ type igroup struct {
 }
 
 func (c *Client) getIgroups(request igroup, clientID string, isSaas bool, connectorIP string) ([]igroup, error) {
-	hostType := ""
-	if isSaas {
-		hostType = "CloudManagerHost"
-	} else {
+	hostType := "CloudManagerHost"
+	if !isSaas {
 		hostType = "http://" + connectorIP
 	}
 
@@ -541,10 +528,8 @@ func (c *Client) getIgroups(request igroup, clientID string, isSaas bool, connec
 }
 
 func (c *Client) checkCifsExists(workingEnvironmentType string, id string, svm string, clientID string, isSaas bool, connectorIP string) (bool, error) {
-	hostType := ""
-	if isSaas {
-		hostType = "CloudManagerHost"
-	} else {
+	hostType := "CloudManagerHost"
+	if !isSaas {
 		hostType = "http://" + connectorIP
 	}
 
@@ -672,10 +657,8 @@ func (c *Client) createSnapshotPolicy(workingEnviromentID string, snapshotPolicy
 	}
 	baseURL, _, err := c.getAPIRoot(snapshotPolicy.WorkingEnvironmentID, clientID, isSaas, connectorIP)
 
-	hostType := ""
-	if isSaas {
-		hostType = "CloudManagerHost"
-	} else {
+	hostType := "CloudManagerHost"
+	if !isSaas {
 		hostType = "http://" + connectorIP
 	}
 

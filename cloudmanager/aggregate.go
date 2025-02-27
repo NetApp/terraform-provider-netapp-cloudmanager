@@ -270,11 +270,8 @@ func (c *Client) deleteAggregate(request deleteAggregateRequest, clientID string
 	} else {
 		err = c.waitOnCompletionForNotSaas(onCloudRequestID, "Aggregate", "delete", 15, 60, clientID, connectorIP)
 	}
-	if err != nil {
-		return err
-	}
 
-	return nil
+	return err
 }
 
 func (c *Client) updateAggregate(request updateAggregateRequest, clientID string, isSaaS bool, connectorIP string) error {
@@ -310,11 +307,8 @@ func (c *Client) updateAggregate(request updateAggregateRequest, clientID string
 	} else {
 		err = c.waitOnCompletionForNotSaas(onCloudRequestID, "Aggregate", "update", 10, 60, clientID, connectorIP)
 	}
-	if err != nil {
-		return err
-	}
 
-	return nil
+	return err
 }
 
 // flattenCapacity: convert struct size + unit

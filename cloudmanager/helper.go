@@ -383,20 +383,21 @@ func (c *Client) checkTaskStatus(id string, clientID string) (int, string, error
 
 	var statusCode int
 	var response []byte
-	networkRetries := 6
-	for {
+	networkRetries := 9
+	initialWaitTime := 1 * time.Second
+	for i := 0; i < networkRetries; i++ {
 		code, result, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
 		if err != nil || code == 504 {
-			if networkRetries > 0 {
+			if i < networkRetries {
 				if code == 504 {
-					time.Sleep(15 * time.Second)
+					waitTime := initialWaitTime * (1 << i) // Exponential backoff
+					time.Sleep(waitTime)
 				} else {
-					time.Sleep(1 * time.Second)
+					time.Sleep(initialWaitTime)
 				}
-				networkRetries--
 				log.Printf("checkTaskStatus id=%s code=%v error=%v Retries %v client=%s", id, code, err, networkRetries, clientID)
 			} else {
-				log.Printf("checkTaskStatus request failed after 3 retries: %v, %v", code, err)
+				log.Printf("checkTaskStatus request failed after %v retries: %v, %v", i+1, code, err)
 				return 0, "", err
 			}
 		} else {
@@ -431,20 +432,21 @@ func (c *Client) checkTaskStatusForNotSaas(id string, clientID string, connector
 
 	var statusCode int
 	var response []byte
-	networkRetries := 6
-	for {
+	networkRetries := 9
+	initialWaitTime := 1 * time.Second
+	for i := 0; i < networkRetries; i++ {
 		code, result, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
 		if err != nil || code == 504 {
-			if networkRetries > 0 {
+			if i < networkRetries {
 				if code == 504 {
-					time.Sleep(15 * time.Second)
+					waitTime := initialWaitTime * (1 << i) // Exponential backoff
+					time.Sleep(waitTime)
 				} else {
-					time.Sleep(1 * time.Second)
+					time.Sleep(initialWaitTime)
 				}
-				networkRetries--
 				log.Printf("checkTaskStatus id=%s code=%v error=%v Retries %v client=%s", id, code, err, networkRetries, clientID)
 			} else {
-				log.Printf("checkTaskStatus request failed after 3 retries: %v, %v", code, err)
+				log.Printf("checkTaskStatus request failed after %v retries: %v, %v", i+1, code, err)
 				return 0, "", err
 			}
 		} else {
@@ -519,10 +521,8 @@ func (c *Client) waitOnCompletionForNotSaas(id string, actionName string, task s
 // response: publicId, name, isHA, providerName, workingEnvironmentType, ...
 func (c *Client) getWorkingEnvironmentInfo(id string, clientID string, isSaas bool, connectorIP string) (workingEnvironmentInfo, error) {
 	baseURL := fmt.Sprintf("/occm/api/ontaps/working-environments/%s", id)
-	hostType := ""
-	if isSaas {
-		hostType = "CloudManagerHost"
-	} else {
+	hostType := "CloudManagerHost"
+	if !isSaas {
 		hostType = "http://" + connectorIP
 	}
 
@@ -594,10 +594,8 @@ func findWEForID(id string, weList []workingEnvironmentInfo) (workingEnvironment
 func (c *Client) findWorkingEnvironmentByName(name string, clientID string, isSaas bool, connectorIP string) (workingEnvironmentInfo, error) {
 	// check working environment exists or not
 	baseURL := fmt.Sprintf("/occm/api/working-environments/exists/%s", name)
-	hostType := ""
-	if isSaas {
-		hostType = "CloudManagerHost"
-	} else {
+	hostType := "CloudManagerHost"
+	if !isSaas {
 		hostType = "http://" + connectorIP
 	}
 
@@ -831,7 +829,7 @@ func (c *Client) getWorkingEnvironmentDetail(d *schema.ResourceData, clientID st
 	return workingEnvDetail, nil
 }
 
-func (c *Client) getFSXSVM(id string, clientID string) (string, error) {
+func (c *Client) getFSXSVM(id string, clientID string, isSaas bool, connectorIP string) (string, error) {
 
 	log.Print("getFSXSVM")
 
@@ -863,7 +861,7 @@ func (c *Client) getFSXSVM(id string, clientID string) (string, error) {
 	return result[0].Name, nil
 }
 
-func (c *Client) getAWSFSXByName(name string, tenantID string, clientID string) (string, error) {
+func (c *Client) getAWSFSXByName(name string, tenantID string, clientID string, isSaas bool, connectorIP string) (string, error) {
 
 	log.Print("getAWSFSXByName")
 
@@ -904,8 +902,8 @@ func (c *Client) getAWSFSXByName(name string, tenantID string, clientID string) 
 	return "", nil
 }
 
-// read working environment information and return the details
-func (c *Client) getWorkingEnvironmentDetailForSnapMirror(d *schema.ResourceData, clientID string) (workingEnvironmentInfo, workingEnvironmentInfo, error) {
+// read working environemnt information and return the details
+func (c *Client) getWorkingEnvironmentDetailForSnapMirror(d *schema.ResourceData, clientID string, isSaas bool, connectorIP string) (workingEnvironmentInfo, workingEnvironmentInfo, error) {
 	var sourceWorkingEnvDetail workingEnvironmentInfo
 	var destWorkingEnvDetail workingEnvironmentInfo
 	var err error
@@ -916,7 +914,7 @@ func (c *Client) getWorkingEnvironmentDetailForSnapMirror(d *schema.ResourceData
 		if strings.HasPrefix(WorkingEnvironmentID, "fs-") {
 			if b, ok := d.GetOk("tenant_id"); ok {
 				tenantID := b.(string)
-				id, err := c.getAWSFSX(WorkingEnvironmentID, tenantID)
+				id, err := c.getAWSFSX(WorkingEnvironmentID, tenantID, isSaas, connectorIP)
 				if err != nil {
 					log.Print("Error getting AWS FSX")
 					return workingEnvironmentInfo{}, workingEnvironmentInfo{}, err
@@ -927,7 +925,7 @@ func (c *Client) getWorkingEnvironmentDetailForSnapMirror(d *schema.ResourceData
 					return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("could not find source working environment ID %v", WorkingEnvironmentID)
 				}
 				sourceWorkingEnvDetail.PublicID = WorkingEnvironmentID
-				svmName, err := c.getFSXSVM(WorkingEnvironmentID, clientID)
+				svmName, err := c.getFSXSVM(WorkingEnvironmentID, clientID, isSaas, connectorIP)
 				if err != nil {
 					return workingEnvironmentInfo{}, workingEnvironmentInfo{}, err
 				}
@@ -936,25 +934,25 @@ func (c *Client) getWorkingEnvironmentDetailForSnapMirror(d *schema.ResourceData
 				return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("cannot find FSX working environment by destination_working_environment_id %s, need tenant_id", WorkingEnvironmentID)
 			}
 		} else {
-			sourceWorkingEnvDetail, err = c.findWorkingEnvironmentForID(WorkingEnvironmentID, clientID)
+			sourceWorkingEnvDetail, err = c.findWorkingEnvironmentForID(WorkingEnvironmentID, clientID, isSaas, connectorIP)
 			if err != nil {
 				return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("cannot find working environment by source_working_environment_id %s", WorkingEnvironmentID)
 			}
 		}
 	} else if a, ok = d.GetOk("source_working_environment_name"); ok {
-		sourceWorkingEnvDetail, err = c.findWorkingEnvironmentByName(a.(string), clientID, true, "")
+		sourceWorkingEnvDetail, err = c.findWorkingEnvironmentByName(a.(string), clientID, isSaas, connectorIP)
 		if sourceWorkingEnvDetail.PublicID == "" {
 			if b, ok := d.GetOk("tenant_id"); ok {
 				workingEnvironmentName := a.(string)
 				tenantID := b.(string)
-				WorkingEnvironmentID, err := c.getAWSFSXByName(workingEnvironmentName, tenantID, clientID)
+				WorkingEnvironmentID, err := c.getAWSFSXByName(workingEnvironmentName, tenantID, clientID, isSaas, connectorIP)
 				if err != nil {
 					log.Print("Error getting AWS FSX: ", err)
 					return workingEnvironmentInfo{}, workingEnvironmentInfo{}, err
 				}
 				sourceWorkingEnvDetail.PublicID = WorkingEnvironmentID
 				if sourceWorkingEnvDetail.PublicID != "" {
-					svmName, err := c.getFSXSVM(WorkingEnvironmentID, clientID)
+					svmName, err := c.getFSXSVM(WorkingEnvironmentID, clientID, isSaas, connectorIP)
 					if err != nil {
 						return workingEnvironmentInfo{}, workingEnvironmentInfo{}, err
 					}
@@ -976,7 +974,7 @@ func (c *Client) getWorkingEnvironmentDetailForSnapMirror(d *schema.ResourceData
 		if strings.HasPrefix(WorkingEnvironmentID, "fs-") {
 			if b, ok := d.GetOk("tenant_id"); ok {
 				tenantID := b.(string)
-				id, err := c.getAWSFSX(WorkingEnvironmentID, tenantID)
+				id, err := c.getAWSFSX(WorkingEnvironmentID, tenantID, isSaas, connectorIP)
 				if err != nil {
 					log.Print("Error getting AWS FSX")
 					return workingEnvironmentInfo{}, workingEnvironmentInfo{}, err
@@ -986,7 +984,7 @@ func (c *Client) getWorkingEnvironmentDetailForSnapMirror(d *schema.ResourceData
 					return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("could not find destination working environment ID %v", WorkingEnvironmentID)
 				}
 				destWorkingEnvDetail.PublicID = WorkingEnvironmentID
-				svmName, err := c.getFSXSVM(WorkingEnvironmentID, clientID)
+				svmName, err := c.getFSXSVM(WorkingEnvironmentID, clientID, isSaas, connectorIP)
 				if err != nil {
 					return workingEnvironmentInfo{}, workingEnvironmentInfo{}, err
 				}
@@ -995,27 +993,27 @@ func (c *Client) getWorkingEnvironmentDetailForSnapMirror(d *schema.ResourceData
 				return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("cannot find FSX working environment by destination_working_environment_id %s, need tenant_id", WorkingEnvironmentID)
 			}
 		} else {
-			destWorkingEnvDetail, err = c.findWorkingEnvironmentForID(WorkingEnvironmentID, clientID)
+			destWorkingEnvDetail, err = c.findWorkingEnvironmentForID(WorkingEnvironmentID, clientID, isSaas, connectorIP)
 			if err != nil {
 				return workingEnvironmentInfo{}, workingEnvironmentInfo{}, fmt.Errorf("cannot find working environment by destination_working_environment_id %s", WorkingEnvironmentID)
 			}
 			log.Print("findWorkingEnvironmentForID", destWorkingEnvDetail)
 		}
 	} else if a, ok = d.GetOk("destination_working_environment_name"); ok {
-		destWorkingEnvDetail, err = c.findWorkingEnvironmentByName(a.(string), clientID, true, "")
+		destWorkingEnvDetail, err = c.findWorkingEnvironmentByName(a.(string), clientID, isSaas, connectorIP)
 		log.Printf("Get environment id %v by %v", destWorkingEnvDetail.PublicID, a.(string))
 		if destWorkingEnvDetail.PublicID == "" {
 			if b, ok := d.GetOk("tenant_id"); ok {
 				workingEnvironmentName := a.(string)
 				tenantID := b.(string)
-				WorkingEnvironmentID, err := c.getAWSFSXByName(workingEnvironmentName, tenantID, clientID)
+				WorkingEnvironmentID, err := c.getAWSFSXByName(workingEnvironmentName, tenantID, clientID, isSaas, connectorIP)
 				if err != nil {
 					log.Print("Error getting AWS FSX: ", err)
 					return workingEnvironmentInfo{}, workingEnvironmentInfo{}, err
 				}
 				if destWorkingEnvDetail.PublicID != "" {
 					destWorkingEnvDetail.PublicID = WorkingEnvironmentID
-					svmName, err := c.getFSXSVM(WorkingEnvironmentID, clientID)
+					svmName, err := c.getFSXSVM(WorkingEnvironmentID, clientID, isSaas, connectorIP)
 					if err != nil {
 						return workingEnvironmentInfo{}, workingEnvironmentInfo{}, err
 					}
@@ -1033,8 +1031,11 @@ func (c *Client) getWorkingEnvironmentDetailForSnapMirror(d *schema.ResourceData
 }
 
 // get all WE from REST API and then using a given ID get the WE
-func (c *Client) findWorkingEnvironmentForID(id string, clientID string) (workingEnvironmentInfo, error) {
+func (c *Client) findWorkingEnvironmentForID(id string, clientID string, isSaas bool, connectorIP string) (workingEnvironmentInfo, error) {
 	hostType := "CloudManagerHost"
+	if !isSaas {
+		hostType = "http://" + connectorIP
+	}
 
 	if c.Token == "" {
 		accesTokenResult, err := c.getAccessToken()
@@ -1086,10 +1087,8 @@ func (c *Client) findWorkingEnvironmentForID(id string, clientID string) (workin
 
 // get working environment properties
 func (c *Client) getWorkingEnvironmentProperties(apiRoot string, id string, field string, clientID string, isSaas bool, connectorIP string) (workingEnvironmentOntapClusterPropertiesResponse, error) {
-	hostType := ""
-	if isSaas {
-		hostType = "CloudManagerHost"
-	} else {
+	hostType := "CloudManagerHost"
+	if !isSaas {
 		hostType = "http://" + connectorIP
 	}
 	baseURL := fmt.Sprintf("%s/working-environments/%s?fields=%s", apiRoot, id, field)
@@ -1192,12 +1191,11 @@ func (c *Client) callCMUpdateAPI(method string, request interface{}, baseURL str
 	}
 	baseURL = apiRoot + baseURL
 
-	hostType := ""
-	if isSaas {
-		hostType = "CloudManagerHost"
-	} else {
+	hostType := "CloudManagerHost"
+	if !isSaas {
 		hostType = "http://" + connectorIP
 	}
+
 	params := structs.Map(request)
 
 	if c.Token == "" {
@@ -1546,12 +1544,11 @@ func (c *Client) setOCCMConfig(request configValuesUpdateRequest, clientID strin
 		}
 	}
 
-	hostType := ""
-	if isSaas {
-		hostType = "CloudManagerHost"
-	} else {
+	hostType := "CloudManagerHost"
+	if !isSaas {
 		hostType = "http://" + connectorIP
 	}
+
 	if c.Token == "" {
 		accesTokenResult, err := c.getAccessToken()
 		if err != nil {
@@ -1586,10 +1583,8 @@ func (c *Client) setOCCMConfig(request configValuesUpdateRequest, clientID strin
 func (c *Client) setConfigFlag(request setFlagRequest, keyPath string, clientID string, isSaas bool, connectorIP string) error {
 	log.Print("setConfigFlag: set flag to allow ONTAP image upgrade")
 
-	hostType := ""
-	if isSaas {
-		hostType = "CloudManagerHost"
-	} else {
+	hostType := "CloudManagerHost"
+	if !isSaas {
 		hostType = "http://" + connectorIP
 	}
 

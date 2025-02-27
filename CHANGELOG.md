@@ -1,8 +1,12 @@
 ## 25.2.0 (unrelease)
 NEW FEATURES:
-* resource/cvo for GCP CVO now supports Restricted mode.
-* resource/volume for GCP now supports Restricted mode.
-* Aggregate resource support Restricted mode.
+* resource/cvo supports Restricted mode for GCP.
+* resource/volume supports Restricted mode for GCP.
+* resource/snapmirror supports Restricted mode for GCP.
+* resource/aggregate supports Restricted mode for GCP.
+
+BUG FIXES:
+* add exponential backoff retries to task status check for handling status 504 case.
 
 ## 25.1.0
 BUG FIXES:

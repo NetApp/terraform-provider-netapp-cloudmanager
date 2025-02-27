@@ -43,7 +43,9 @@ The following arguments are supported:
 * `destination_svm_name` - (Optional) The name of the destination SVM. The default SVM name is used, if a name isn't provided.
 * `source_volume_name` - (Required) The name of the source volume.
 * `destination_volume_name` - (Required) The name of the destination volume to be created for snapmirror relationship.
-* `tenant_id` - (Required) The NetApp account ID that the Connector will be associated with. To be used only when using FSX.
+* `connector_ip` - (Optional) The private IP of the connector, this is only required for Restricted mode account.
+* `tenant_id` - (Optional) The NetApp tenant ID that the Connector will be associated with. To be used in FSX or when `deployment_mode` is `Restricted`.  You can find the tenant ID in the Identity & Access Management in Settings, Organization tab of BlueXP at [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
+* `deployment_mode` - (Optional) The mode of deployment to use for the working environment: ['Standard', 'Restricted']. The default is 'Standard'. To know more on deployment modes [https://docs.netapp.com/us-en/bluexp-setup-admin/concept-modes.html/](https://docs.netapp.com/us-en/bluexp-setup-admin/concept-modes.html/).
 * `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
 * `policy` - (Optional) The SnapMirror policy name. The default is 'MirrorAllSnapshots'.
 * `schedule` - (Optional) Schedule name. The default is '1hour'.

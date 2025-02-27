@@ -46,7 +46,6 @@ type createCVOGCPDetails struct {
 	BackupVolumesToCbs      bool                    `structs:"backupVolumesToCbs"`
 	EnableCompliance        bool                    `structs:"enableCompliance"`
 	IsHA                    bool
-	ConnectorIP             string
 	HAParams                haParamsGCP `structs:"haParams,omitempty"`
 	FlashCache              bool        `structs:"flashCache"`
 }
@@ -93,7 +92,7 @@ type haParamsGCP struct {
 	VPC3FirewallRuleTagName        string `structs:"vpc3FirewallRuleTagName,omitempty"`
 }
 
-func (c *Client) createCVOGCP(cvoDetails createCVOGCPDetails, clientID string, isSaas bool) (cvoResult, error) {
+func (c *Client) createCVOGCP(cvoDetails createCVOGCPDetails, clientID string, isSaas bool, connectorIP string) (cvoResult, error) {
 	log.Printf("\n\ncreateCVO %s client_id %s", cvoDetails.Name, clientID)
 
 	accessTokenResult, err := c.getAccessToken()
@@ -113,7 +112,7 @@ func (c *Client) createCVOGCP(cvoDetails createCVOGCPDetails, clientID string, i
 			log.Print("tenant result ", tenantID)
 			cvoDetails.WorkspaceID = tenantID
 		} else {
-			tenantID, err := c.getTenantForNotSaas(clientID, cvoDetails.ConnectorIP)
+			tenantID, err := c.getTenantForNotSaas(clientID, connectorIP)
 			if err != nil {
 				log.Print("getTenant request failed ", err)
 				return cvoResult{}, err
@@ -124,7 +123,7 @@ func (c *Client) createCVOGCP(cvoDetails createCVOGCPDetails, clientID string, i
 	}
 
 	if cvoDetails.NssAccount == "" && (cvoDetails.VsaMetadata.LicenseType == "gcp-cot-premium-byol" || cvoDetails.VsaMetadata.LicenseType == "gcp-ha-cot-premium-byol") && !strings.HasPrefix(cvoDetails.SerialNumber, "Eval-") {
-		nssAccount, err := c.getNSS(clientID, isSaas, cvoDetails.ConnectorIP)
+		nssAccount, err := c.getNSS(clientID, isSaas, connectorIP)
 		if err != nil {
 			log.Print("getNSS request failed ", err)
 			return cvoResult{}, err
@@ -135,11 +134,9 @@ func (c *Client) createCVOGCP(cvoDetails createCVOGCPDetails, clientID string, i
 
 	baseURL := getAPIRootForWorkingEnvironment(cvoDetails.IsHA, "")
 
-	hostType := ""
-	if isSaas {
-		hostType = "CloudManagerHost"
-	} else {
-		hostType = "http://" + cvoDetails.ConnectorIP
+	hostType := "CloudManagerHost"
+	if !isSaas {
+		hostType = "http://" + connectorIP
 	}
 
 	params := structs.Map(cvoDetails)
@@ -167,7 +164,7 @@ func (c *Client) createCVOGCP(cvoDetails createCVOGCPDetails, clientID string, i
 	if isSaas {
 		err = c.waitOnCompletion(onCloudRequestID, "CVO", "create", CreationRetries, 60, clientID)
 	} else {
-		err = c.waitOnCompletionForNotSaas(onCloudRequestID, "CVO", "create", CreationRetries, 60, clientID, cvoDetails.ConnectorIP)
+		err = c.waitOnCompletionForNotSaas(onCloudRequestID, "CVO", "create", CreationRetries, 60, clientID, connectorIP)
 	}
 	if err != nil {
 		return cvoResult{}, err
@@ -196,12 +193,11 @@ func (c *Client) deleteCVOGCP(id string, isHA bool, clientID string, isSaas bool
 
 	baseURL := getAPIRootForWorkingEnvironment(isHA, id)
 
-	hostType := ""
-	if isSaas {
-		hostType = "CloudManagerHost"
-	} else {
+	hostType := "CloudManagerHost"
+	if !isSaas {
 		hostType = "http://" + connectorIP
 	}
+
 	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("DELETE", baseURL, nil, c.Token, hostType, clientID)
 	if err != nil {
 		log.Printf("deleteCVO %s request failed %#v", id, statusCode)
@@ -235,10 +231,8 @@ func (c *Client) addSVMtoCVO(id string, clientID string, svmName string, isSaas 
 
 	// GCP CVO SVM add and deletion only support HA
 	baseURL := getAPIRootForWorkingEnvironment(true, id) + "/svm"
-	hostType := ""
-	if isSaas {
-		hostType = "CloudManagerHost"
-	} else {
+	hostType := "CloudManagerHost"
+	if !isSaas {
 		hostType = "http://" + connectorIP
 	}
 
@@ -281,10 +275,8 @@ func (c *Client) deleteSVMfromCVO(id string, clientID string, svmName string, is
 	baseURL = fmt.Sprintf("%s/svm/%s", baseURL, svmName)
 	log.Print("\tDelete svm url: ", baseURL)
 
-	hostType := ""
-	if isSaas {
-		hostType = "CloudManagerHost"
-	} else {
+	hostType := "CloudManagerHost"
+	if !isSaas {
 		hostType = "http://" + connectorIP
 	}
 

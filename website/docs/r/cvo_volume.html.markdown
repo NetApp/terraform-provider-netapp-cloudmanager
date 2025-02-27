@@ -34,7 +34,7 @@ NFS, CIFS, and iSCSI volumes are supported.
   client_id = netapp-cloudmanager_connector_gcp.cm-gcp.client_id
   deployment_mode = "Restricted"
   connector_ip = "10.10.10.10"
-  tenant_account_id = "account-22Vu41zs"
+  tenant_id = "account-22Vu41zs"
 }
 ```
 
@@ -137,8 +137,8 @@ The following arguments are supported:
 * `size_unit` - (Required) ['Byte' or 'KB' or 'MB' or 'GB' or 'TB'].
 * `provider_volume_type` - (Required) The underlying cloud provider volume type. For AWS: ['gp3', 'gp2', 'io1', 'st1', 'sc1'] (ebs_volume_type on AWS CVO). For Azure: ['Premium_LRS','Standard_LRS','StandardSSD_LRS', 'Premium_ZRS'] (storage_type on Azure CVO). For GCP: ['pd-balanced', 'pd-ssd','pd-standard'] (gcp_volume_type on GCP CVO). For onPrem: 'onprem'.
 * `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
-* `connector_ip` - (Optional) The private IP of the connector, this is only required for Restricted mode account.
-* `tenant_account_id` - (Optional) The NetApp account ID that the Connector will be associated with. You can find the account ID in the account tab of Cloud Manager at [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
+* `connector_ip` - (Optional) The private IP of the connector, this is only required for Restricted mode.
+* `tenant_id` - (Optional) The NetApp tenant ID that the Connector will be associated with.  You can find the tenant ID in the Identity & Access Management in Settings, Organization tab of BlueXP at [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
 * `deployment_mode` - (Optional) The mode of deployment to use for the working environment: ['Standard', 'Restricted']. The default is 'Standard'. To know more on deployment modes [https://docs.netapp.com/us-en/bluexp-setup-admin/concept-modes.html/](https://docs.netapp.com/us-en/bluexp-setup-admin/concept-modes.html/).
 * `enable_thin_provisioning` - (Optional) Enable thin provisioning.
 * `enable_compression` - (Optional) Enable compression.
