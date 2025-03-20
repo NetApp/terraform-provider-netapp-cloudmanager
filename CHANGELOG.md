@@ -1,3 +1,7 @@
+## 25.3.0
+NEW FEATURES:
+* resource/volume supports import.
+
 ## 25.2.0
 NEW FEATURES:
 * resource/cvo supports Restricted mode for GCP.

@@ -184,3 +184,77 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `id` - The name of the volume.
 
+## Import
+
+This resource supports import, which allows you to import existing volumes into the state of this resource.
+
+#### Standard Mode
+Import requires deployment_mode,client_id,working_environment_name and volume name, separated by a comma.
+
+id = `deployment_mode`,`client_id`,`working_environment_name`,`name`
+
+#### Restricted Mode
+Import requires deployment_mode,client_id,working_environment_name,volume name,tenant_id and connector_ip separated by a comma.
+
+id = `deployment_mode`,`client_id`,`working_environment_name`,`name`,`tenant_id`,`connector_ip`
+
+### Terraform Import
+
+For example
+
+```shell
+ terraform import netapp-cloudmanager_volume.example Standard,xxxxxx,cvo,xxxxx,xxxxx,10.10.10.10
+```
+
+!> The terraform import CLI command can only import resources into the state. Importing via the CLI does not generate configuration. If you want to generate the accompanying configuration for imported resources, use the import block instead.
+
+### Terraform Import Block
+
+This requires Terraform 1.5 or higher, and will auto create the configuration for you
+
+First create the block
+
+```terraform
+import {
+  to = netapp-cloudmanager_volume.volume_import
+  id = "Standard,xxxxxx,cvo,xxxxx,xxxxx,10.10.10.10"
+}
+```
+
+Next run, this will auto create the configuration for you
+
+```shell
+terraform plan -generate-config-out=generated.tf
+```
+
+This will generate a file called generated.tf, which will contain the configuration for the imported resource
+
+```terraform
+# __generated__ by Terraform
+# Please review these resources and move them into your main configuration files.
+
+# __generated__ by Terraform from "Standard,xxxxxx,cvo,xxxxx,xxxxx,10.10.10.10"
+resource "netapp-cloudmanager_volume" "volume_import" {
+  space_guarantee = "volume"
+  state           = "online"
+  svm_name        = "svm1"
+  tiering = {
+    minimum_cooling_days = 0
+    policy_name          = "none"
+  }
+  type = "rw"
+
+  aggregate_name = "aggr"
+  capacity_tier = "test"
+  client_id = "xxxxxxx"
+  comment = "test"
+  deployment_mode = "Standard"
+  id = "xxxxxxxxx"
+  name = "test"
+  size = 10
+  svm_name = "svm"
+  unit = "mb"
+  working_environment_id = "xxxxxx"
+  working_environment_name = "test"
+}
+```
