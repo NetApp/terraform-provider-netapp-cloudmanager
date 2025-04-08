@@ -88,7 +88,7 @@ type ExportPolicyRule struct {
 	// Clients           []string `structs:"clients"`
 	// RoRule            []string `structs:"ro_rule"`
 	// RwRule            []string `structs:"rw_rule"`
-	Superuser         bool     `structs:"superuser"`
+	SuperUser         bool     `structs:"superUser"`
 	Index             int32    `structs:"index,omitempty"`
 	RuleAccessControl string   `structs:"ruleAccessControl"`
 	Ips               []string `structs:"ips"`

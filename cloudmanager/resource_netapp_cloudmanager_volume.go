@@ -389,7 +389,7 @@ func resourceCVOVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 				eachRule[0] = x
 				rules[i].Ips = eachRule
 				rules[i].NfsVersion = nfsVersion
-				rules[i].Superuser = d.Get("export_policy_rule_super_user").(bool)
+				rules[i].SuperUser = d.Get("export_policy_rule_super_user").(bool)
 				rules[i].RuleAccessControl = d.Get("export_policy_rule_access_control").(string)
 				rules[i].Index = int32(i + 1)
 			}
@@ -891,7 +891,7 @@ func resourceCVOVolumeUpdate(d *schema.ResourceData, meta interface{}) error {
 			eachRule[0] = x
 			rules[i].Ips = eachRule
 			rules[i].NfsVersion = volume.ExportPolicyInfo.NfsVersion
-			rules[i].Superuser = d.Get("export_policy_rule_super_user").(bool)
+			rules[i].SuperUser = d.Get("export_policy_rule_super_user").(bool)
 			rules[i].RuleAccessControl = d.Get("export_policy_rule_access_control").(string)
 			rules[i].Index = int32(i + 1)
 		}

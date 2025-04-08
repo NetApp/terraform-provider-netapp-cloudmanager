@@ -2,6 +2,10 @@
 NEW FEATURES:
 * resource/volume supports import.
 
+BUG FIXES:
+* resource/volume: Fixed an issue where `export_policy_rule_super_user` was incorrectly updated to `none` regardless of the specified value.
+* resource/volume: Fixed incorrect references to parameters in documentation.
+
 ## 25.2.0
 NEW FEATURES:
 * resource/cvo supports Restricted mode for GCP.
