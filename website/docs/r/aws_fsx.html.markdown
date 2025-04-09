@@ -44,13 +44,13 @@ resource "netapp-cloudmanager_aws_fsx" "aws-fsx" {
 
 The following arguments are supported:
 
-* `name` - (Required) The name of the Cloud Volumes ONTAP working environment.
+* `name` - (Required) The name of the working environment.
 * `aws_credentials_name` - (Required) The name of the AWS Credentials account name.
 * `region` - (Required) The region where the working environment will be created.
 * `primary_subnet_id` - (Required) For HA, the subnet ID of the first node.
 * `secondary_subnet_id` - (Required) For HA, the subnet ID of the second node.
-* `fsx_admin_password` - (Required) The admin password for Cloud Volumes ONTAP.
-* `tenant_id` - (Required) The NetApp account ID that the Connector will be associated with.
+* `fsx_admin_password` - (Required) The admin password for working environment.
+* `tenant_id` - (Required) The NetApp account ID that the working environment will be associated with.
 * `workspace_id` - (Required) The ID of the Cloud Manager workspace of working environment.
 * `kms_key_id` - (Optional) AWS encryption parameters. It is required if using aws encryption.
 * `minimum_ssd_iops` - (Optional) Provisioned SSD IOPS.
