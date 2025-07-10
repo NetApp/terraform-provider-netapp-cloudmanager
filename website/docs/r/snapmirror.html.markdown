@@ -31,6 +31,26 @@ resource "netapp-cloudmanager_snapmirror" "cl-snapmirror" {
 }
 ```
 
+**Create netapp-cloudmanager_snapmirror with automatic destination volume deletion:**
+
+```
+resource "netapp-cloudmanager_snapmirror" "cl-snapmirror-with-volume-deletion" {
+  provider = netapp-cloudmanager
+  source_working_environment_id = "xxxxxxxx"
+  destination_working_environment_id = "xxxxxxxx"
+  source_volume_name = "source"
+  source_svm_name = "svm_source"
+  destination_volume_name = "source_copy"
+  destination_svm_name = "svm_dest"
+  policy = "MirrorAllSnapshots"
+  schedule = "5min"
+  destination_aggregate_name = "aggr1"
+  max_transfer_rate = "102400"
+  delete_destination_volume = true
+  client_id = "xxxxxxxxxxx"
+}
+```
+
 ## Argument Reference
 
 The following arguments are supported:
@@ -53,6 +73,7 @@ The following arguments are supported:
 * `destination_aggregate_name` - (Optional) The aggregate in which the volume will be created. If not provided, Cloud Manager chooses the best aggregate for you.
 * `provider_volume_type` - (Optional) The underlying cloud provider volume type. For AWS: ['gp3', 'gp2', 'io1', 'st1', 'sc1']. For Azure: ['Premium_LRS','Standard_LRS','StandardSSD_LRS']. For GCP: ['pd-balanced', 'pd-ssd','pd-standard']
 * `capacity_tier` - (Optional) The volume's capacity tier for tiering cold data to object storage: ['S3', 'Blob', 'cloudStorage']. The default values for each cloud provider are as follows: Amazon => 'S3', Azure => 'Blob', GCP => 'cloudStorage'. If none, the capacity tier won't be set on volume creation.
+* `delete_destination_volume` - (Optional) Set to true to delete the destination volume when the snapmirror relationship is destroyed. The default is false.
 
 ## Attributes Reference
 
