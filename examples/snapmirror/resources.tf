@@ -68,4 +68,5 @@ resource "netapp-cloudmanager_snapmirror" "cl-snapmirror" {
   schedule = "5min"
   source_volume_name = netapp-cloudmanager_volume.cvo-volume2.name
   source_working_environment_id = netapp-cloudmanager_cvo_aws.cvo-aws-2.id
+  delete_destination_volume = true  # Enable automatic deletion of destination volume when snapmirror is destroyed
 }
