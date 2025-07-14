@@ -49,11 +49,47 @@ type interClusterLifsAddress struct {
 }
 
 type snapMirrorStatusResponse struct {
-	Destination destination `structs:"destination"`
+	Source          relationshipEndpoint `json:"source"`
+	Destination     relationshipEndpoint `json:"destination"`
+	Policy          string               `json:"policy"`
+	Schedule        string               `json:"schedule"`
+	MaxTransferRate sizeUnit             `json:"maxTransferRate"`
 }
 
-type destination struct {
-	VolumeName string `structs:"volumeName"`
+type relationshipEndpoint struct {
+	WorkingEnvironmentID string `json:"workingEnvironmentId"`
+	SvmName              string `json:"svmName"`
+	VolumeName           string `json:"volumeName"`
+	AggregateName        string `json:"aggregateName"`
+	ProviderVolumeType   string `json:"providerVolumeType"`
+	CapacityTier         string `json:"capacityTier"`
+	// Add more fields that might be in the actual response
+	WorkingEnvironmentType   string `json:"workingEnvironmentType"`
+	WorkingEnvironmentStatus string `json:"workingEnvironmentStatus"`
+	ClusterName              string `json:"clusterName"`
+	Region                   string `json:"region"`
+	AvailabilityZone         string `json:"availabilityZone"`
+	SvmPeerAliasName         string `json:"svmPeerAliasName"`
+	NodeName                 string `json:"nodeName"`
+}
+
+type sizeUnit struct {
+	Size int    `json:"size"`
+	Unit string `json:"unit"`
+}
+
+// Basic relationship structure from all-relationships endpoint
+type allRelationshipsResponse struct {
+	Relationships []basicRelationship `json:"relationships"`
+}
+
+type basicRelationship struct {
+	Source relationshipEndpointBasic `json:"source"`
+	Target relationshipEndpointBasic `json:"target"`
+}
+
+type relationshipEndpointBasic struct {
+	ID string `json:"id"`
 }
 
 func (c *Client) getInterclusterlifs(snapMirror snapMirrorRequest, clientID string, isSaas bool, connectorIP string) (interclusterlif, error) {
@@ -317,6 +353,105 @@ func (c *Client) deleteSnapMirror(snapMirror snapMirrorRequest, clientID string,
 	}
 
 	return err
+}
+
+// getAllSnapMirrorRelationships queries all SnapMirror relationships to find one by destination volume name
+func (c *Client) getAllSnapMirrorRelationships(clientID string, isSaas bool, connectorIP string) ([]snapMirrorStatusResponse, error) {
+	accessTokenResult, err := c.getAccessToken()
+	if err != nil {
+		log.Print("in getAllSnapMirrorRelationships request, failed to get AccessToken")
+		return nil, err
+	}
+	c.Token = accessTokenResult.Token
+
+	hostType := "CloudManagerHost"
+	if !isSaas {
+		hostType = "http://" + connectorIP
+	}
+
+	baseURL := "/occm/api/replication/all-relationships"
+
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
+	if err != nil {
+		log.Print("getAllSnapMirrorRelationships request failed ", statusCode)
+		return nil, err
+	}
+	responseError := apiResponseChecker(statusCode, response, "getAllSnapMirrorRelationships")
+	if responseError != nil {
+		return nil, responseError
+	}
+
+	var allRelationships allRelationshipsResponse
+	if err := json.Unmarshal(response, &allRelationships); err != nil {
+		log.Print("Failed to unmarshall response from getAllSnapMirrorRelationships ", err)
+		return nil, err
+	}
+
+	log.Printf("Found %d basic relationships", len(allRelationships.Relationships))
+
+	// Now get detailed information for each relationship
+	var result []snapMirrorStatusResponse
+	for _, basicRel := range allRelationships.Relationships {
+		// Query detailed status for this source working environment
+		detailedRelationships, err := c.getSnapMirrorStatusForSourceWE(basicRel.Source.ID, clientID, isSaas, connectorIP)
+		if err != nil {
+			log.Printf("Failed to get detailed status for source WE %s: %v", basicRel.Source.ID, err)
+			continue
+		}
+
+		// Filter relationships for this specific target
+		for _, detailed := range detailedRelationships {
+			if detailed.Destination.WorkingEnvironmentID == basicRel.Target.ID {
+				result = append(result, detailed)
+			}
+		}
+	}
+
+	return result, nil
+}
+
+// getSnapMirrorStatusForSourceWE gets detailed snapmirror status for a specific source working environment
+func (c *Client) getSnapMirrorStatusForSourceWE(sourceWEID string, clientID string, isSaas bool, connectorIP string) ([]snapMirrorStatusResponse, error) {
+	hostType := "CloudManagerHost"
+	if !isSaas {
+		hostType = "http://" + connectorIP
+	}
+
+	baseURL := fmt.Sprintf("/occm/api/replication/status/%s", sourceWEID)
+
+	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, c.Token, hostType, clientID)
+	if err != nil {
+		log.Printf("getSnapMirrorStatusForSourceWE request failed for %s: %d", sourceWEID, statusCode)
+		return nil, err
+	}
+	responseError := apiResponseChecker(statusCode, response, "getSnapMirrorStatusForSourceWE")
+	if responseError != nil {
+		return nil, responseError
+	}
+
+	var result []snapMirrorStatusResponse
+	if err := json.Unmarshal(response, &result); err != nil {
+		log.Printf("Failed to unmarshall response from getSnapMirrorStatusForSourceWE for %s: %v", sourceWEID, err)
+		return nil, err
+	}
+
+	return result, nil
+}
+
+// findSnapMirrorByDestinationVolume finds a snapmirror relationship by destination volume name
+func (c *Client) findSnapMirrorByDestinationVolume(destinationVolumeName string, clientID string, isSaas bool, connectorIP string) (*snapMirrorStatusResponse, error) {
+	relationships, err := c.getAllSnapMirrorRelationships(clientID, isSaas, connectorIP)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, relationship := range relationships {
+		if relationship.Destination.VolumeName == destinationVolumeName {
+			return &relationship, nil
+		}
+	}
+
+	return nil, fmt.Errorf("snapmirror relationship not found for destination volume: %s", destinationVolumeName)
 }
 
 func (c *Client) getSnapMirror(snapMirror snapMirrorRequest, vol string, clientID string, isSaas bool, connectorIP string) (string, error) {
