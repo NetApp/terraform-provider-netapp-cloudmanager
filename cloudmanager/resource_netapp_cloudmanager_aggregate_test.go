@@ -32,7 +32,7 @@ func TestAccAggregate_basic(t *testing.T) {
 				Config: testAccAggregateConfigUpdateAggregate(),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAggregateExists("netapp-cloudmanager_aggregate.cl-aggregate2", &aggregate),
-					resource.TestCheckResourceAttr("netapp-cloudmanager_aggregate.cl-aggregate2", "number_of_disks", "2"),
+					resource.TestCheckResourceAttr("netapp-cloudmanager_aggregate.cl-aggregate2", "number_of_disks", "4"),
 				),
 			},
 		},
@@ -120,46 +120,49 @@ func testAccCheckAggregateExists(name string, aggregate *aggregateResult) resour
 }
 
 func testAccAggregateConfigCreateByWorkingEnvironmentID() string {
-	return fmt.Sprintf(`
+	return `
 	resource "netapp-cloudmanager_aggregate" "cl-aggregate1" {
 		provider = netapp-cloudmanager
 		name = "acc_test_aggr_1"
-		provider_volume_type = "gp2"
-		client_id = "Nw4Q2O1kdnLtvhwegGalFnodEHUfPJWh"
-		working_environment_id = "VsaWorkingEnvironment-D72MevVC"
+		client_id = "6uOCTkJr78QT51ixCGBTiLMkLglKqoU7"
+		working_environment_id = "vsaworkingenvironment-cfmaavwc"
 		number_of_disks = 1
-	  	disk_size_size = 100
-	  	disk_size_unit = "GB"
+		disk_size_size = 100
+		disk_size_unit = "GB"
+		capacity_tier = "NONE"
+		provider_volume_type = "pd-ssd"
 	}
-  `)
+  `
 }
 
 func testAccAggregateConfigCreateByWorkingEnvironmentName() string {
-	return fmt.Sprintf(`
+	return `
 	resource "netapp-cloudmanager_aggregate" "cl-aggregate2" {
 		provider = netapp-cloudmanager
 		name = "acc_test_aggr_2"
-		provider_volume_type = "gp2"
-		client_id = "Nw4Q2O1kdnLtvhwegGalFnodEHUfPJWh"
-		working_environment_name = "testAWS"
-		number_of_disks = 1
-	  	disk_size_size = 100
-	  	disk_size_unit = "GB"
+		client_id = "6uOCTkJr78QT51ixCGBTiLMkLglKqoU7"
+		working_environment_name = "acccvo"
+		number_of_disks = 3
+		disk_size_size = 100
+		disk_size_unit = "GB"
+		capacity_tier = "NONE"
+		provider_volume_type = "pd-ssd"
 	}
-  `)
+  `
 }
 
 func testAccAggregateConfigUpdateAggregate() string {
-	return fmt.Sprintf(`
+	return `
 	resource "netapp-cloudmanager_aggregate" "cl-aggregate2" {
 		provider = netapp-cloudmanager
 		name = "acc_test_aggr_2"
-		provider_volume_type = "gp2"
-		client_id = "Nw4Q2O1kdnLtvhwegGalFnodEHUfPJWh"
-		working_environment_name = "testAWS"
-		number_of_disks = 2
-	  	disk_size_size = 100
-	  	disk_size_unit = "GB"
+		client_id = "6uOCTkJr78QT51ixCGBTiLMkLglKqoU7"
+		working_environment_name = "acccvo"
+		number_of_disks = 4
+		disk_size_size = 100
+		disk_size_unit = "GB"
+		capacity_tier = "NONE"
+		provider_volume_type = "pd-ssd"
 	}
-  `)
+  `
 }

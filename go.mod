@@ -11,7 +11,6 @@ require (
 	github.com/hashicorp/terraform v0.13.4
 	github.com/sirupsen/logrus v1.7.0
 	golang.org/x/oauth2 v0.23.0
-	gopkg.in/yaml.v2 v2.2.8
 )
 
 require (
@@ -102,3 +101,5 @@ require (
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 )
+
+replace github.com/spf13/afero => github.com/spf13/afero v1.2.2

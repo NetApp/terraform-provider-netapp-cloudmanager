@@ -10,91 +10,13 @@ import (
 	"time"
 
 	"github.com/fatih/structs"
-	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"golang.org/x/oauth2/jwt"
-	"gopkg.in/yaml.v2"
 )
 
 // OCCMMGCPResult the response name  of a occm
 type OCCMMGCPResult struct {
 	Name string `json:"name"`
-}
-
-// GCP template
-type tcontent struct {
-	Resources []tresource `yaml:"resources"`
-}
-
-type tresource struct {
-	Name       string            `yaml:"name"`
-	Properties properties        `yaml:"properties"`
-	Type       string            `yaml:"type"`
-	Metadata   metaData          `yaml:"metadata,omitempty"`
-	Labels     map[string]string `yaml:"labels,omitempty"`
-}
-
-type properties struct {
-	Name              string             `yaml:"name,omitempty"`
-	SizeGb            int                `yaml:"sizeGb,omitempty"`
-	SourceImage       string             `yaml:"sourceImage,omitempty"`
-	Type              string             `yaml:"type,omitempty"`
-	Tags              tags               `yaml:"tags,omitempty"`
-	Disks             []pdisk            `yaml:"disks,omitempty"`
-	MachineType       string             `yaml:"machineType,omitempty"`
-	Zone              string             `yaml:"zone"`
-	Metadata          pmetadata          `yaml:"metadata,omitempty"`
-	NetworkInterfaces []networkInterface `yaml:"networkInterfaces,omitempty"`
-	ServiceAccounts   []serviceAccount   `yaml:"serviceAccounts,omitempty"`
-	Labels            map[string]string  `yaml:"labels,omitempty"`
-}
-
-type label struct {
-	Key   string `yaml:"key,omitempty"`
-	Value string `yaml:"value,omitempty"`
-}
-
-type metaData struct {
-	DependsOn []string `yaml:"dependsOn"`
-}
-
-type tags struct {
-	Items []string `yaml:"items"`
-}
-
-type pdisk struct {
-	AutoDelete bool   `yaml:"autoDelete"`
-	Boot       bool   `yaml:"boot"`
-	DeviceName string `yaml:"deviceName"`
-	Name       string `yaml:"name"`
-	Source     string `yaml:"source"`
-	Type       string `yaml:"type"`
-}
-
-type pmetadata struct {
-	Items []item `yaml:"items"`
-}
-
-type item struct {
-	Key, Value interface{}
-}
-
-type networkInterface struct {
-	AccessConfigs []accessConfig `yaml:"accessConfigs"`
-	Kind          string         `yaml:"kind"`
-	Subnetwork    string         `yaml:"subnetwork"`
-}
-
-type accessConfig struct {
-	Kind        string `yaml:"kind"`
-	Name        string `yaml:"name"`
-	Type        string `yaml:"type"`
-	NetworkTier string `yaml:"networkTier"`
-}
-
-type serviceAccount struct {
-	Email  string   `yaml:"email"`
-	Scopes []string `yaml:"scopes"`
 }
 
 func (c *Client) getCustomDataForGCP(registerAgentTOService registerAgentTOServiceRequest, proxyCertificates []string, clientID string) (string, string, error) {
@@ -193,117 +115,22 @@ func (c *Client) deployGCPVM(occmDetails createOCCMDetails, proxyCertificates []
 
 	gcpCustomData := base64.StdEncoding.EncodeToString([]byte(userData))
 
-	gcpSaScopes := []string{"https://www.googleapis.com/auth/cloud-platform",
-		"https://www.googleapis.com/auth/compute",
-		"https://www.googleapis.com/auth/compute.readonly",
-		"https://www.googleapis.com/auth/ndev.cloudman",
-		"https://www.googleapis.com/auth/ndev.cloudman.readonly"}
-
-	content := tcontent{}
-
-	// first resource
-	t := tresource{}
-	t.Name = fmt.Sprintf("%s-vm", occmDetails.Name)
-	if occmDetails.FirewallTags {
-		t.Properties.Tags.Items = []string{"firewall-tag-bvsu", "http-server", "https-server"}
-	}
-	if len(occmDetails.Tags) > 0 {
-		t.Properties.Tags.Items = append(t.Properties.Tags.Items, occmDetails.Tags...)
-	}
-	deviceName := fmt.Sprintf("%s-vm-disk-boot", occmDetails.Name)
-	t.Properties.Disks = []pdisk{
-		{AutoDelete: true,
-			Boot:       true,
-			DeviceName: deviceName,
-			Name:       deviceName,
-			Source:     fmt.Sprintf("\\\"$(ref.%s.selfLink)\\\"", deviceName),
-			Type:       "PERSISTENT",
-		},
-	}
-	t.Properties.MachineType = fmt.Sprintf("zones/%s/machineTypes/%s", occmDetails.Zone, occmDetails.MachineType)
-	t.Properties.Metadata.Items = []item{
-		{Key: "serial-port-enable", Value: 1},
-		{Key: "customData", Value: gcpCustomData}}
-
-	var accessConfigs []accessConfig
-	if occmDetails.AssociatePublicIP {
-		accessConfigs = []accessConfig{{Kind: "compute#accessConfig", Name: "External NAT", Type: "ONE_TO_ONE_NAT", NetworkTier: "PREMIUM"}}
-	}
-	var projectID string
-	if occmDetails.NetworkProjectID != "" {
-		projectID = occmDetails.NetworkProjectID
-	} else {
-		projectID = occmDetails.GCPProject
-	}
-	subnetID, err := convertSubnetID(projectID, occmDetails, occmDetails.SubnetID)
-	if err != nil {
-		return OCCMMResult{}, err
-	}
-	t.Properties.NetworkInterfaces = []networkInterface{
-		{AccessConfigs: accessConfigs,
-			Kind:       "compute#networkInterface",
-			Subnetwork: subnetID,
-		},
-	}
-	t.Properties.ServiceAccounts = []serviceAccount{{Email: occmDetails.ServiceAccountEmail, Scopes: gcpSaScopes}}
-	t.Properties.Zone = occmDetails.Zone
-	t.Type = "compute.v1.instance"
-	t.Metadata.DependsOn = []string{deviceName}
-
-	// the resource which the first resource depends on
-	td := tresource{}
-	td.Name = deviceName
-	td.Properties.Name = deviceName
-	td.Properties.SizeGb = 100
-	td.Properties.SourceImage = fmt.Sprintf("projects/%s/global/images/family/%s", c.GCPImageProject, c.GCPImageFamily)
-	td.Properties.Type = fmt.Sprintf("zones/%s/diskTypes/pd-ssd", occmDetails.Zone)
-	td.Properties.Zone = occmDetails.Zone
-	td.Type = "compute.v1.disks"
-
-	if occmDetails.Labels != nil {
-		label := map[string]string{}
-		for key, value := range occmDetails.Labels {
-			key = fmt.Sprintf("\\\"%s\\\"", key)
-			value = fmt.Sprintf("\\\"%s\\\"", value)
-			label[key] = value
-			t.Properties.Labels = label
-			td.Properties.Labels = label
-		}
-	}
-
-	content.Resources = []tresource{t, td}
-	data, err := yaml.Marshal(&content)
-	if err != nil {
-		return OCCMMResult{}, fmt.Errorf("error: %v", err)
-	}
-	mydata := string(data)
-	c.GCPDeploymentTemplate = fmt.Sprintf(`{
-		"name": "%s%s",
-		"target": {
-		"config": {
-		"content": "%s"
-		}
-	}
-	}`, occmDetails.Name, occmDetails.GCPCommonSuffixName, mydata)
-
+	// Get GCP token for API calls
 	token, err := c.getGCPToken(c.GCPServiceAccountKey)
 	if err != nil {
 		return OCCMMResult{}, err
 	}
-	baseURL := fmt.Sprintf("/deploymentmanager/v2/projects/%s/global/deployments", occmDetails.GCPProject)
-	hostType := "GCPDeploymentManager"
 
-	log.Print("POST")
-	log.Printf("deployGCPVM: call depolyments api base client=%s", newClientID)
-	statusCode, response, _, err := c.CallAPIMethod("POST", baseURL, nil, token, hostType, newClientID)
+	// Step 1: Create the disk first
+	err = c.createGCPDisk(occmDetails, token, newClientID)
 	if err != nil {
-		log.Print("deployGCPVM request failed")
 		return OCCMMResult{}, err
 	}
 
-	responseError := apiResponseChecker(statusCode, response, "deployGCPVM")
-	if responseError != nil {
-		return OCCMMResult{}, responseError
+	// Step 2: Create the VM instance
+	err = c.createGCPInstance(occmDetails, token, newClientID, gcpCustomData)
+	if err != nil {
+		return OCCMMResult{}, err
 	}
 
 	log.Print("Sleep for 2 minutes")
@@ -331,41 +158,49 @@ func (c *Client) deployGCPVM(occmDetails createOCCMDetails, proxyCertificates []
 }
 
 func (c *Client) getdeployGCPVM(occmDetails createOCCMDetails, id string, clientID string) (string, error) {
-
 	log.Print("getdeployGCPVM")
+	log.Printf("Expected ID parameter: %s", id)
+
 	token, err := c.getGCPToken(c.GCPServiceAccountKey)
 	if err != nil {
 		return "", err
 	}
-	baseURL := fmt.Sprintf("/deploymentmanager/v2/projects/%s/global/deployments/%s%s", occmDetails.GCPProject, occmDetails.Name, occmDetails.GCPCommonSuffixName)
-	hostType := "GCPDeploymentManager"
 
-	log.Print("GET")
+	instanceName := fmt.Sprintf("%s-vm", occmDetails.Name)
+	baseURL := fmt.Sprintf("/compute/v1/projects/%s/zones/%s/instances/%s", occmDetails.GCPProject, occmDetails.Zone, instanceName)
+	hostType := "GCPCompute"
+
+	log.Printf("Making GET request to: %s", baseURL)
 	statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, token, hostType, clientID)
 	if err != nil {
-		log.Print("getdeployGCPVM request failed")
+		log.Printf("getdeployGCPVM request failed: %v", err)
 		return "", err
 	}
 
 	responseError := apiResponseChecker(statusCode, response, "getdeployGCPVM")
 	if responseError != nil {
+		log.Printf("getdeployGCPVM response error: %v", responseError)
 		return "", responseError
 	}
 
-	var result OCCMMGCPResult
+	var result map[string]interface{}
 	if err := json.Unmarshal(response, &result); err != nil {
-		log.Print("Failed to unmarshall response from getVolumeByID")
+		log.Print("Failed to unmarshall response from getdeployGCPVM")
 		return "", err
 	}
 
-	if result.Name == id {
-		return result.Name, nil
+	if name, ok := result["name"].(string); ok && name == instanceName {
+		// Instance exists, return the expected ID that was passed in
+		log.Printf("Instance found: %s, returning expected ID: %s", name, id)
+		return id, nil
 	}
 
 	return "", nil
 }
 
 func (c *Client) getDisk(occmDetails createOCCMDetails, clientID string) (map[string]interface{}, error) {
+	log.Print("getDisk")
+
 	hostType := "GCPCompute"
 	token, err := c.getGCPToken(c.GCPServiceAccountKey)
 	if err != nil {
@@ -392,7 +227,6 @@ func (c *Client) getDisk(occmDetails createOCCMDetails, clientID string) (map[st
 }
 
 func (c *Client) getVMInstance(occmDetails createOCCMDetails, clientID string) (map[string]interface{}, error) {
-
 	log.Print("getVMInstance")
 
 	token, err := c.getGCPToken(c.GCPServiceAccountKey)
@@ -512,26 +346,28 @@ func (c *Client) setVMInstaceTags(occmDetails createOCCMDetails, fingerprint str
 }
 
 func (c *Client) deleteOCCMGCP(request deleteOCCMDetails, clientID string) error {
-
 	log.Printf("deleteOCCMGCP %s client %s", request.Name, clientID)
+
 	token, err := c.getGCPToken(c.GCPServiceAccountKey)
 	if err != nil {
 		return err
 	}
-	baseURL := fmt.Sprintf("/deploymentmanager/v2/projects/%s/global/deployments/%s%s", request.Project, request.Name, request.GCPCommonSuffixName)
-	hostType := "GCPDeploymentManager"
 
-	log.Print("DELETE")
-	statusCode, response, _, err := c.CallAPIMethod("DELETE", baseURL, nil, token, hostType, clientID)
+	// Step 1: Delete the VM instance
+	err = c.deleteGCPInstance(request, token, clientID)
 	if err != nil {
-		log.Print("deleteOCCMGCP request failed")
-		return err
+		log.Printf("Warning: Failed to delete instance: %v", err)
+		// Continue with deletion process even if instance deletion fails
 	}
 
-	responseError := apiResponseChecker(statusCode, response, "deleteOCCMGCP")
-	if responseError != nil {
-		return responseError
-	}
+	// We specify "autoDelete": true in line 576, as a result the disk will be deleted automatically when the instance is deleted.
+	// Keep the code here commented out in case we need to delete the disk manually in the future.
+	// // Step 2: Delete the disk
+	// err = c.deleteGCPDisk(request, token, clientID)
+	// if err != nil {
+	// 	log.Printf("Warning: Failed to delete disk: %v", err)
+	// 	// Continue with deletion process even if disk deletion fails
+	// }
 
 	log.Print("Sleep for 30 seconds")
 	time.Sleep(time.Duration(30) * time.Second)
@@ -553,7 +389,7 @@ func (c *Client) deleteOCCMGCP(request deleteOCCMDetails, clientID string) error
 		} else {
 			if retries == 0 {
 				log.Print("Taking too long for instance to finish terminating")
-				return fmt.Errorf("Taking too long for instance to finish terminating")
+				return fmt.Errorf("taking too long for instance to finish terminating")
 			}
 			time.Sleep(time.Duration(10) * time.Second)
 			retries--
@@ -599,7 +435,7 @@ func (c *Client) getGCPToken(gcpServiceAccountKey string) (string, error) {
 			Scopes:     scopes,
 			TokenURL:   google.JWTTokenURL,
 		}
-		gcpToken, err := config.TokenSource(oauth2.NoContext).Token()
+		gcpToken, err := config.TokenSource(context.Background()).Token()
 		if err != nil {
 			return "", err
 		}
@@ -620,3 +456,240 @@ func (c *Client) getGCPToken(gcpServiceAccountKey string) (string, error) {
 
 	return token, nil
 }
+
+// createGCPDisk creates a disk using GCP Compute API
+func (c *Client) createGCPDisk(occmDetails createOCCMDetails, token, clientID string) error {
+	log.Print("Creating GCP disk...")
+
+	// Validate that required fields are not empty
+	if occmDetails.Zone == "" {
+		return fmt.Errorf("zone is required but not provided")
+	}
+	if occmDetails.GCPProject == "" {
+		return fmt.Errorf("GCP project is required but not provided")
+	}
+
+	deviceName := fmt.Sprintf("%s-vm-disk-boot", occmDetails.Name)
+
+	diskBody := map[string]interface{}{
+		"name":        deviceName,
+		"sizeGb":      100,
+		"sourceImage": fmt.Sprintf("projects/%s/global/images/family/%s", c.GCPImageProject, c.GCPImageFamily),
+		"type":        fmt.Sprintf("zones/%s/diskTypes/pd-ssd", occmDetails.Zone),
+		"zone":        occmDetails.Zone,
+	}
+
+	// Add labels if specified
+	if occmDetails.Labels != nil {
+		labels := map[string]string{}
+		for key, value := range occmDetails.Labels {
+			labels[key] = value
+		}
+		diskBody["labels"] = labels
+	}
+
+	baseURL := fmt.Sprintf("/compute/v1/projects/%s/zones/%s/disks", occmDetails.GCPProject, occmDetails.Zone)
+	hostType := "GCPCompute"
+
+	statusCode, response, _, err := c.CallAPIMethod("POST", baseURL, diskBody, token, hostType, clientID)
+	if err != nil {
+		log.Printf("createGCPDisk request failed: %s", err.Error())
+		return err
+	}
+
+	responseError := apiResponseChecker(statusCode, response, "createGCPDisk")
+	if responseError != nil {
+		return responseError
+	}
+
+	log.Printf("Disk creation initiated: %s", deviceName)
+
+	return nil
+
+	// // Wait for disk to be ready
+	// return c.waitForDiskReady(occmDetails, token, clientID, deviceName)
+}
+
+// createGCPInstance creates a VM instance using GCP Compute API
+func (c *Client) createGCPInstance(occmDetails createOCCMDetails, token, clientID, gcpCustomData string) error {
+	log.Print("Creating GCP instance...")
+
+	// Validate that required fields are not empty
+	if occmDetails.Zone == "" {
+		return fmt.Errorf("zone is required but not provided")
+	}
+	if occmDetails.GCPProject == "" {
+		return fmt.Errorf("GCP project is required but not provided")
+	}
+
+	deviceName := fmt.Sprintf("%s-vm-disk-boot", occmDetails.Name)
+	instanceName := fmt.Sprintf("%s-vm", occmDetails.Name)
+
+	gcpSaScopes := []string{
+		"https://www.googleapis.com/auth/cloud-platform",
+		"https://www.googleapis.com/auth/compute",
+		"https://www.googleapis.com/auth/compute.readonly",
+		"https://www.googleapis.com/auth/ndev.cloudman",
+		"https://www.googleapis.com/auth/ndev.cloudman.readonly",
+	}
+
+	// Build tags
+	var tags []string
+	if occmDetails.FirewallTags {
+		tags = []string{"firewall-tag-bvsu", "http-server", "https-server"}
+	}
+	if len(occmDetails.Tags) > 0 {
+		tags = append(tags, occmDetails.Tags...)
+	}
+
+	// Build access configs for public IP
+	var accessConfigs []map[string]interface{}
+	if occmDetails.AssociatePublicIP {
+		accessConfigs = []map[string]interface{}{
+			{
+				"kind":        "compute#accessConfig",
+				"name":        "External NAT",
+				"type":        "ONE_TO_ONE_NAT",
+				"networkTier": "PREMIUM",
+			},
+		}
+	}
+
+	// Determine project ID for network
+	var projectID string
+	if occmDetails.NetworkProjectID != "" {
+		projectID = occmDetails.NetworkProjectID
+	} else {
+		projectID = occmDetails.GCPProject
+	}
+
+	subnetID, err := convertSubnetID(projectID, occmDetails, occmDetails.SubnetID)
+	if err != nil {
+		return err
+	}
+
+	instanceBody := map[string]interface{}{
+		"name":        instanceName,
+		"machineType": fmt.Sprintf("zones/%s/machineTypes/%s", occmDetails.Zone, occmDetails.MachineType),
+		"zone":        occmDetails.Zone,
+		"disks": []map[string]interface{}{
+			{
+				"autoDelete": true,
+				"boot":       true,
+				"deviceName": deviceName,
+				"source":     fmt.Sprintf("projects/%s/zones/%s/disks/%s", occmDetails.GCPProject, occmDetails.Zone, deviceName),
+				"type":       "PERSISTENT",
+			},
+		},
+		"metadata": map[string]interface{}{
+			"items": []map[string]interface{}{
+				{"key": "serial-port-enable", "value": "1"},
+				{"key": "customData", "value": gcpCustomData},
+			},
+		},
+		"networkInterfaces": []map[string]interface{}{
+			{
+				"accessConfigs": accessConfigs,
+				"kind":          "compute#networkInterface",
+				"subnetwork":    subnetID,
+			},
+		},
+		"serviceAccounts": []map[string]interface{}{
+			{
+				"email":  occmDetails.ServiceAccountEmail,
+				"scopes": gcpSaScopes,
+			},
+		},
+	}
+
+	// Add tags if specified
+	if len(tags) > 0 {
+		instanceBody["tags"] = map[string]interface{}{
+			"items": tags,
+		}
+	}
+
+	// Add labels if specified
+	if occmDetails.Labels != nil {
+		labels := map[string]string{}
+		for key, value := range occmDetails.Labels {
+			labels[key] = value
+		}
+		instanceBody["labels"] = labels
+	}
+
+	baseURL := fmt.Sprintf("/compute/v1/projects/%s/zones/%s/instances", occmDetails.GCPProject, occmDetails.Zone)
+	hostType := "GCPCompute"
+
+	statusCode, response, _, err := c.CallAPIMethod("POST", baseURL, instanceBody, token, hostType, clientID)
+	if err != nil {
+		log.Printf("createGCPInstance request failed: %s", err.Error())
+		return err
+	}
+
+	responseError := apiResponseChecker(statusCode, response, "createGCPInstance")
+	if responseError != nil {
+		return responseError
+	}
+
+	log.Printf("Instance creation initiated: %s", instanceName)
+
+	return nil
+
+	// // Wait for instance to be ready
+	// return c.waitForInstanceReady(occmDetails, token, clientID, instanceName)
+}
+
+// deleteGCPInstance deletes a VM instance using GCP Compute API
+func (c *Client) deleteGCPInstance(request deleteOCCMDetails, token, clientID string) error {
+	log.Print("Deleting GCP instance...")
+
+	instanceName := fmt.Sprintf("%s-vm", request.Name)
+	baseURL := fmt.Sprintf("/compute/v1/projects/%s/zones/%s/instances/%s", request.Project, request.Region, instanceName)
+	hostType := "GCPCompute"
+
+	statusCode, response, _, err := c.CallAPIMethod("DELETE", baseURL, nil, token, hostType, clientID)
+	if err != nil {
+		log.Printf("deleteGCPInstance request failed: %s", err.Error())
+		return err
+	}
+
+	responseError := apiResponseChecker(statusCode, response, "deleteGCPInstance")
+	if responseError != nil {
+		return responseError
+	}
+
+	log.Printf("Instance deletion initiated: %s", instanceName)
+
+	return nil
+
+	// // Wait for instance to be deleted
+	// return c.waitForInstanceDeleted(request, token, clientID, instanceName)
+}
+
+// We specify "autoDelete": true in line 576, as a result the disk will be deleted automatically when the instance is deleted.
+// Keep the code here commented out in case we need to delete the disk manually in the future.
+// // deleteGCPDisk deletes a disk using GCP Compute API
+// func (c *Client) deleteGCPDisk(request deleteOCCMDetails, token, clientID string) error {
+// 	log.Print("Deleting GCP disk...")
+
+// 	diskName := fmt.Sprintf("%s-vm-disk-boot", request.Name)
+// 	baseURL := fmt.Sprintf("/compute/v1/projects/%s/zones/%s/disks/%s", request.Project, request.Region, diskName)
+// 	hostType := "GCPCompute"
+
+// 	statusCode, response, _, err := c.CallAPIMethod("DELETE", baseURL, nil, token, hostType, clientID)
+// 	if err != nil {
+// 		log.Printf("deleteGCPDisk request failed: %s", err.Error())
+// 		return err
+// 	}
+
+// 	responseError := apiResponseChecker(statusCode, response, "deleteGCPDisk")
+// 	if responseError != nil {
+// 		return responseError
+// 	}
+
+// 	log.Printf("Disk deletion initiated: %s", diskName)
+
+// 	// Wait for disk to be deleted
+// 	return c.waitForDiskDeleted(request, token, clientID, diskName)
+// }

@@ -290,6 +290,8 @@ func resourceOCCMGCPCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	d.SetId(occmDetails.Name)
+	log.Printf("resourceOCCMGCPCreate - Set resource ID to: %s", occmDetails.Name)
+
 	if err := d.Set("client_id", res.ClientID); err != nil {
 		return fmt.Errorf("error reading occm client_id: %s", err)
 	}
@@ -334,12 +336,13 @@ func resourceOCCMGCPRead(d *schema.ResourceData, meta interface{}) error {
 
 	resID, err := client.getdeployGCPVM(occmDetails, id, clientID)
 	if err != nil {
-		log.Print("Error getting occm")
+		log.Printf("Error getting occm: %v", err)
 		return err
 	}
 
+	log.Printf("resourceOCCMGCPRead - Expected ID: %s, Response ID: %s", id, resID)
 	if resID != id {
-		return fmt.Errorf("expected occm ID %v, Response could not find", id)
+		return fmt.Errorf("expected occm ID %v, Response could not find (got: %s)", id, resID)
 	}
 
 	if _, ok := d.GetOk("tags"); ok {
@@ -458,7 +461,8 @@ func resourceOCCMGCPExists(d *schema.ResourceData, meta interface{}) (bool, erro
 	occmDetails.GCPCommonSuffixName = "-vm-boot-deployment"
 	occmDetails.Name = d.Get("name").(string)
 	occmDetails.GCPProject = d.Get("project_id").(string)
-	occmDetails.Region = d.Get("zone").(string)
+	occmDetails.Zone = d.Get("zone").(string)
+	occmDetails.Region = string(occmDetails.Zone[0 : len(occmDetails.Zone)-2])
 	occmDetails.SubnetID = d.Get("subnet_id").(string)
 	var err error
 	client.GCPServiceAccountKey, err = getGCPServiceAccountKey(d)
@@ -472,7 +476,7 @@ func resourceOCCMGCPExists(d *schema.ResourceData, meta interface{}) (bool, erro
 
 	resID, err := client.getdeployGCPVM(occmDetails, id, clientID)
 	if err != nil {
-		log.Print("Error getting occm")
+		log.Printf("Error getting occm in Exists: %v", err)
 		return false, err
 	}
 
