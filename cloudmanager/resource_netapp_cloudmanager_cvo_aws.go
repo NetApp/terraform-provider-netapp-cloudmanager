@@ -223,11 +223,6 @@ func resourceCVOAWS() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
-			"kms_key_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
 			"aws_tag": {
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -472,10 +467,6 @@ func resourceCVOAWSCreate(d *schema.ResourceData, meta interface{}) error {
 
 	if c, ok := d.GetOk("cloud_provider_account"); ok {
 		cvoDetails.CloudProviderAccount = c.(string)
-	}
-
-	if c, ok := d.GetOk("kms_key_id"); ok {
-		cvoDetails.AwsEncryptionParameters.KmsKeyID = c.(string)
 	}
 
 	if c, ok := d.GetOk("provided_license"); ok {

@@ -33,6 +33,8 @@ resource "netapp-cloudmanager_snapmirror" "cl-snapmirror" {
 
 ## Argument Reference
 
+Arguments marked with “Forces new resource” will cause the resource to be recreated if their value is changed after creation.
+
 The following arguments are supported:
 
 * `source_working_environment_id` - (Optional) The public ID of the source working environment where the snapmirror relationship will be created.
@@ -44,7 +46,7 @@ The following arguments are supported:
 * `source_volume_name` - (Required) The name of the source volume.
 * `destination_volume_name` - (Required) The name of the destination volume to be created for snapmirror relationship.
 * `connector_ip` - (Optional) The private IP of the connector, this is only required for Restricted mode account.
-* `tenant_id` - (Optional) The NetApp tenant ID that the Connector will be associated with. To be used in FSX or when `deployment_mode` is `Restricted`.  You can find the tenant ID in the Identity & Access Management in Settings, Organization tab of BlueXP at [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
+* `tenant_id` - (Optional, Forces new resource) The NetApp tenant ID that the Connector will be associated with. To be used in FSX or when `deployment_mode` is `Restricted`.  You can find the tenant ID in the Identity & Access Management in Settings, Organization tab of BlueXP at [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
 * `deployment_mode` - (Optional) The mode of deployment to use for the working environment: ['Standard', 'Restricted']. The default is 'Standard'. To know more on deployment modes [https://docs.netapp.com/us-en/bluexp-setup-admin/concept-modes.html/](https://docs.netapp.com/us-en/bluexp-setup-admin/concept-modes.html/).
 * `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
 * `policy` - (Optional) The SnapMirror policy name. The default is 'MirrorAllSnapshots'.
@@ -53,6 +55,8 @@ The following arguments are supported:
 * `destination_aggregate_name` - (Optional) The aggregate in which the volume will be created. If not provided, Cloud Manager chooses the best aggregate for you.
 * `provider_volume_type` - (Optional) The underlying cloud provider volume type. For AWS: ['gp3', 'gp2', 'io1', 'st1', 'sc1']. For Azure: ['Premium_LRS','Standard_LRS','StandardSSD_LRS']. For GCP: ['pd-balanced', 'pd-ssd','pd-standard']
 * `capacity_tier` - (Optional) The volume's capacity tier for tiering cold data to object storage: ['S3', 'Blob', 'cloudStorage']. The default values for each cloud provider are as follows: Amazon => 'S3', Azure => 'Blob', GCP => 'cloudStorage'. If none, the capacity tier won't be set on volume creation.
+* `iops` - (Optional, Forces new resource) The number of IOPS to provision for the volume.
+* `throughput` - (Optional, Forces new resource) The throughput to provision for the volume.
 
 ## Attributes Reference
 

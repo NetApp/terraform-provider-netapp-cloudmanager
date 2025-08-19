@@ -18,7 +18,6 @@ func dataSourceAWSFSX() *schema.Resource {
 			"id": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"status": {
 				Type:     schema.TypeString,

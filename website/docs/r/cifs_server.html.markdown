@@ -55,19 +55,21 @@ resource "netapp-cloudmanager_cifs_server" "cl-cifs-wg" {
 
 ## Argument Reference
 
+Arguments marked with “Forces new resource” will cause the resource to be recreated if their value is changed after creation.
+
 The following arguments are supported:
 
-* `working_environment_id` - (Optional) The public ID of the working environment where the CIFS server will be created. This argument is optional if working_environment_name is provided. You can find the ID from a previous create Cloud Volumes ONTAP action as shown in the example, or from the information page of the Cloud Volumes ONTAP working environment on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
-* `working_environment_name` - (Optional) The working environment name where the CIFS server will be created. The argument will be ignored if working_environment_id is provided.
-* `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
-* `domain` - (Required) Active Directory domain name. For CIFS AD only.
-* `username` - (Required) Active Directory admin user name. For CIFS AD only.
-* `password` - (Required) Active Directory admin password. For CIFS AD only.
-* `dns_domain` - (Required) DNS domain name. For CIFS AD only.
-* `ip_addresses` - (Required) DNS server IP addresses. For CIFS AD only.
-* `netbios` - (Required) CIFS server NetBIOS name. For CIFS AD only.
-* `organizational_unit` - (Required) Organizational Unit in which to register the CIFS server. For CIFS AD only.
-* `svm_name` - (Optional) The name of the SVM. API will use the svmName from the CVO if it is not provided here.
+* `working_environment_id` - (Optional, Forces new resource) The public ID of the working environment where the CIFS server will be created. This argument is optional if working_environment_name is provided. You can find the ID from a previous create Cloud Volumes ONTAP action as shown in the example, or from the information page of the Cloud Volumes ONTAP working environment on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
+* `working_environment_name` - (Optional, Forces new resource) The working environment name where the CIFS server will be created. The argument will be ignored if working_environment_id is provided.
+* `client_id` - (Required, Forces new resource) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
+* `domain` - (Required, Forces new resource) Active Directory domain name. For CIFS AD only.
+* `username` - (Required, Forces new resource) Active Directory admin user name. For CIFS AD only.
+* `password` - (Required, Forces new resource) Active Directory admin password. For CIFS AD only.
+* `dns_domain` - (Required, Forces new resource) DNS domain name. For CIFS AD only.
+* `ip_addresses` - (Required, Forces new resource) DNS server IP addresses. For CIFS AD only.
+* `netbios` - (Required, Forces new resource) CIFS server NetBIOS name. For CIFS AD only.
+* `organizational_unit` - (Required, Forces new resource) Organizational Unit in which to register the CIFS server. For CIFS AD only.
+* `svm_name` - (Optional, Forces new resource) The name of the SVM. API will use the svmName from the CVO if it is not provided here.
 * `is_workgroup` - (Deprecated) For CIFS workgroup operations, set to true. Creating cifs server with workgroup is deprecated.
 * `server_name` - (Deprecated) Server name. For CIFS workgroup only. Creating cifs server with workgroup is deprecated.
 * `workgroup_name` - (Deprecated) Workgroup name. For CIFS workgroup only. Creating cifs server with workgroup is deprecated.

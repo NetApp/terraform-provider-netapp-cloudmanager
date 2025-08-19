@@ -2,6 +2,10 @@
 IMPROVEMENTS:
 * resource/connector_gcp: replaced GCP Deployment Manager API with individual GCP Compute Engine APIs for VM and disk management.
 
+ENHANCEMENTS:
+* Update all the resources documenation by adding `Forces new resource` if the modification is not supported.
+
+
 ## 25.3.0
 NEW FEATURES:
 * resource/volume supports import.

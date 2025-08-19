@@ -54,35 +54,38 @@ resource "netapp-cloudmanager_anf_volume" "test-1" {
 
 ## Argument Reference
 
+Arguments marked with “Forces new resource” will cause the resource to be recreated if their value is changed after creation.
+
 The following arguments are supported:
 
-* `name` - (Required) The name of the volume.
-* `size` - (Required) The volume size, supported with decimal numbers.
-* `size_unit` - (Required) [ 'GB' ].
-* `volume_path` - (Required) The volume path.
-* `protocol_types` (Required) [ 'NFSv3' ].
-* `location` - (Required) The location of the account.
-* `service_level` - (Required) ['Premium' or 'Standard' or 'Ultra'].
-* `subnet` - (Required) The name of the subnet.
-* `virtual_network`  - (Required) The name of the virtual network.
-* `account` - (Required) The name of the account.
-* `netapp_account` - (Required) The name of the netapp account.
-* `subscription`  - (Required) The name of the subscription.
-* `resource_groups` - (Required) The name of the resource group in Azure where the volume will be created.
-* `capacity_pool` - (Required) The name of the capacity pool.
-* `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
-* `working_environment_name` - (Required) The working environment name.
-* `export_policy` - (Optional) The rules of the export policy.
-
+* `name` - (Required, Forces new resource) The name of the volume.
+* `size` - (Required, Forces new resource) The volume size, supported with decimal numbers.
+* `size_unit` - (Required, Forces new resource) [ 'GB' ].
+* `volume_path` - (Required, Forces new resource) The volume path.
+* `protocol_types` (Required, Forces new resource) [ 'NFSv3' ].
+* `location` - (Required, Forces new resource) The location of the account.
+* `service_level` - (Required, Forces new resource) ['Premium' or 'Standard' or 'Ultra'].
+* `subnet` - (Required, Forces new resource) The name of the subnet.
+* `virtual_network`  - (Required, Forces new resource) The name of the virtual network.
+* `account` - (Required, Forces new resource) The name of the account.
+* `netapp_account` - (Required, Forces new resource) The name of the netapp account.
+* `subscription`  - (Required, Forces new resource) The name of the subscription.
+* `resource_groups` - (Required, Forces new resource) The name of the resource group in Azure where the volume will be created.
+* `capacity_pool` - (Required, Forces new resource) The name of the capacity pool.
+* `client_id` - (Required, Forces new resource) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
+* `working_environment_name` - (Required, Forces new resource) The working environment name.
+* `export_policy` - (Optional, Forces new resource) The rules of the export policy.
 
 The `export_policy` block supports:
-* `rule` - (Optional) The rule of the export policy.
+
+* `rule` - (Optional, Forces new resource) The rule of the export policy.
 
 The `rule` block supports:
-* `allowed_clients` - (Optional) allowed clients.
+
+* `allowed_clients` - (Optional, Forces new resource) allowed clients.
 * `rule_index` - (Optional) rule index.
-* `nfsv3` - (Optional) Boolean.
-* `unix_read_only` - (Optional) Boolean.
+* `nfsv3` - (Optional, Forces new resource) Boolean.
+* `unix_read_only` - (Optional, Forces new resource) Boolean.
 * `unix_read_write` - (Optional) Boolean.
 
 ## Attributes Reference

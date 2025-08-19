@@ -129,6 +129,8 @@ resource "netapp-cloudmanager_volume" "cvo-volume-onprem" {
 
 ## Argument Reference
 
+Arguments marked with “Forces new resource” will cause the resource to be recreated if their value is changed after creation.
+
 The following arguments are supported:
 
 * `name` - (Required) The name of the volume.
@@ -175,8 +177,8 @@ The `snapshot_policy` block supports:
 * `schedule` - (Required) The schedule configuration for creating snapshot policy. When `snapshot_policy_name` does not exist, the snapshot policy will be created with `schedule`(s) and named as `snapshot_policy_name`. It supports the volume creation based on the AWS, AZURE and GCP CVO.
 
 The `schedule` block supports:
-* `schedule_type` - (Required) snapshot policy schedule type. Must be one of '5min', '8hour', 'hourly', 'daily', 'weekly', 'monthly'.
-* `retention` - (Required) snapshot policy retention.
+* `schedule_type` - (Required, Forces new resource) snapshot policy schedule type. Must be one of '5min', '8hour', 'hourly', 'daily', 'weekly', 'monthly'.
+* `retention` - (Required, Forces new resource) snapshot policy retention.
 
 ## Attributes Reference
 

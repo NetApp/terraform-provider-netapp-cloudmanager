@@ -39,25 +39,27 @@ resource "netapp-cloudmanager_connector_gcp" "cl-occm-gcp" {
 
 ## Argument Reference
 
+Arguments marked with “Forces new resource” will cause the resource to be recreated if their value is changed after creation.
+
 The following arguments are supported:
 
-* `name` - (Required, non-modifiable) The name of the Cloud Manager Connector.
-* `project_id` - (Required, non-modifiable) The GCP project_id where the connector will be created.
-* `zone` - (Required, non-modifiable) The GCP zone where the Connector will be created.
-* `company` - (Required, non-modifiable) The name of the company of the user.
-* `service_account_email` - (Required, non-modifiable) The email of the service_account for the connector instance. This service account is used to allow the Connector to create Cloud Volume ONTAP.
-* `service_account_path` - (Optional, non-modifiable) The local path of the service_account JSON file for GCP authorization purposes. This service account is used to create the Connector in GCP. Conflicts with `service_account_key`. It does not need to be set when using the user application default credential authentication by running the command gcloud auth application-default login..
+* `name` - (Required, Forces new resource) The name of the Cloud Manager Connector.
+* `project_id` - (Required, Forces new resource) The GCP project_id where the connector will be created.
+* `zone` - (Required, Forces new resource) The GCP zone where the Connector will be created.
+* `company` - (Required, Forces new resource) The name of the company of the user.
+* `service_account_email` - (Required, Forces new resource) The email of the service_account for the connector instance. This service account is used to allow the Connector to create Cloud Volume ONTAP.
+* `service_account_path` - (Optional, Forces new resource) The local path of the service_account JSON file for GCP authorization purposes. This service account is used to create the Connector in GCP. Conflicts with `service_account_key`. It does not need to be set when using the user application default credential authentication by running the command gcloud auth application-default login..
 * `service_account_key` - (Optional) A JSON string for the service account key for GCP authorization purposes. This service account is used to create the Connector in GCP. Conflicts with `service_account_path`. It does not need to be set when using the user application default credential authentication by running the command gcloud auth application-default login.
-* `subnet_id` - (Optional, non-modifiable) The name of the subnet for the virtual machine. The default value is "Default". Two formats are supported: either <subnetID> or projects/<projectID>/regions/<region>/subnetworks/<subnetID>. 
-* `network_project_id` - (Optional, non-modifiable) The project id in GCP associated with the Subnet. If not provided, it’s assumed that the Subnet is within the previously specified project id.
-* `machine_type` - (Optional, non-modifiable) The machine_type for the Connector VM. The default value is "n2-standard-8"
-* `firewall_tags` - (Optional, non-modifiable) Indicates whether to add firewall_tags to the connector VM (HTTP and HTTP). The default is "true". If true, "firewall-tag-bvsu", "http-server", "https-server" are set as tags, and they can't be managed using tag options.
-* `associate_public_ip` - (Optional, non-modifiable) Indicates whether to associate a public IP address to the virtual machine. The default is "true"
-* `proxy_url` - (Optional, non-modifiable) The proxy URL, if using a proxy to connect to the internet.
-* `proxy_user_name` - (Optional, non-modifiable) The proxy user name, if using a proxy to connect to the internet.
-* `proxy_password` - (Optional, non-modifiable) The proxy password, if using a proxy to connect to the internet.
-* `proxy_certificates` - (Optional, non-modifiable) The proxy certificates. A list of certificate file names.
-* `account_id` - (Optional, non-modifiable) The NetApp account ID that the Connector will be associated with. If not provided, Cloud Manager uses the first account. If no account exists, Cloud Manager creates a new account. You can find the account ID in the account tab of Cloud Manager at [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
+* `subnet_id` - (Optional, Forces new resource) The name of the subnet for the virtual machine. The default value is "Default". Two formats are supported: either <subnetID> or projects/<projectID>/regions/<region>/subnetworks/<subnetID>. 
+* `network_project_id` - (Optional, Forces new resource) The project id in GCP associated with the Subnet. If not provided, it’s assumed that the Subnet is within the previously specified project id.
+* `machine_type` - (Optional, Forces new resource) The machine_type for the Connector VM. The default value is "n2-standard-8"
+* `firewall_tags` - (Optional, Forces new resource) Indicates whether to add firewall_tags to the connector VM (HTTP and HTTP). The default is "true". If true, "firewall-tag-bvsu", "http-server", "https-server" are set as tags, and they can't be managed using tag options.
+* `associate_public_ip` - (Optional, Forces new resource) Indicates whether to associate a public IP address to the virtual machine. The default is "true"
+* `proxy_url` - (Optional, Forces new resource) The proxy URL, if using a proxy to connect to the internet.
+* `proxy_user_name` - (Optional, Forces new resource) The proxy user name, if using a proxy to connect to the internet.
+* `proxy_password` - (Optional, Forces new resource) The proxy password, if using a proxy to connect to the internet.
+* `proxy_certificates` - (Optional, Forces new resource) The proxy certificates. A list of certificate file names.
+* `account_id` - (Optional, Forces new resource) The NetApp account ID that the Connector will be associated with. If not provided, Cloud Manager uses the first account. If no account exists, Cloud Manager creates a new account. You can find the account ID in the account tab of Cloud Manager at [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
 * `tags` - (Optional) The list of network tags.
 * `labels` - (Optional) The map of labels.
 * `gcp_block_project_ssh_keys` - (Optional) Block project-wide SSH keys. Default value is false. Reference: [Block project SSH keys from a VM after VM creation](https://cloud.google.com/compute/docs/connect/restrict-ssh-keys#after-vm-creation)

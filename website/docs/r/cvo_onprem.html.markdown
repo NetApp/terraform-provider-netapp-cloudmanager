@@ -29,15 +29,17 @@ resource "netapp-cloudmanager_cvo_onprem" "cvo-onprem" {
 
 ## Argument Reference
 
+Arguments marked with “Forces new resource” will cause the resource to be recreated if their value is changed after creation.
+
 The following arguments are supported:
 
-* `name` - (Required) The name of the Cloud Volumes ONTAP working environment.
-* `cluster_address` - (Required) The ip address of the cluster management interface.
-* `cluster_user_name` - (Required) The admin user name for the onprem ONTAP system.
-* `cluster_password` - (Required) The admin password for the onprem ONTAP system.
-* `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
-* `workspace_id` - (Optional) The ID of the Cloud Manager workspace where you want to deploy Cloud Volumes ONTAP. If not provided, Cloud Manager uses the first workspace. You can find the ID from the Workspace tab on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
-* `location` - (Required) The type of location to use for the working environment: ['ON_PREM', 'AZURE', 'AWS', 'SOFTLAYER', 'GOOGLE', 'CLOUD_TIERING'].
+* `name` - (Required, Forces new resource) The name of the Cloud Volumes ONTAP working environment.
+* `cluster_address` - (Required, Forces new resource) The ip address of the cluster management interface.
+* `cluster_user_name` - (Required, Forces new resource) The admin user name for the onprem ONTAP system.
+* `cluster_password` - (Required, Forces new resource) The admin password for the onprem ONTAP system.
+* `client_id` - (Required, Forces new resource) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
+* `workspace_id` - (Optional, Forces new resource) The ID of the Cloud Manager workspace where you want to deploy Cloud Volumes ONTAP. If not provided, Cloud Manager uses the first workspace. You can find the ID from the Workspace tab on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
+* `location` - (Required, Forces new resource) The type of location to use for the working environment: ['ON_PREM', 'AZURE', 'AWS', 'SOFTLAYER', 'GOOGLE', 'CLOUD_TIERING'].
 
 ## Attributes Reference
 

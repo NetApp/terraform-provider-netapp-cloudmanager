@@ -177,6 +177,31 @@ func (c *Client) getdeployGCPVM(occmDetails createOCCMDetails, id string, client
 		return "", err
 	}
 
+	// Handle 404 - instance not found
+	// if statusCode == 404 {
+	// 	log.Printf("Instance not found (404): %s", instanceName)
+
+	// 	// Try to check if this is a legacy deployment manager instance
+	// 	// by looking for any instance with the base name
+	// 	legacyInstanceName := occmDetails.Name
+	// 	legacyURL := fmt.Sprintf("/compute/v1/projects/%s/zones/%s/instances/%s", occmDetails.GCPProject, occmDetails.Zone, legacyInstanceName)
+	// 	log.Printf("Trying legacy instance name: %s", legacyInstanceName)
+
+	// 	legacyStatusCode, legacyResponse, _, legacyErr := c.CallAPIMethod("GET", legacyURL, nil, token, hostType, clientID)
+	// 	if legacyErr == nil && legacyStatusCode == 200 {
+	// 		log.Printf("Found legacy instance with name: %s", legacyInstanceName)
+	// 		var legacyResult map[string]interface{}
+	// 		if err := json.Unmarshal(legacyResponse, &legacyResult); err == nil {
+	// 			if name, ok := legacyResult["name"].(string); ok && name == legacyInstanceName {
+	// 				log.Printf("Legacy instance found: %s, returning expected ID: %s", name, id)
+	// 				return id, nil
+	// 			}
+	// 		}
+	// 	}
+
+	// 	return "", nil
+	// }
+
 	responseError := apiResponseChecker(statusCode, response, "getdeployGCPVM")
 	if responseError != nil {
 		log.Printf("getdeployGCPVM response error: %v", responseError)

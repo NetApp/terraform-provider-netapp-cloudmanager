@@ -53,6 +53,8 @@ resource "netapp-cloudmanager_aws_fsx_volume" "fsx-volume-cifs" {
 
 ## Argument Reference
 
+Arguments marked with “Forces new resource” will cause the resource to be recreated if their value is changed after creation.
+
 The following arguments are supported:
 
 * `name` - (Required) The name of the volume.
@@ -69,7 +71,7 @@ The following arguments are supported:
 * `permission` (Optional) CIFS share permission type. (CIFS protocol parameters)
 * `users` (Optional) List of users with the permission. (CIFS protocol parameters)
 * `volume_protocol` - (Required) The protocol for the volume: ['nfs', 'cifs']. This affects the provided parameters.
-*  `tags` - (Optional) Set tags for the volume during creation. The API doesn't contain any information about tags so the provider doesn't guarantee tags will be added successfully and detect any drift after create.
+* `tags` - (Optional) Set tags for the volume during creation. The API doesn't contain any information about tags so the provider doesn't guarantee tags will be added successfully and detect any drift after create.
 * `tenant_id` - (Required) The workspace id.
 
 
