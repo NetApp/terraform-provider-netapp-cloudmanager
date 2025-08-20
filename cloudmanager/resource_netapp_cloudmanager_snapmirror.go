@@ -110,6 +110,12 @@ func resourceCVOSnapMirror() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"delete_destination_volume": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     false,
+				Description: "Set to true to delete the destination volume when the snapmirror relationship is destroyed",
+			},
 		},
 	}
 }
@@ -272,6 +278,26 @@ func resourceCVOSnapMirrorDelete(d *schema.ResourceData, meta interface{}) error
 		log.Print("Error deleting SnapMirror")
 		return err
 	}
+
+	// If delete_destination_volume is enabled, also delete the destination volume
+	if d.Get("delete_destination_volume").(bool) {
+		log.Printf("Deleting destination volume: %s", snapMirror.ReplicationVolume.DestinationVolumeName)
+
+		// Prepare volume request for deletion using the same logic as volume resource
+		volume := volumeRequest{}
+		volume.WorkingEnvironmentID = destWEInfo.PublicID
+		volume.WorkingEnvironmentType = destWEInfo.WorkingEnvironmentType
+		volume.SvmName = snapMirror.ReplicationVolume.DestinationSvmName
+		volume.Name = snapMirror.ReplicationVolume.DestinationVolumeName
+
+		err = client.deleteVolume(volume, clientID, isSaas, connectorIP)
+		if err != nil {
+			log.Printf("Error deleting destination volume: %s", snapMirror.ReplicationVolume.DestinationVolumeName)
+			return err
+		}
+		log.Printf("Successfully deleted destination volume: %s", snapMirror.ReplicationVolume.DestinationVolumeName)
+	}
+
 	return nil
 }
 
