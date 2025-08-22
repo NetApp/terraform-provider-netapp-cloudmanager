@@ -3,6 +3,7 @@ IMPROVEMENTS:
 * resource/connector_gcp: replaced GCP Deployment Manager API with individual GCP Compute Engine APIs for VM and disk management.
 
 NEW FEATURES:
+* resource/snapmirror: now supports import.
 * resource/snapmirror: add `delete_destination_volume` option to automatically delete destination volume when destroying snapmirror relationships.
 
 ENHANCEMENTS:

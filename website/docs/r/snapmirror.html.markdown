@@ -85,3 +85,72 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `id` - will be the snapmirror name.
 
+## Import
+
+This resource supports import, which allows you to import existing snapmirror relationships into the state of this resource.
+
+#### Standard Mode
+Import requires deployment_mode, client_id and destination_volume_name separated by commas.
+
+id = `deployment_mode,client_id,destination_volume_name`
+
+#### Restricted Mode
+Import requires deployment_mode, client_id, destination_volume_name, tenant_id and connector_ip separated by commas.
+
+id = `deployment_mode,client_id,destination_volume_name,tenant_id,connector_ip`
+
+### Terraform Import
+
+For example
+
+```shell
+terraform import netapp-cloudmanager_snapmirror.example Standard,xxxxxxx,dest_volume_copy
+```
+
+For Restricted mode:
+
+```shell
+terraform import netapp-cloudmanager_snapmirror.example Restricted,xxxxxxx,dest_volume_copy,account-xxxxx,10.10.10.10
+```
+
+!> The terraform import CLI command can only import resources into the state. Importing via the CLI does not generate configuration. If you want to generate the accompanying configuration for imported resources, use the import block instead.
+
+### Terraform Import Block
+
+This requires Terraform 1.5 or higher, and will auto create the configuration for you
+
+First create the block
+
+```terraform
+import {
+  to = netapp-cloudmanager_snapmirror.snapmirror_import
+  id = "Standard,xxxxxxx,dest_volume_copy"
+}
+```
+
+Next run, this will auto create the configuration for you
+
+```shell
+terraform plan -generate-config-out=generated.tf
+```
+
+This will generate a file called generated.tf, which will contain the configuration for the imported resource
+
+```terraform
+# __generated__ by Terraform
+# Please review these resources and move them into your main configuration files.
+
+# __generated__ by Terraform from "Standard,xxxxxxx,dest_volume_copy"
+resource "netapp-cloudmanager_snapmirror" "snapmirror_import" {
+  client_id                          = "xxxxxxx"
+  destination_volume_name            = "dest_volume_copy"
+  destination_working_environment_id = "VsaWorkingEnvironment-xxxxxxx"
+  max_transfer_rate                  = 100000
+  policy                            = "MirrorAllSnapshots"
+  schedule                          = "1hour"
+  source_volume_name                = "source_volume"
+  source_working_environment_id     = "VsaWorkingEnvironment-xxxxxxx"
+  deployment_mode                   = "Standard"
+}
+```
+

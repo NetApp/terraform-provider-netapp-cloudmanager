@@ -1,6 +1,7 @@
 package cloudmanager
 
 import (
+	"fmt"
 	"log"
 	"strings"
 
@@ -16,7 +17,7 @@ func resourceCVOSnapMirror() *schema.Resource {
 		Exists: resourceCVOSnapMirrorExists,
 		Update: resourceCVOSnapMirrorUpdate,
 		Importer: &schema.ResourceImporter{
-			State: schema.ImportStatePassthrough,
+			State: resourceCVOSnapMirrorImport,
 		},
 		Schema: map[string]*schema.Schema{
 			"source_working_environment_id": {
@@ -341,4 +342,108 @@ func resourceCVOSnapMirrorExists(d *schema.ResourceData, meta interface{}) (bool
 func resourceCVOSnapMirrorUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	return nil
+}
+
+func resourceCVOSnapMirrorImport(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
+	log.Printf("Importing SnapMirror with ID: %s", d.Id())
+
+	client := meta.(*Client)
+	importID := d.Id()
+
+	// Parse the import ID - expect different formats based on deployment mode
+	// Standard mode: deployment_mode,client_id,destination_volume_name
+	// Restricted mode: deployment_mode,client_id,destination_volume_name,tenant_id,connector_ip
+	parts := strings.Split(importID, ",")
+
+	if len(parts) < 3 || (parts[0] != "Standard" && parts[0] != "Restricted") {
+		return nil, fmt.Errorf("invalid import ID format. Expected: deployment_mode,client_id,destination_volume_name or deployment_mode,client_id,destination_volume_name,tenant_id,connector_ip for Restricted mode, got: %s", importID)
+	}
+
+	deploymentMode := parts[0]
+	clientID := parts[1]
+	destinationVolumeName := parts[2]
+
+	// Set deployment mode
+	d.Set("deployment_mode", deploymentMode)
+	d.Set("client_id", clientID)
+
+	// Handle Restricted mode additional parameters
+	if deploymentMode == "Restricted" {
+		if len(parts) != 5 {
+			return nil, fmt.Errorf("invalid import ID format for Restricted mode. Expected: deployment_mode,client_id,destination_volume_name,tenant_id,connector_ip, got: %s", importID)
+		}
+		d.Set("tenant_id", parts[3])
+		d.Set("connector_ip", parts[4])
+	} else if deploymentMode == "Standard" {
+		if len(parts) != 3 {
+			return nil, fmt.Errorf("invalid import ID format for Standard mode. Expected: deployment_mode,client_id,destination_volume_name, got: %s", importID)
+		}
+	}
+
+	// Check deployment mode
+	isSaas, connectorIP, err := client.checkDeploymentMode(d, clientID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check deployment mode during import: %v", err)
+	}
+
+	// Try to find the snapmirror relationship by destination volume name
+	relationship, err := client.findSnapMirrorByDestinationVolume(destinationVolumeName, clientID, isSaas, connectorIP)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find snapmirror relationship during import: %v", err)
+	}
+
+	// Set the ID and populate the required fields
+	d.SetId(destinationVolumeName)
+	d.Set("client_id", clientID)
+	d.Set("source_working_environment_id", relationship.Source.WorkingEnvironmentID)
+	d.Set("destination_working_environment_id", relationship.Destination.WorkingEnvironmentID)
+	d.Set("source_volume_name", relationship.Source.VolumeName)
+	d.Set("destination_volume_name", relationship.Destination.VolumeName)
+	d.Set("source_svm_name", relationship.Source.SvmName)
+	d.Set("destination_svm_name", relationship.Destination.SvmName)
+	d.Set("policy", relationship.Policy)
+	d.Set("schedule", relationship.Schedule)
+	d.Set("max_transfer_rate", relationship.MaxTransferRate.Size)
+
+	if _, ok := d.GetOk("delete_destination_volume"); !ok {
+		d.Set("delete_destination_volume", false)
+	}
+
+	// Set optional fields if they exist, otherwise set appropriate defaults
+	if relationship.Destination.AggregateName != "" {
+		d.Set("destination_aggregate_name", relationship.Destination.AggregateName)
+	}
+	if relationship.Destination.ProviderVolumeType != "" {
+		d.Set("provider_volume_type", relationship.Destination.ProviderVolumeType)
+	}
+	if relationship.Destination.CapacityTier != "" && relationship.Destination.CapacityTier != "none" {
+		d.Set("capacity_tier", relationship.Destination.CapacityTier)
+	} else {
+		d.Set("capacity_tier", "none")
+	}
+
+	// Try to get additional volume information from the destination working environment
+	// This is needed because the status API doesn't include all volume details
+	if relationship.Destination.WorkingEnvironmentID != "" {
+		volumeRequest := volumeRequest{
+			WorkingEnvironmentID: relationship.Destination.WorkingEnvironmentID,
+			Name:                 relationship.Destination.VolumeName,
+		}
+
+		volumes, err := client.getVolume(volumeRequest, clientID, isSaas, connectorIP)
+		if err == nil && len(volumes) > 0 {
+			volume := volumes[0]
+			if volume.AggregateName != "" {
+				d.Set("destination_aggregate_name", volume.AggregateName)
+			}
+			if volume.ProviderVolumeType != "" {
+				d.Set("provider_volume_type", volume.ProviderVolumeType)
+			}
+			if volume.CapacityTier != "" {
+				d.Set("capacity_tier", volume.CapacityTier)
+			}
+		}
+	}
+
+	return []*schema.ResourceData{d}, nil
 }
