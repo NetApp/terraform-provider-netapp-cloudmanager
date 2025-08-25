@@ -145,6 +145,7 @@ The following arguments are supported:
 * `backup_volumes_to_cbs` - (Optional, Forces new resource) Automatically enable back up of all volumes to S3 [true, false].
 * `enable_compliance` - (Optional, Forces new resource) Enable the Cloud Compliance service on the working environment [true, false].
 * `enable_monitoring` - (Optional, Forces new resource) Enable the Monitoring service on the working environment [true, false]. The default is false.
+* `open_security_group` - (Optional, Forces new resource) Open security group to all IP ranges
 * `optimized_network_utilization` - (Optional, Forces new resource) Use optimized network utilization [true, false]. The default is true.
 * `is_ha` - (Optional, Forces new resource) Indicate whether the working environment is an HA pair or not [true, false]. The default is false.
 * `failover_mode` - (Optional, Forces new resource) For HA, the failover mode for the HA pair: ['PrivateIP', 'FloatingIP']. 'PrivateIP' is for a single availability zone and 'FloatingIP' is for multiple availability zones.
@@ -163,7 +164,7 @@ The following arguments are supported:
 * `route_table_ids` - (Optional) For HA FloatingIP, the list of route table IDs that will be updated with the floating IPs.
 * `upgrade_ontap_version` - (Optional) Indicates whether to upgrade ontap image with `ontap_version`. To upgrade ontap image, `ontap_version` cannot be 'latest' and `use_latest_version` needs to be false. The available versions can be found in BlueXP UI. Click the CVO -> click **New Version Available** under **Notifications** -> the latest available version will be shown. The list of available versions can be found in **Select older versions**. Update the `ontap_version` by follow the naming conversion.
 * `mediator_security_group_id` - (Optional, Forces new resource) For HA only, mediator security group id.
-* `assume_role_arn` - (Optional, Forces new resource) For HA only, Amazon Resource Name ARN of an AWS Identity and Access Managent IAM role that has created in the VPC owner account. For example, "arn:aws:iam::61239912384567:role/mediator_role_assume_fromdev"
+* `assume_role_arn` - (Optional, Forces new resource) For HA only, Amazon Resource Name ARN of an AWS Identity and Access Management IAM role that has created in the VPC owner account. For example, "arn:aws:iam::61239912384567:role/mediator_role_assume_fromdev"
 * `retries` - (Optional) The number of attempts to wait for the completion of creating the CVO with 60 seconds apart for each attempt. For HA, this value is incremented by 30. The default is '60'.
 * `worm_retention_period_length` - (Optional, Forces new resource) WORM retention period length. Once specified retention period, the WORM is enabled. When WORM storage is activated, data tiering to object storage can’t be enabled.
 * `worm_retention_period_unit` - (Optional, Forces new resource) WORM retention period unit: ['years','months','days','hours','minutes','seconds'].

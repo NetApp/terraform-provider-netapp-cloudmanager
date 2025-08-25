@@ -44,6 +44,7 @@ type createCVOAWSDetails struct {
 	BackupVolumesToCbs          bool                    `structs:"backupVolumesToCbs"`
 	EnableCompliance            bool                    `structs:"enableCompliance"`
 	EnableMonitoring            bool                    `structs:"enableMonitoring"`
+	OpenSecurityGroup           bool                    `structs:"openSecurityGroup"`
 	AwsEncryptionParameters     awsEncryptionParameters `structs:"awsEncryptionParameters,omitempty"`
 	AwsTags                     []userTags              `structs:"awsTags,omitempty"`
 	IsHA                        bool

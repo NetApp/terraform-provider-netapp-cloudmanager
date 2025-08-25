@@ -319,6 +319,11 @@ func resourceCVOAWS() *schema.Resource {
 					Type: schema.TypeString,
 				},
 			},
+			"open_security_group": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
 			"client_id": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -383,6 +388,10 @@ func resourceCVOAWSCreate(d *schema.ResourceData, meta interface{}) error {
 
 	if c, ok := d.GetOk("backup_volumes_to_cbs"); ok {
 		cvoDetails.BackupVolumesToCbs = c.(bool)
+	}
+
+	if c, ok := d.GetOk("open_security_group"); ok {
+		cvoDetails.OpenSecurityGroup = c.(bool)
 	}
 
 	if c, ok := d.GetOk("enable_compliance"); ok {

@@ -13,6 +13,7 @@ NEW FEATURES:
 
 ENHANCEMENTS:
 * Update all the resources documenation by adding `Forces new resource` if the modification is not supported.
+* resource/cvo_aws and resource/cvo_azure: add `open_security_group` option to open security group to all IP ranges
 
 ## 25.3.0
 NEW FEATURES:
@@ -112,7 +113,7 @@ BUG FIXES:
 ## 23.8.0
 BUG FIXES:
 * resource/volume: fix documentation name for volume and add an example for creating on_prem volume.
-* ressource/cvo_aws, cvo_azure, cvo_gcp: remove force new from `retries`.
+* resource/cvo_aws, cvo_azure, cvo_gcp: remove force new from `retries`.
 
 NEW ENHANCEMENTS:
 * resource/cvo_aws and cvo_gcp: add `saas_subscription_id`.
@@ -214,12 +215,12 @@ NEW FEATURES:
 * resource/cvo_aws: add `retries` parameter to increase wait time when creating CVO.
 * resource/cvo_azure: add `retries` parameter to increase wait time when creating CVO.
 * resource/cvo_gcp: add `retries` parameter to increase wait time when creating CVO.
-* resoruce/cvs for AWS, AZURE and GCP: add `svm_name` an optional parameter. The modification is supported.
+* resource/cvs for AWS, AZURE and GCP: add `svm_name` an optional parameter. The modification is supported.
 
 NEW ENHANCEMENTS:
 * resource/connector_azure: display the deployed virtual machine principal_id in state file on the connector azure creation.
 * resource/cvo_azure: add `availability_zone_node1` and `availability_zone_node2` to support HA deployment.
-* resoruce/cvo_azure: add new support value "Premium_ZRS" in parameter `storage_type`.
+* resource/cvo_azure: add new support value "Premium_ZRS" in parameter `storage_type`.
 
 ## 22.9.1
 NEW FEATURES:
@@ -318,7 +319,7 @@ ENHANCEMENTS:
 NEW FEATURES:
 
 * resource/aws_fsx_volume: create, update and delete FSx volume.
-* resource/cvo_onnprem: This can be used to register an onprem ONTAP system into CloudManager.
+* resource/cvo_onprem: This can be used to register an onprem ONTAP system into CloudManager.
 
 ## 21.11.1
 ENHANCEMENTS:

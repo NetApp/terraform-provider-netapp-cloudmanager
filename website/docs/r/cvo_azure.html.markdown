@@ -163,12 +163,13 @@ The naming convention:
 * `backup_volumes_to_cbs` - (Optional, Forces new resource) Automatically enable back up of all volumes to Azure Blob [true, false].
 * `enable_compliance` - (Optional, Forces new resource) Enable the Cloud Compliance service on the working environment [true, false].
 * `enable_monitoring` - (Optional, Forces new resource) Enable the Monitoring service on the working environment [true, false]. The default is false.
+* `open_security_group` - (Optional, Forces new resource) Open security group to all IP ranges
 * `is_ha` - (Optional, Forces new resource) Indicate whether the working environment is an HA pair or not [true, false]. The default is false.
 * `platform_serial_number_node1` - (Optional, Forces new resource) For HA BYOL, the serial number for the first node.
 * `platform_serial_number_node2` - (Optional, Forces new resource) For HA BYOL, the serial number for the second node.
 * `availability_zone_node1` - (Optional, Forces new resource) For HA, the availability zone for the first node.
 * `availability_zone_node2` - (Optional, Forces new resource) For HA, the availability zone for the second node.
-* `ha_enable_https` - (Optional, Forces new resourcef) For HA, enable the HTTPS connection from CVO to storage accounts. This can impact write performance. The default is false.
+* `ha_enable_https` - (Optional, Forces new resource) For HA, enable the HTTPS connection from CVO to storage accounts. This can impact write performance. The default is false.
 * `upgrade_ontap_version` - (Optional) Indicates whether to upgrade ontap image with `ontap_version`. To upgrade ontap image, `ontap_version` cannot be 'latest' and `use_latest_version` needs to be false. The available versions can be found in BlueXP UI. Click the CVO -> click **New Version Available** under **Notifications** -> the latest available version will be shown. The list of available versions can be found in **Select older versions**. Update the `ontap_version` by follow the naming conversion.
 * `retries` - (Optional) The number of attempts to wait for the completion of creating the CVO with 60 seconds apart for each attempt. For HA, this value is incremented by 30. The default is '60'.
 * `worm_retention_period_length` - (Optional, Forces new resource) WORM retention period length. Once specified retention period, the WORM is enabled. When WORM storage is activated, data tiering to object storage can’t be enabled.
