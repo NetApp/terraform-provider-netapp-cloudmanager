@@ -1,8 +1,13 @@
-## 25.4.0
+## 26.0.0
+BREAKING CHANGE:
+* resource/aggregate: `number_of_disks` and `disk_size_size` default value is removed.
+
 IMPROVEMENTS:
 * resource/connector_gcp: replaced GCP Deployment Manager API with individual GCP Compute Engine APIs for VM and disk management.
 
 NEW FEATURES:
+* resource/aggregate: added option `increase_capacity_size` and `increase_capacity_unit` to support increase capacity for EBS Elastic Volumes aggregate.
+* resource/aggregate: added option `initial_ev_aggregate_size` and `initial_ev_aggregate_unit` to support initial capacity for EBS Elastic Volumes aggregate.
 * resource/snapmirror: now supports import.
 * resource/snapmirror: add `delete_destination_volume` option to automatically delete destination volume when destroying snapmirror relationships.
 

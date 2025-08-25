@@ -10,11 +10,12 @@ import (
 
 func resourceAggregate() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAggregateCreate,
-		Read:   resourceAggregateRead,
-		Delete: resourceAggregateDelete,
-		Exists: resourceAggregateExists,
-		Update: resourceAggregateUpdate,
+		Create:        resourceAggregateCreate,
+		Read:          resourceAggregateRead,
+		Delete:        resourceAggregateDelete,
+		Exists:        resourceAggregateExists,
+		Update:        resourceAggregateUpdate,
+		CustomizeDiff: resourceAggregateCustomizeDiff,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -42,19 +43,17 @@ func resourceAggregate() *schema.Resource {
 			},
 			"number_of_disks": {
 				Type:     schema.TypeInt,
-				Required: true,
+				Optional: true,
 			},
 			"disk_size_size": {
 				Type:     schema.TypeInt,
 				Optional: true,
 				ForceNew: true,
-				Default:  1,
 			},
 			"disk_size_unit": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				Default:      "TB",
 				ValidateFunc: validation.StringInSlice([]string{"GB", "TB"}, true),
 			},
 			"home_node": {
@@ -98,6 +97,54 @@ func resourceAggregate() *schema.Resource {
 				ValidateFunc: validation.StringInSlice([]string{"Standard", "Restricted"}, false),
 				Default:      "Standard",
 			},
+			"increase_capacity_size": {
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Computed:    true,
+				Description: "Additional capacity to add to the aggregate (only available during updates)",
+				ForceNew:    false,
+			},
+			"increase_capacity_unit": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Byte", "KB", "MB", "GB", "TB"}, true),
+				Description:  "Unit for the additional capacity (Byte, KB, MB, GB, or TB) (only available during updates)",
+				ForceNew:     false,
+			},
+			"initial_ev_aggregate_size": {
+				Type:        schema.TypeInt,
+				Optional:    true,
+				ForceNew:    true,
+				Description: "Initial size for EBS Elastic Volumes aggregate. This enables the aggregate to support capacity expansion.",
+			},
+			"initial_ev_aggregate_unit": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Byte", "KB", "MB", "GB", "TB"}, true),
+				Description:  "Unit for initial EBS Elastic Volumes aggregate size",
+			},
+			"total_capacity_size": {
+				Type:        schema.TypeFloat,
+				Computed:    true,
+				Description: "Total capacity of the aggregate",
+			},
+			"total_capacity_unit": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "Unit of the total capacity",
+			},
+			"available_capacity_size": {
+				Type:        schema.TypeFloat,
+				Computed:    true,
+				Description: "Available capacity of the aggregate",
+			},
+			"available_capacity_unit": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "Unit of the available capacity",
+			},
 		},
 	}
 }
@@ -123,9 +170,19 @@ func resourceAggregateCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 	aggregate.WorkingEnvironmentID = workingEnv.PublicID
 
-	aggregate.Name = d.Get("name").(string)
-	aggregate.NumberOfDisks = d.Get("number_of_disks").(int)
+	// Validate that capacity increase fields are not used during creation
+	if capacitySize, ok := d.GetOk("increase_capacity_size"); ok && capacitySize.(int) > 0 {
+		return fmt.Errorf("increase_capacity_size can only be used during aggregate updates, not during creation")
+	}
+	if capacityUnit, ok := d.GetOk("increase_capacity_unit"); ok && capacityUnit.(string) != "" {
+		return fmt.Errorf("increase_capacity_unit can only be used during aggregate updates, not during creation")
+	}
 
+	aggregate.Name = d.Get("name").(string)
+
+	if a, ok := d.GetOk("number_of_disks"); ok {
+		aggregate.NumberOfDisks, _ = a.(int)
+	}
 	if a, ok := d.GetOk("disk_size_size"); ok {
 		aggregate.DiskSize.Size, _ = a.(int)
 	}
@@ -168,6 +225,21 @@ func resourceAggregateCreate(d *schema.ResourceData, meta interface{}) error {
 		aggregate.CapacityTier = "Blob"
 	} else if workingEnv.CloudProviderName == "GCP" {
 		aggregate.CapacityTier = "cloudStorage"
+	}
+
+	// Handle initial EV aggregate size for AWS EBS Elastic Volumes
+	if initialSize, ok := d.GetOk("initial_ev_aggregate_size"); ok {
+		if workingEnv.CloudProviderName != "Amazon" {
+			return fmt.Errorf("initial_ev_aggregate_size is only supported for Amazon Web Services (AWS) environments")
+		}
+
+		aggregate.InitialEvAggregateSize.Size = initialSize.(int)
+
+		if initialUnit, ok := d.GetOk("initial_ev_aggregate_unit"); ok {
+			aggregate.InitialEvAggregateSize.Unit = initialUnit.(string)
+		}
+
+		log.Printf("Setting initial EV aggregate size: %d %s", aggregate.InitialEvAggregateSize.Size, aggregate.InitialEvAggregateSize.Unit)
 	}
 
 	res, err := client.createAggregate(&aggregate, clientID, isSaaS, connectorIP)
@@ -215,6 +287,12 @@ func resourceAggregateRead(d *schema.ResourceData, meta interface{}) error {
 	if aggr.Name != id {
 		return fmt.Errorf("expected aggregate name %v, Response could not find", aggr.Name)
 	}
+
+	// Set computed capacity values
+	d.Set("total_capacity_size", aggr.TotalCapacity.Size)
+	d.Set("total_capacity_unit", aggr.TotalCapacity.Unit)
+	d.Set("available_capacity_size", aggr.AvailableCapacity.Size)
+	d.Set("available_capacity_unit", aggr.AvailableCapacity.Unit)
 
 	return nil
 }
@@ -270,7 +348,6 @@ func resourceAggregateUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	aggregate := aggregateRequest{}
 	aggregate.WorkingEnvironmentID = workingEnvDetail.PublicID
-	// aggregate.ConnectorIP = request.ConnectorIP
 	id := d.Id()
 	aggr, err := client.getAggregate(aggregate, id, workingEnvDetail.WorkingEnvironmentType, clientID, isSaaS, connectorIP)
 	if err != nil {
@@ -281,7 +358,42 @@ func resourceAggregateUpdate(d *schema.ResourceData, meta interface{}) error {
 	request.Name = d.Get("name").(string)
 
 	log.Printf("Current number of disks: %v", currentNumber)
-	// Only support number of disks update
+
+	// Handle capacity increase
+	if d.HasChange("increase_capacity_size") || d.HasChange("increase_capacity_unit") {
+		capacitySize := d.Get("increase_capacity_size").(int)
+		capacityUnit := d.Get("increase_capacity_unit").(string)
+
+		if capacitySize > 0 {
+			// Check if this is an Amazon (AWS) environment first
+			if workingEnvDetail.CloudProviderName != "Amazon" {
+				return fmt.Errorf("aggregate capacity increase is only supported for Amazon Web Services (AWS) environments, current environment is %s", workingEnvDetail.CloudProviderName)
+			}
+
+			increaseRequest := increaseAggregateCapacityRequest{
+				WorkingEnvironmentID: workingEnvDetail.PublicID,
+				AggregateName:        request.Name,
+				CapacityToAdd: diskSize{
+					Size: capacitySize,
+					Unit: capacityUnit,
+				},
+			}
+
+			err := client.increaseAggregateCapacity(increaseRequest, clientID, isSaaS, connectorIP)
+			if err != nil {
+				return fmt.Errorf("failed to increase aggregate capacity: %v", err)
+			}
+
+			log.Printf("Successfully increased aggregate capacity by %d %s", capacitySize, capacityUnit)
+
+			// As long as config has increase fields, every run acts as an update by resetting the increase fields in state file.
+			// only if increase fields are not used in the configuration, the resource can achieve idempotency
+			d.Set("increase_capacity_size", 0)
+			d.Set("increase_capacity_unit", "")
+		}
+	}
+
+	// Handle disk count update
 	if d.HasChange("number_of_disks") {
 		expectNumber := d.Get("number_of_disks")
 		log.Printf("Expect number of disks: %v", expectNumber.(int))
@@ -299,7 +411,7 @@ func resourceAggregateUpdate(d *schema.ResourceData, meta interface{}) error {
 		}
 	}
 
-	log.Printf("Updated aggregate; %v", request.Name)
+	log.Printf("Updated aggregate: %v", request.Name)
 
 	return resourceAggregateRead(d, meta)
 }
@@ -336,4 +448,53 @@ func resourceAggregateExists(d *schema.ResourceData, meta interface{}) (bool, er
 	}
 
 	return true, nil
+}
+
+func resourceAggregateCustomizeDiff(diff *schema.ResourceDiff, v interface{}) error {
+	// Validate disk_size_size and disk_size_unit are provided together
+	diskSizeSize := diff.Get("disk_size_size")
+	diskSizeUnit := diff.Get("disk_size_unit")
+
+	hasDiskSizeSize := diskSizeSize != nil && diskSizeSize.(int) > 0
+	hasDiskSizeUnit := diskSizeUnit != nil && diskSizeUnit.(string) != ""
+
+	if hasDiskSizeSize && !hasDiskSizeUnit {
+		return fmt.Errorf("disk_size_unit is required when disk_size_size is specified")
+	}
+
+	if hasDiskSizeUnit && !hasDiskSizeSize {
+		return fmt.Errorf("disk_size_size is required when disk_size_unit is specified")
+	}
+
+	// Validate initial_ev_aggregate_size and initial_ev_aggregate_unit are provided together
+	initialEvSize := diff.Get("initial_ev_aggregate_size")
+	initialEvUnit := diff.Get("initial_ev_aggregate_unit")
+
+	hasInitialEvSize := initialEvSize != nil && initialEvSize.(int) > 0
+	hasInitialEvUnit := initialEvUnit != nil && initialEvUnit.(string) != ""
+
+	if hasInitialEvSize && !hasInitialEvUnit {
+		return fmt.Errorf("initial_ev_aggregate_unit is required when initial_ev_aggregate_size is specified")
+	}
+
+	if hasInitialEvUnit && !hasInitialEvSize {
+		return fmt.Errorf("initial_ev_aggregate_size is required when initial_ev_aggregate_unit is specified")
+	}
+
+	// Validate increase_capacity_size and increase_capacity_unit are provided together
+	increaseSize := diff.Get("increase_capacity_size")
+	increaseUnit := diff.Get("increase_capacity_unit")
+
+	hasIncreaseSize := increaseSize != nil && increaseSize.(int) > 0
+	hasIncreaseUnit := increaseUnit != nil && increaseUnit.(string) != ""
+
+	if hasIncreaseSize && !hasIncreaseUnit {
+		return fmt.Errorf("increase_capacity_unit is required when increase_capacity_size is specified")
+	}
+
+	if hasIncreaseUnit && !hasIncreaseSize {
+		return fmt.Errorf("increase_capacity_size is required when increase_capacity_unit is specified")
+	}
+
+	return nil
 }
