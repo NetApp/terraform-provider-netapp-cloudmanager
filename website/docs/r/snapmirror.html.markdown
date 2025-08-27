@@ -61,8 +61,8 @@ The following arguments are supported:
 * `destination_working_environment_id` - (Optional) The public ID of the destination working environment where the snapmirror relationship will be created.
 * `source_working_environment_name` - (Optional) The source working environment name where the snapmirror relationship will be created. It will be ignored if working_environment_id is provided.
 * `destination_working_environment_name` - (Optional) The destination working environment name where the snapmirror relationship will be created. It will be ignored if working_environment_id is provided.
-* `source_svm_name` - (Optional) The name of the source SVM. The default SVM name is used, if a name isn't provided.
-* `destination_svm_name` - (Optional) The name of the destination SVM. The default SVM name is used, if a name isn't provided.
+* `source_svm_name` - (Optional, Computed) The name of the source SVM. The default SVM name is used, if a name isn't provided.
+* `destination_svm_name` - (Optional, Computed) The name of the destination SVM. The default SVM name is used, if a name isn't provided.
 * `source_volume_name` - (Required) The name of the source volume.
 * `destination_volume_name` - (Required) The name of the destination volume to be created for snapmirror relationship.
 * `connector_ip` - (Optional) The private IP of the connector, this is only required for Restricted mode account.
@@ -85,23 +85,26 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `id` - will be the snapmirror name.
 
+
 ## Import
 
 This resource supports import, which allows you to import existing snapmirror relationships into the state of this resource.
 
-#### Standard Mode
-Import requires deployment_mode, client_id and destination_volume_name separated by commas.
+### Standard Mode
+
+Import requires `deployment_mode`, `client_id` and `destination_volume_name` separated by commas.
 
 id = `deployment_mode,client_id,destination_volume_name`
 
-#### Restricted Mode
-Import requires deployment_mode, client_id, destination_volume_name, tenant_id and connector_ip separated by commas.
+### Restricted Mode
+
+Import requires `deployment_mode`, `client_id`, `destination_volume_name`, `tenant_id` and `connector_ip` separated by commas.
 
 id = `deployment_mode,client_id,destination_volume_name,tenant_id,connector_ip`
 
-### Terraform Import
+#### Terraform Import
 
-For example
+For example:
 
 ```shell
 terraform import netapp-cloudmanager_snapmirror.example Standard,xxxxxxx,dest_volume_copy
@@ -113,13 +116,13 @@ For Restricted mode:
 terraform import netapp-cloudmanager_snapmirror.example Restricted,xxxxxxx,dest_volume_copy,account-xxxxx,10.10.10.10
 ```
 
-!> The terraform import CLI command can only import resources into the state. Importing via the CLI does not generate configuration. If you want to generate the accompanying configuration for imported resources, use the import block instead.
+> The terraform import CLI command can only import resources into the state. Importing via the CLI does not generate configuration. If you want to generate the accompanying configuration for imported resources, use the import block instead.
 
-### Terraform Import Block
+#### Terraform Import Block
 
-This requires Terraform 1.5 or higher, and will auto create the configuration for you
+This requires Terraform 1.5 or higher, and will auto create the configuration for you.
 
-First create the block
+First create the block:
 
 ```terraform
 import {
@@ -128,13 +131,13 @@ import {
 }
 ```
 
-Next run, this will auto create the configuration for you
+Next run, this will auto create the configuration for you:
 
 ```shell
 terraform plan -generate-config-out=generated.tf
 ```
 
-This will generate a file called generated.tf, which will contain the configuration for the imported resource
+This will generate a file called `generated.tf`, which will contain the configuration for the imported resource:
 
 ```terraform
 # __generated__ by Terraform

@@ -189,11 +189,11 @@ The following arguments are supported:
 * `node1_zone` - (Optional, Forces new resource)  Zone for node 1. It will also be used in the 'zone' if it is not provided in HA.
 * `node2_zone` - (Optional, Forces new resource) Zone for node 2.
 * `mediator_zone` - (Optional, Forces new resource) Zone for mediator.
-* `vpc0_node_and_data_connectivity` - (Optional, Forces new resource) VPC path for nic1, required for node and data connectivity. If using shared VPC, netwrok_project_id must be provided.
+* `vpc0_node_and_data_connectivity` - (Optional, Forces new resource) VPC path for nic1, required for node and data connectivity. If using shared VPC, `network_project_id` must be provided.
 * `vpc1_cluster_connectivity` - (Optional, Forces new resource) VPC path for nic2, required for cluster connectivity.
 * `vpc2_ha_connectivity` - (Optional, Forces new resource) VPC path for nic3, required for HA connectivity.
 * `vpc3_data_replication` - (Optional, Forces new resource) VPC path for nic4, required for data replication.
-* `subnet0_node_and_data_connectivity` - (Optional, Forces new resource) Subnet path for nic1, required for node and data connectivity. If using shared VPC, netwrok_project_id must be provided.
+* `subnet0_node_and_data_connectivity` - (Optional, Forces new resource) Subnet path for nic1, required for node and data connectivity. If using shared VPC, `network_project_id` must be provided.
 * `subnet1_cluster_connectivity` - (Optional, Forces new resource) Subnet path for nic2, required for cluster connectivity.
 * `subnet2_ha_connectivity` - (Optional, Forces new resource) Subnet path for nic3, required for HA connectivity.
 * `subnet3_data_replication` - (Optional, Forces new resource) Subnet path for nic4, required for data replication.

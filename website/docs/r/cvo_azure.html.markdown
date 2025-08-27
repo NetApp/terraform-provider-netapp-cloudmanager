@@ -175,10 +175,11 @@ The naming convention:
 * `worm_retention_period_length` - (Optional, Forces new resource) WORM retention period length. Once specified retention period, the WORM is enabled. When WORM storage is activated, data tiering to object storage can’t be enabled.
 * `worm_retention_period_unit` - (Optional, Forces new resource) WORM retention period unit: ['years','months','days','hours','minutes','seconds'].
 
-The`azure_encryption_parameters` - (Optional, Forces new resource) Parameters required if using azure encryption with custom key. This block supports:
-* `key` - (Required) Customize key name.
-* `vault_name` - (Required) Azure keyVault name.
-* `user_assigned_identity` - (Optional) The identity for authorizing access the keyVault.
+
+The `azure_encryption_parameters` block supports:
+* `key` - (Required, Forces new resource) Customize key name.
+* `vault_name` - (Required, Forces new resource) Azure keyVault name.
+* `user_assigned_identity` - (Optional, Forces new resource) The identity for authorizing access the keyVault.
 
 The `azure_tag` block supports:
 * `tag_key` - (Required) The key of the tag.

@@ -85,9 +85,9 @@ The `instance_metadata` block supports the following:
 The following attributes are exported in addition to the arguments listed above:
 
 * `id` - The EC2 instance ID.
-* `client_id` - The unique client ID of the Connector. Can be used in other resources.
-* `account_id` - The NetApp tenancy account ID.
-* `public_ip_address` - The public IP of the connector.
+* `client_id` - (Computed) The unique client ID of the Connector. Can be used in other resources.
+* `account_id` - (Computed) The NetApp tenancy account ID.
+* `public_ip_address` - (Computed) The public IP of the connector.
 
 ## Unique id versus name
 

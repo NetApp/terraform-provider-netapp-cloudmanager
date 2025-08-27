@@ -82,7 +82,7 @@ The following arguments are supported:
 * `name` - (Required, Forces new resource) The name of the volume.
 * `size` - (Required, Forces new resource) The volume size, supported with decimal numbers.
 * `size_unit` - (Required, Forces new resource) [ 'gb' ].
-* `volume_path` - (Required, Forces new resource) The volume path.
+* `volume_path` - (Required, Computed, Forces new resource) The volume path.
 * `protocol_types` (Required, Forces new resource) [ 'nfsv3', 'nfsv4', 'cifs' ].
 * `region` - (Required, Forces new resource) The region where the volume is created.
 * `service_level` - (Optional, Forces new resource) ['low' or 'medium' or 'high'].
@@ -91,14 +91,14 @@ The following arguments are supported:
 * `client_id` - (Required, Forces new resource) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
 * `working_environment_name` - (Required, Forces new resource) The working environment name.
 * `export_policy` - (Optional, Forces new resource) The rules of the export policy.
-* `snapshot_policy` - (Optional, Forces new resource) The set of Snapshot Policy attributes for volume.
+* `snapshot_policy` - (Optional, Computed, Forces new resource) The set of Snapshot Policy attributes for volume.
 
 The `snapshot_policy` block supports:
-* `enabled` - (Optional, Forces new resource) If enabled, make snapshots automatically according to the schedules. Default is false.
-* `daily_schedule` - (Optional, Forces new resource) If enabled, make a snapshot every day. Defaults to midnight.
-* `hourly_schedule` - (Optional, Forces new resource) If enabled, make a snapshot every hour e.g. at 04:00, 05:00, 06:00.
-* `monthly_schedule` - (Optional, Forces new resource) If enabled, make a snapshot every month at a specific day or days, defaults to the first day of the month at midnight
-* `weekly_schedule` - (Optional, Forces new resource) If enabled, make a snapshot every week at a specific day or days, defaults to Sunday at midnight.
+* `enabled` - (Optional, Computed, Forces new resource) If enabled, make snapshots automatically according to the schedules. Default is false.
+* `daily_schedule` - (Optional, Computed, Forces new resource) If enabled, make a snapshot every day. Defaults to midnight.
+* `hourly_schedule` - (Optional, Computed, Forces new resource) If enabled, make a snapshot every hour e.g. at 04:00, 05:00, 06:00.
+* `monthly_schedule` - (Optional, Computed, Forces new resource) If enabled, make a snapshot every month at a specific day or days, defaults to the first day of the month at midnight
+* `weekly_schedule` - (Optional, Computed, Forces new resource) If enabled, make a snapshot every week at a specific day or days, defaults to Sunday at midnight.
 
 The `daily_schedule` block supports:
 * `hour` - (Optional, Forces new resource) Set the hour to start the snapshot (0-23), defaults to midnight (0).
@@ -110,16 +110,16 @@ The `hourly_schedule` block supports:
 * `snapshots_to_keep` - (Optional, Forces new resource) The maximum number of Snapshots to keep for the hourly schedule.
 
 The `monthly_schedule` block supports:
-* `days_of_month` - (Optional, Forces new resource) Set the day or days of the month to make a snapshot (1-31). Accepts a comma delimited string of the day of the month e.g. '1,15,31'. Defaults to '1'.
-* `hour` - (Optional, Forces new resource) Set the hour to start the snapshot (0-23), defaults to midnight (0).
-* `minute` - (Optional, Forces new resource) Set the minute of the hour to start the snapshot (0-59), defaults to the top of the hour (0).
-* `snapshots_to_keep` - (Optional, Forces new resource) The maximum number of Snapshots to keep for the monthly schedule.
+* `days_of_month` - (Optional, Computed, Forces new resource) Set the day or days of the month to make a snapshot (1-31). Accepts a comma delimited string of the day of the month e.g. '1,15,31'. Defaults to '1'.
+* `hour` - (Optional, Computed, Forces new resource) Set the hour to start the snapshot (0-23), defaults to midnight (0).
+* `minute` - (Optional, Computed, Forces new resource) Set the minute of the hour to start the snapshot (0-59), defaults to the top of the hour (0).
+* `snapshots_to_keep` - (Optional, Computed, Forces new resource) The maximum number of Snapshots to keep for the monthly schedule.
 
 The `weekly_schedule` block supports:
-* `day` - (Optional, Forces new resource) Set the day or days of the week to make a snapshot. Accepts a comma delimited string of week day names in english. Defaults to 'Sunday'.
-* `hour` - (Optional, Forces new resource) Set the hour to start the snapshot (0-23), defaults to midnight (0).
-* `minute` - (Optional, Forces new resource) Set the minute of the hour to start the snapshot (0-59), defaults to the top of the hour (0).
-* `snapshots_to_keep` - (Optional, Forces new resource) The maximum number of Snapshots to keep for the weekly schedule.
+* `day` - (Optional, Computed, Forces new resource) Set the day or days of the week to make a snapshot. Accepts a comma delimited string of week day names in english. Defaults to 'Sunday'.
+* `hour` - (Optional, Computed, Forces new resource) Set the hour to start the snapshot (0-23), defaults to midnight (0).
+* `minute` - (Optional, Computed, Forces new resource) Set the minute of the hour to start the snapshot (0-59), defaults to the top of the hour (0).
+* `snapshots_to_keep` - (Optional, Computed, Forces new resource) The maximum number of Snapshots to keep for the weekly schedule.
 
 The `export_policy` block supports:
 * `rule` - (Optional) Export Policy rule.
@@ -128,7 +128,7 @@ The `rule` block supports:
 * `rule_index` -  (Optional, Forces new resource)
 * `unix_read_only` - (Optional, Forces new resource)
 * `unix_read_write`- (Optional, Forces new resource)
-* `allowed_clients` - (Optional, Forces new resource) Defines the client ingress specification (allowed clients) as a comma seperated string with IPv4 CIDRs, IPv4 host addresses and host names.
+* `allowed_clients` - (Optional, Forces new resource) Defines the client ingress specification (allowed clients) as a comma separated string with IPv4 CIDRs, IPv4 host addresses and host names.
 * `nfsv3` - (Optional, Forces new resource) If enabled (true) the rule allows NFSv3 protocol for clients matching the 'allowedClients' specification.
 * `nfsv4` - (Optional, Forces new resource) If enabled (true) the rule allows NFSv4 protocol for clients matching the 'allowedClients' specification.
 
