@@ -235,6 +235,11 @@ func resourceCVOAzure() *schema.Resource {
 				ForceNew: true,
 				Default:  false,
 			},
+			"open_security_group": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
 			"allow_deploy_in_existing_rg": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -355,6 +360,9 @@ func resourceCVOAzureCreate(d *schema.ResourceData, meta interface{}) error {
 		if tags.Len() > 0 {
 			cvoDetails.AzureTags = expandUserTags(tags)
 		}
+	}
+	if c, ok := d.GetOk("open_security_group"); ok {
+		cvoDetails.OpenSecurityGroup = c.(bool)
 	}
 	cvoDetails.DiskSize.Size = d.Get("disk_size").(int)
 	cvoDetails.DiskSize.Unit = d.Get("disk_size_unit").(string)

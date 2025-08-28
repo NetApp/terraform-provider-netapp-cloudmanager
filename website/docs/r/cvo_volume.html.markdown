@@ -129,6 +129,8 @@ resource "netapp-cloudmanager_volume" "cvo-volume-onprem" {
 
 ## Argument Reference
 
+Arguments marked with “Forces new resource” will cause the resource to be recreated if their value is changed after creation.
+
 The following arguments are supported:
 
 * `name` - (Required) The name of the volume.
@@ -143,7 +145,7 @@ The following arguments are supported:
 * `enable_thin_provisioning` - (Optional) Enable thin provisioning.
 * `enable_compression` - (Optional) Enable compression.
 * `enable_deduplication` - (Optional) Enable deduplication.
-* `aggregate_name ` - (Optional) The aggregate in which the volume will be created. If not provided, Cloud Manager chooses the best aggregate for you. For OnPrem, aggregate input is required.
+* `aggregate_name ` - (Optional, Computed) The aggregate in which the volume will be created. If not provided, Cloud Manager chooses the best aggregate for you. For OnPrem, aggregate input is required.
 * `volume_protocol` - (Optional) The protocol for the volume: ['nfs', 'cifs', 'iscsi']. This affects the provided parameters. The default is 'nfs'.
 * `working_environment_id` - (Optional) The public ID of the working environment where the volume will be created. The ID can be optional if working_environment_name is provided. You can find the ID from the previous create Cloud Volumes ONTAP action as shown in the example, or from the Information page of the Cloud Volumes ONTAP working environment on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
 * `working_environment_name` - (Optional) The working environment name where the aggregate will be created. It will be ignored if working_environment_id is provided.
@@ -175,8 +177,8 @@ The `snapshot_policy` block supports:
 * `schedule` - (Required) The schedule configuration for creating snapshot policy. When `snapshot_policy_name` does not exist, the snapshot policy will be created with `schedule`(s) and named as `snapshot_policy_name`. It supports the volume creation based on the AWS, AZURE and GCP CVO.
 
 The `schedule` block supports:
-* `schedule_type` - (Required) snapshot policy schedule type. Must be one of '5min', '8hour', 'hourly', 'daily', 'weekly', 'monthly'.
-* `retention` - (Required) snapshot policy retention.
+* `schedule_type` - (Required, Forces new resource) snapshot policy schedule type. Must be one of '5min', '8hour', 'hourly', 'daily', 'weekly', 'monthly'.
+* `retention` - (Required, Forces new resource) snapshot policy retention.
 
 ## Attributes Reference
 

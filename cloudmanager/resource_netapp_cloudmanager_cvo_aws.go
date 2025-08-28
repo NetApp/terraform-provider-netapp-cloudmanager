@@ -223,11 +223,6 @@ func resourceCVOAWS() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
-			"kms_key_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
 			"aws_tag": {
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -324,6 +319,11 @@ func resourceCVOAWS() *schema.Resource {
 					Type: schema.TypeString,
 				},
 			},
+			"open_security_group": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
 			"client_id": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -388,6 +388,10 @@ func resourceCVOAWSCreate(d *schema.ResourceData, meta interface{}) error {
 
 	if c, ok := d.GetOk("backup_volumes_to_cbs"); ok {
 		cvoDetails.BackupVolumesToCbs = c.(bool)
+	}
+
+	if c, ok := d.GetOk("open_security_group"); ok {
+		cvoDetails.OpenSecurityGroup = c.(bool)
 	}
 
 	if c, ok := d.GetOk("enable_compliance"); ok {
@@ -472,10 +476,6 @@ func resourceCVOAWSCreate(d *schema.ResourceData, meta interface{}) error {
 
 	if c, ok := d.GetOk("cloud_provider_account"); ok {
 		cvoDetails.CloudProviderAccount = c.(string)
-	}
-
-	if c, ok := d.GetOk("kms_key_id"); ok {
-		cvoDetails.AwsEncryptionParameters.KmsKeyID = c.(string)
 	}
 
 	if c, ok := d.GetOk("provided_license"); ok {

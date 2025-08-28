@@ -70,7 +70,7 @@ type gcpVolumeResponse struct {
 	LifeCycleStateDetails string         `json:"lifeCycleStateDetails"`
 	Zone                  string         `json:"zone,omitempty"`
 	StorageClass          string         `json:"storageClass,omitempty"`
-	TypeDP                bool           `json:"isDataProtection,omitempty"`
+	TypeDP                bool           `json:"isDataProtection"`
 	MountPoints           []mountPoints  `json:"mountPoints,omitempty"`
 }
 
@@ -264,7 +264,6 @@ func expandExportPolicy(set *schema.Set) []exportPolicyRule {
 		log.Printf("here here here here : %#v", v)
 		rules := v.(map[string]interface{})
 		ruleSet := rules["rule"].(*schema.Set).List()
-		ruleConfigs := make([]exportPolicyRule, 0, len(ruleSet))
 		for _, x := range ruleSet {
 			exportPolicyRule := exportPolicyRule{}
 			ruleConfig := x.(map[string]interface{})
@@ -274,7 +273,6 @@ func expandExportPolicy(set *schema.Set) []exportPolicyRule {
 			exportPolicyRule.UnixReadWrite = ruleConfig["unix_read_write"].(bool)
 			exportPolicyRule.Nfsv3 = ruleConfig["nfsv3"].(bool)
 			exportPolicyRule.Nfsv4 = ruleConfig["nfsv4"].(bool)
-			ruleConfigs = append(ruleConfigs, exportPolicyRule)
 			exportPolicy.Rules = append(exportPolicy.Rules, exportPolicyRule)
 		}
 	}

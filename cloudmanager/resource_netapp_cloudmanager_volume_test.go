@@ -9,8 +9,8 @@ import (
 	"github.com/hashicorp/terraform/terraform"
 )
 
-var clientID = "vAWgtc8ZcLRshb08kybl2Uhh9W0o5ElE"
-var AWSVsaName = "acctestawsvsavolume"
+var clientID = "6uOCTkJr78QT51ixCGBTiLMkLglKqoU7"
+var AWSVsaName = "acccvo"
 
 func TestAccVolume_basic(t *testing.T) {
 	var volume volumeResponse

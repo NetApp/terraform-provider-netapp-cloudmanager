@@ -2,6 +2,7 @@ package cloudmanager
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/resource"
@@ -32,7 +33,33 @@ func TestAccAggregate_basic(t *testing.T) {
 				Config: testAccAggregateConfigUpdateAggregate(),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAggregateExists("netapp-cloudmanager_aggregate.cl-aggregate2", &aggregate),
-					resource.TestCheckResourceAttr("netapp-cloudmanager_aggregate.cl-aggregate2", "number_of_disks", "2"),
+					resource.TestCheckResourceAttr("netapp-cloudmanager_aggregate.cl-aggregate2", "number_of_disks", "4"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAggregate_capacityIncrease(t *testing.T) {
+
+	var aggregate aggregateResult
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckAggregateDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccAggregateConfigCreateForCapacityIncrease(),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAggregateExists("netapp-cloudmanager_aggregate.cl-aggregate-capacity", &aggregate),
+				),
+			},
+			{
+				Config: testAccAggregateConfigIncreaseCapacity(),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAggregateExists("netapp-cloudmanager_aggregate.cl-aggregate-capacity", &aggregate),
+					resource.TestCheckResourceAttr("netapp-cloudmanager_aggregate.cl-aggregate-capacity", "increase_capacity_size", "512"),
+					resource.TestCheckResourceAttr("netapp-cloudmanager_aggregate.cl-aggregate-capacity", "increase_capacity_unit", "GB"),
 				),
 			},
 		},
@@ -120,46 +147,208 @@ func testAccCheckAggregateExists(name string, aggregate *aggregateResult) resour
 }
 
 func testAccAggregateConfigCreateByWorkingEnvironmentID() string {
-	return fmt.Sprintf(`
+	return `
 	resource "netapp-cloudmanager_aggregate" "cl-aggregate1" {
 		provider = netapp-cloudmanager
 		name = "acc_test_aggr_1"
-		provider_volume_type = "gp2"
-		client_id = "Nw4Q2O1kdnLtvhwegGalFnodEHUfPJWh"
-		working_environment_id = "VsaWorkingEnvironment-D72MevVC"
+		client_id = "6uOCTkJr78QT51ixCGBTiLMkLglKqoU7"
+		working_environment_id = "vsaworkingenvironment-cfmaavwc"
 		number_of_disks = 1
-	  	disk_size_size = 100
-	  	disk_size_unit = "GB"
+		disk_size_size = 100
+		disk_size_unit = "GB"
+		capacity_tier = "NONE"
+		provider_volume_type = "pd-ssd"
 	}
-  `)
+  `
 }
 
 func testAccAggregateConfigCreateByWorkingEnvironmentName() string {
-	return fmt.Sprintf(`
+	return `
 	resource "netapp-cloudmanager_aggregate" "cl-aggregate2" {
 		provider = netapp-cloudmanager
 		name = "acc_test_aggr_2"
-		provider_volume_type = "gp2"
-		client_id = "Nw4Q2O1kdnLtvhwegGalFnodEHUfPJWh"
-		working_environment_name = "testAWS"
-		number_of_disks = 1
-	  	disk_size_size = 100
-	  	disk_size_unit = "GB"
+		client_id = "6uOCTkJr78QT51ixCGBTiLMkLglKqoU7"
+		working_environment_name = "acccvo"
+		number_of_disks = 3
+		disk_size_size = 100
+		disk_size_unit = "GB"
+		capacity_tier = "NONE"
+		provider_volume_type = "pd-ssd"
 	}
-  `)
+  `
 }
 
 func testAccAggregateConfigUpdateAggregate() string {
-	return fmt.Sprintf(`
+	return `
 	resource "netapp-cloudmanager_aggregate" "cl-aggregate2" {
 		provider = netapp-cloudmanager
 		name = "acc_test_aggr_2"
-		provider_volume_type = "gp2"
-		client_id = "Nw4Q2O1kdnLtvhwegGalFnodEHUfPJWh"
-		working_environment_name = "testAWS"
-		number_of_disks = 2
-	  	disk_size_size = 100
-	  	disk_size_unit = "GB"
+		client_id = "6uOCTkJr78QT51ixCGBTiLMkLglKqoU7"
+		working_environment_name = "acccvo"
+		number_of_disks = 4
+		disk_size_size = 100
+		disk_size_unit = "GB"
+		capacity_tier = "NONE"
+		provider_volume_type = "pd-ssd"
 	}
-  `)
+  `
+}
+
+func testAccAggregateConfigCreateForCapacityIncrease() string {
+	return `
+	resource "netapp-cloudmanager_aggregate" "cl-aggregate-capacity" {
+		provider = netapp-cloudmanager
+		name = "acc_test_aggr_capacity"
+		client_id = "6uOCTkJr78QT51ixCGBTiLMkLglKqoU7"
+		working_environment_name = "aws-test-env"
+		number_of_disks = 2
+		disk_size_size = 100
+		disk_size_unit = "GB"
+		capacity_tier = "NONE"
+		provider_volume_type = "gp3"
+	}
+  `
+}
+
+func testAccAggregateConfigIncreaseCapacity() string {
+	return `
+	resource "netapp-cloudmanager_aggregate" "cl-aggregate-capacity" {
+		provider = netapp-cloudmanager
+		name = "acc_test_aggr_capacity"
+		client_id = "6uOCTkJr78QT51ixCGBTiLMkLglKqoU7"
+		working_environment_name = "aws-test-env"
+		number_of_disks = 2
+		disk_size_size = 100
+		disk_size_unit = "GB"
+		capacity_tier = "NONE"
+		provider_volume_type = "gp3"
+		increase_capacity_size = 512
+		increase_capacity_unit = "GB"
+	}
+  `
+}
+
+func TestAccAggregate_validation(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config:      testAccAggregateConfigDiskSizeValidationFail(),
+				ExpectError: regexp.MustCompile("disk_size_unit is required when disk_size_size is specified"),
+			},
+			{
+				Config:      testAccAggregateConfigDiskUnitValidationFail(),
+				ExpectError: regexp.MustCompile("disk_size_size is required when disk_size_unit is specified"),
+			},
+			{
+				Config:      testAccAggregateConfigInitialEvSizeValidationFail(),
+				ExpectError: regexp.MustCompile("initial_ev_aggregate_unit is required when initial_ev_aggregate_size is specified"),
+			},
+			{
+				Config:      testAccAggregateConfigInitialEvUnitValidationFail(),
+				ExpectError: regexp.MustCompile("initial_ev_aggregate_size is required when initial_ev_aggregate_unit is specified"),
+			},
+			{
+				Config:      testAccAggregateConfigIncreaseSizeValidationFail(),
+				ExpectError: regexp.MustCompile("increase_capacity_unit is required when increase_capacity_size is specified"),
+			},
+			{
+				Config:      testAccAggregateConfigIncreaseUnitValidationFail(),
+				ExpectError: regexp.MustCompile("increase_capacity_size is required when increase_capacity_unit is specified"),
+			},
+		},
+	})
+}
+
+// Test configurations that should fail validation
+
+func testAccAggregateConfigDiskSizeValidationFail() string {
+	return `
+	resource "netapp-cloudmanager_aggregate" "cl-aggregate-fail" {
+		provider = netapp-cloudmanager
+		name = "acc_test_aggr_fail"
+		client_id = "6uOCTkJr78QT51ixCGBTiLMkLglKqoU7"
+		working_environment_name = "acccvo"
+		number_of_disks = 1
+		disk_size_size = 100
+		capacity_tier = "NONE"
+		provider_volume_type = "pd-ssd"
+	}
+  `
+}
+
+func testAccAggregateConfigDiskUnitValidationFail() string {
+	return `
+	resource "netapp-cloudmanager_aggregate" "cl-aggregate-fail" {
+		provider = netapp-cloudmanager
+		name = "acc_test_aggr_fail"
+		client_id = "6uOCTkJr78QT51ixCGBTiLMkLglKqoU7"
+		working_environment_name = "acccvo"
+		number_of_disks = 1
+		disk_size_unit = "GB"
+		capacity_tier = "NONE"
+		provider_volume_type = "pd-ssd"
+	}
+  `
+}
+
+func testAccAggregateConfigInitialEvSizeValidationFail() string {
+	return `
+	resource "netapp-cloudmanager_aggregate" "cl-aggregate-fail" {
+		provider = netapp-cloudmanager
+		name = "acc_test_aggr_fail"
+		client_id = "6uOCTkJr78QT51ixCGBTiLMkLglKqoU7"
+		working_environment_name = "aws-test-env"
+		number_of_disks = 1
+		initial_ev_aggregate_size = 256
+		capacity_tier = "NONE"
+		provider_volume_type = "gp3"
+	}
+  `
+}
+
+func testAccAggregateConfigInitialEvUnitValidationFail() string {
+	return `
+	resource "netapp-cloudmanager_aggregate" "cl-aggregate-fail" {
+		provider = netapp-cloudmanager
+		name = "acc_test_aggr_fail"
+		client_id = "6uOCTkJr78QT51ixCGBTiLMkLglKqoU7"
+		working_environment_name = "aws-test-env"
+		number_of_disks = 1
+		initial_ev_aggregate_unit = "GB"
+		capacity_tier = "NONE"
+		provider_volume_type = "gp3"
+	}
+  `
+}
+
+func testAccAggregateConfigIncreaseSizeValidationFail() string {
+	return `
+	resource "netapp-cloudmanager_aggregate" "cl-aggregate-fail" {
+		provider = netapp-cloudmanager
+		name = "acc_test_aggr_fail"
+		client_id = "6uOCTkJr78QT51ixCGBTiLMkLglKqoU7"
+		working_environment_name = "aws-test-env"
+		number_of_disks = 1
+		increase_capacity_size = 512
+		capacity_tier = "NONE"
+		provider_volume_type = "gp3"
+	}
+  `
+}
+
+func testAccAggregateConfigIncreaseUnitValidationFail() string {
+	return `
+	resource "netapp-cloudmanager_aggregate" "cl-aggregate-fail" {
+		provider = netapp-cloudmanager
+		name = "acc_test_aggr_fail"
+		client_id = "6uOCTkJr78QT51ixCGBTiLMkLglKqoU7"
+		working_environment_name = "aws-test-env"
+		number_of_disks = 1
+		increase_capacity_unit = "GB"
+		capacity_tier = "NONE"
+		provider_volume_type = "gp3"
+	}
+  `
 }

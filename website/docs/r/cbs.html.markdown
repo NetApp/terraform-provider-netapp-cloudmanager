@@ -103,22 +103,24 @@ resource "netapp-cloudmanager_cbs" "azure-cbs" {
 
 ## Argument Reference
 
+Arguments marked with “Forces new resource” will cause the resource to be recreated if their value is changed after creation.
+
 The following arguments are supported:
 
-* `working_environment_id` - (Optional) The public ID of the working environment where the aggregate will be created. This argument is optional if working_environment_name is provided. You can find the ID from a previous create Cloud Volumes ONTAP action as shown in the example, or from the information page of the Cloud Volumes ONTAP working environment on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
-* `working_environment_name` - (Optional) The working environment name where the aggregate will be created. This argument will be ignored if working_environment_id is provided.
-* `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
-* `account_id` - (Required) The NetApp account ID that the backup cloud will be associated with. You can find the account ID in the account tab of Cloud Manager at [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
-* `cloud_provider` - (Required) Need to be one of ['AWS', 'AZURE', 'GCP']
-* `region` - (Required) The region where the working environment created.
-* `bucket`- (Optional)
-* `ip_space` - (Optional)
+* `working_environment_id` - (Optional, Forces new resource) The public ID of the working environment where the aggregate will be created. This argument is optional if working_environment_name is provided. You can find the ID from a previous create Cloud Volumes ONTAP action as shown in the example, or from the information page of the Cloud Volumes ONTAP working environment on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
+* `working_environment_name` - (Optional, Forces new resource) The working environment name where the aggregate will be created. This argument will be ignored if working_environment_id is provided.
+* `client_id` - (Required, Forces new resource) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
+* `account_id` - (Required, Forces new resource) The NetApp account ID that the backup cloud will be associated with. You can find the account ID in the account tab of Cloud Manager at [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
+* `cloud_provider` - (Required, Forces new resource) Need to be one of ['AWS', 'AZURE', 'GCP']
+* `region` - (Required, Forces new resource) The region where the working environment created.
+* `bucket`- (Optional, Forces new resource)
+* `ip_space` - (Optional, Forces new resource)
 * `backup_policy` - (Optional)
-* `auto_backup_enabled` - (Optional) Auto backup all volumes in working environments.
-* `max_transfer_rate` - (Optional) Modifies node level throttling of an ONTAP cluster. Value to be specified in kilo bytes per second(kbps). A value of 0 implies Unlimited throttling.
-* `export_existing_snapshots` - (Optional) Export pre-existing Snapshot copies to object storage
-* `aws_cbs_parameters` - (Optional)
-* `azure_cbs_parameters` - (Optional)
+* `auto_backup_enabled` - (Optional, Forces new resource) Auto backup all volumes in working environments.
+* `max_transfer_rate` - (Optional, Forces new resource) Modifies node level throttling of an ONTAP cluster. Value to be specified in kilo bytes per second(kbps). A value of 0 implies Unlimited throttling.
+* `export_existing_snapshots` - (Optional, Forces new resource) Export pre-existing Snapshot copies to object storage
+* `aws_cbs_parameters` - (Optional, Forces new resource)
+* `azure_cbs_parameters` - (Optional, Forces new resource)
 
 The `aws_cbs_parameters` block supports the following:
 * `aws_account_id` - (Optional) Required when the provider is AWS.
@@ -126,7 +128,7 @@ The `aws_cbs_parameters` block supports the following:
 * `access_key` - (Optional)
 * `secret_password` - (Optional)
 * `kms_key_id` - (Optional) Input field for a customer-managed key use case
-* `private_endpoint_id` - (Optional) 
+* `private_endpoint_id` - (Optional)
 
 The `azure_cbs_parameters` block supports the following:
 * `resource_group` - (Required) The resource group name.
@@ -146,8 +148,8 @@ The `policy_rules` block supports the followings:
 * `rule` - (Optional)
 
 The `rule` blocks support the followings:
-* `label` - (Optional) ['Hourly', 'Daily', 'Weekly', 'Monthly', 'Yearly']
-* `retention` - (Optional) The number value goes with the `label`
+* `label` - (Optional, Forces new resource) ['Hourly', 'Daily', 'Weekly', 'Monthly', 'Yearly']
+* `retention` - (Optional, Forces new resource) The number value goes with the `label`
 
 The `volumes` block supports the followings:
 * `volume_name` - (Required) Name of the volume to enable backup.

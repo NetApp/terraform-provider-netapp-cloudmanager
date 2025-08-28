@@ -13,15 +13,16 @@ import (
 
 // createAggregateRequest the users input for creating an Aggregate
 type createAggregateRequest struct {
-	Name                 string   `structs:"name"`
-	WorkingEnvironmentID string   `structs:"workingEnvironmentId"`
-	NumberOfDisks        int      `structs:"numberOfDisks"`
-	DiskSize             diskSize `structs:"diskSize"`
-	HomeNode             string   `structs:"homeNode,omitempty"`
-	ProviderVolumeType   string   `structs:"providerVolumeType,omitempty"`
-	CapacityTier         string   `structs:"capacityTier,omitempty"`
-	Iops                 int      `structs:"iops,omitempty"`
-	Throughput           int      `structs:"throughput,omitempty"`
+	Name                   string   `structs:"name"`
+	WorkingEnvironmentID   string   `structs:"workingEnvironmentId"`
+	NumberOfDisks          int      `structs:"numberOfDisks,omitempty"`
+	DiskSize               diskSize `structs:"diskSize,omitempty"`
+	HomeNode               string   `structs:"homeNode,omitempty"`
+	ProviderVolumeType     string   `structs:"providerVolumeType,omitempty"`
+	CapacityTier           string   `structs:"capacityTier,omitempty"`
+	Iops                   int      `structs:"iops,omitempty"`
+	Throughput             int      `structs:"throughput,omitempty"`
+	InitialEvAggregateSize diskSize `structs:"initialEvAggregateSize,omitempty"`
 }
 
 // diskSize struct
@@ -105,6 +106,12 @@ type updateAggregateRequest struct {
 	WorkingEnvironmentID string `structs:"workingEnvironmentId"`
 	Name                 string `structs:"name"`
 	NumberOfDisks        int    `structs:"numberOfDisks"`
+}
+
+type increaseAggregateCapacityRequest struct {
+	WorkingEnvironmentID string   `structs:"workingEnvironmentId"`
+	AggregateName        string   `structs:"aggregateName"`
+	CapacityToAdd        diskSize `structs:"capacityToAdd"`
 }
 
 // get aggregate by workingEnvironmentId+aggregate name
@@ -306,6 +313,53 @@ func (c *Client) updateAggregate(request updateAggregateRequest, clientID string
 		err = c.waitOnCompletion(onCloudRequestID, "Aggregate", "update", 10, 60, clientID)
 	} else {
 		err = c.waitOnCompletionForNotSaas(onCloudRequestID, "Aggregate", "update", 10, 60, clientID, connectorIP)
+	}
+
+	return err
+}
+
+// increaseAggregateCapacity increases the capacity of an aggregate using Amazon EBS Elastic Volumes
+func (c *Client) increaseAggregateCapacity(request increaseAggregateCapacityRequest, clientID string, isSaaS bool, connectorIP string) error {
+	log.Printf("increaseAggregateCapacity for aggregate %s by %d %s", request.AggregateName, request.CapacityToAdd.Size, request.CapacityToAdd.Unit)
+
+	params := structs.Map(request)
+	hostType := "CloudManagerHost"
+	if !isSaaS {
+		hostType = "http://" + connectorIP
+	}
+
+	var baseURL string
+	rootURL, cloudProviderName, err := c.getAPIRoot(request.WorkingEnvironmentID, clientID, isSaaS, connectorIP)
+
+	if err != nil {
+		log.Print("increaseAggregateCapacity: Cannot get API root.")
+		return err
+	}
+
+	// Only AWS supports aggregate capacity increase
+	if cloudProviderName != "Amazon" {
+		return fmt.Errorf("aggregate capacity increase is currently only supported for AWS")
+	}
+
+	// Build the API endpoint using the root URL from getAPIRoot
+	baseURL = fmt.Sprintf("%s/aggregates/%s/%s/add-capacity", rootURL, request.WorkingEnvironmentID, request.AggregateName)
+
+	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("POST", baseURL, params, c.Token, hostType, clientID)
+	if err != nil {
+		log.Print("increaseAggregateCapacity request failed")
+		return err
+	}
+
+	responseError := apiResponseChecker(statusCode, response, "increaseAggregateCapacity")
+	if responseError != nil {
+		return responseError
+	}
+
+	log.Print("Wait for aggregate capacity increase.")
+	if isSaaS {
+		err = c.waitOnCompletion(onCloudRequestID, "Aggregate", "increase capacity", 15, 60, clientID)
+	} else {
+		err = c.waitOnCompletionForNotSaas(onCloudRequestID, "Aggregate", "increase capacity", 15, 60, clientID, connectorIP)
 	}
 
 	return err

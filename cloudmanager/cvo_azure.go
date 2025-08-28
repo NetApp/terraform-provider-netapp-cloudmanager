@@ -43,7 +43,8 @@ type createCVOAzureDetails struct {
 	BackupVolumesToCbs          bool                      `structs:"backupVolumesToCbs"`
 	EnableCompliance            bool                      `structs:"enableCompliance"`
 	EnableMonitoring            bool                      `structs:"enableMonitoring"`
-	AllowDeployInExistingRg     bool                      `structs:"allowDeployInExistingRg,omitempty"`
+	AllowDeployInExistingRg     bool                      `structs:"allowDeployInExistingRg"`
+	OpenSecurityGroup           bool                      `structs:"openSecurityGroup"`
 	AzureTags                   []userTags                `structs:"azureTags,omitempty"`
 	IsHA                        bool
 	ResourceGroup               string `structs:"resourceGroup,omitempty"`

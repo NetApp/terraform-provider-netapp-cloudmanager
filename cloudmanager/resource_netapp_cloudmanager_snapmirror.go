@@ -350,14 +350,35 @@ func resourceCVOSnapMirrorImport(d *schema.ResourceData, meta interface{}) ([]*s
 	client := meta.(*Client)
 	importID := d.Id()
 
-	// Parse the import ID - expect format: client_id:destination_volume_name
-	parts := strings.Split(importID, ":")
-	if len(parts) != 2 {
-		return nil, fmt.Errorf("invalid import ID format. Expected: client_id:destination_volume_name, got: %s", importID)
+	// Parse the import ID - expect different formats based on deployment mode
+	// Standard mode: deployment_mode,client_id,destination_volume_name
+	// Restricted mode: deployment_mode,client_id,destination_volume_name,tenant_id,connector_ip
+	parts := strings.Split(importID, ",")
+
+	if len(parts) < 3 || (parts[0] != "Standard" && parts[0] != "Restricted") {
+		return nil, fmt.Errorf("invalid import ID format. Expected: deployment_mode,client_id,destination_volume_name or deployment_mode,client_id,destination_volume_name,tenant_id,connector_ip for Restricted mode, got: %s", importID)
 	}
 
-	clientID := parts[0]
-	destinationVolumeName := parts[1]
+	deploymentMode := parts[0]
+	clientID := parts[1]
+	destinationVolumeName := parts[2]
+
+	// Set deployment mode
+	d.Set("deployment_mode", deploymentMode)
+	d.Set("client_id", clientID)
+
+	// Handle Restricted mode additional parameters
+	if deploymentMode == "Restricted" {
+		if len(parts) != 5 {
+			return nil, fmt.Errorf("invalid import ID format for Restricted mode. Expected: deployment_mode,client_id,destination_volume_name,tenant_id,connector_ip, got: %s", importID)
+		}
+		d.Set("tenant_id", parts[3])
+		d.Set("connector_ip", parts[4])
+	} else if deploymentMode == "Standard" {
+		if len(parts) != 3 {
+			return nil, fmt.Errorf("invalid import ID format for Standard mode. Expected: deployment_mode,client_id,destination_volume_name, got: %s", importID)
+		}
+	}
 
 	// Check deployment mode
 	isSaas, connectorIP, err := client.checkDeploymentMode(d, clientID)

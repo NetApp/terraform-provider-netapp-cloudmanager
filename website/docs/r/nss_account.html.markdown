@@ -35,11 +35,13 @@ resource "netapp-cloudmanager_nss_account" "nss-account-2" {
 
 ## Argument Reference
 
+Arguments marked with “Forces new resource” will cause the resource to be recreated if their value is changed after creation.
+
 The following arguments are supported:
 
-* `client_id` - (Required) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
-* `username` - (Required) NSS username. Not required in data source.
-* `password` - (Required) NSS password. Not required in data source.
+* `client_id` - (Required, Forces new resource) The client ID of the Cloud Manager Connector. You can find the ID from a previous create Connector action as shown in the example, or from the Connector tab on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
+* `username` - (Required, Forces new resource) NSS username. Not required in data source.
+* `password` - (Required, Forces new resource) NSS password. Not required in data source.
 
 ## Attributes Reference
 
