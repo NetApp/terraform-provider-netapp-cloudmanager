@@ -65,7 +65,7 @@ type haParamsAWS struct {
 	PlatformSerialNumberNode1   string   `structs:"platformSerialNumberNode1,omitempty"`
 	PlatformSerialNumberNode2   string   `structs:"platformSerialNumberNode2,omitempty"`
 	MediatorInstanceProfileName string   `structs:"mediatorInstanceProfileName,omitempty"`
-	MediatorAssignPublicIP      bool     `structs:"mediatorAssignPublicIP,omitempty"`
+	MediatorAssignPublicIP      bool     `structs:"mediatorAssignPublicIP"`
 	MediatorSecurityGroupID     string   `structs:"mediatorSecurityGroupId,omitempty"`
 	RouteTableIds               []string `structs:"routeTableIds,omitempty"`
 	AssumeRoleArn               string   `structs:"assumeRoleArn,omitempty"`
@@ -365,7 +365,7 @@ func (c *Client) deleteCVO(id string, isHA bool, clientID string) error {
 
 // validateCVOParams validates params
 func validateCVOParams(cvoDetails createCVOAWSDetails) error {
-	if cvoDetails.VsaMetadata.UseLatestVersion == true && cvoDetails.VsaMetadata.OntapVersion != "latest" {
+	if cvoDetails.VsaMetadata.UseLatestVersion && cvoDetails.VsaMetadata.OntapVersion != "latest" {
 		return fmt.Errorf("ontap_version parameter not required when having use_latest_version as true")
 	}
 
@@ -375,14 +375,14 @@ func validateCVOParams(cvoDetails createCVOAWSDetails) error {
 	}
 
 	// by Node byol license for existing customers
-	if cvoDetails.IsHA == true && cvoDetails.VsaMetadata.LicenseType == "ha-cot-premium-byol" {
+	if cvoDetails.IsHA && cvoDetails.VsaMetadata.LicenseType == "ha-cot-premium-byol" {
 		if cvoDetails.HAParams.PlatformSerialNumberNode1 == "" || cvoDetails.HAParams.PlatformSerialNumberNode2 == "" {
 			return fmt.Errorf("both platform_serial_number_node1 and platform_serial_number_node2 parameters are required when having ha type as true and license_type as ha-cot-premium-byol")
 		}
 	}
 
 	// by Node byol license for existing customers
-	if cvoDetails.IsHA == false && (cvoDetails.HAParams.PlatformSerialNumberNode1 != "" || cvoDetails.HAParams.PlatformSerialNumberNode2 != "") {
+	if !cvoDetails.IsHA && (cvoDetails.HAParams.PlatformSerialNumberNode1 != "" || cvoDetails.HAParams.PlatformSerialNumberNode2 != "") {
 		return fmt.Errorf("both platform_serial_number_node1 and platform_serial_number_node2 parameters are only required when having ha type as true and license_type as ha-cot-premium-byol")
 	}
 
@@ -398,17 +398,17 @@ func validateCVOParams(cvoDetails createCVOAWSDetails) error {
 		return fmt.Errorf("throughput parameter required when ebs_volume_type is gp3")
 	}
 
-	if cvoDetails.IsHA == true && cvoDetails.SubnetID != "" {
+	if cvoDetails.IsHA && cvoDetails.SubnetID != "" {
 		return fmt.Errorf("subnet_id not required when having ha as true")
 	}
 
 	// by Capacity license
 	if cvoDetails.VsaMetadata.CapacityPackageName != "" {
 		log.Print("Verify cvo parameter capacity_package_name is not empty")
-		if cvoDetails.IsHA == true && cvoDetails.VsaMetadata.LicenseType != "ha-capacity-paygo" {
+		if cvoDetails.IsHA && cvoDetails.VsaMetadata.LicenseType != "ha-capacity-paygo" {
 			return fmt.Errorf("license_type must be ha-capacity-paygo")
 		}
-		if cvoDetails.IsHA == false && cvoDetails.VsaMetadata.LicenseType != "capacity-paygo" {
+		if !cvoDetails.IsHA && cvoDetails.VsaMetadata.LicenseType != "capacity-paygo" {
 			return fmt.Errorf("license_type must be capacity-paygo")
 		}
 	}

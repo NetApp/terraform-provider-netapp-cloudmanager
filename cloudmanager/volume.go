@@ -38,7 +38,7 @@ type volumeRequest struct {
 	IscsiInfo                 iscsiInfo              `structs:"iscsiInfo,omitempty"`
 	FileSystemID              string                 `structs:"fileSystemId,omitempty"`
 	TenantID                  string                 `structs:"tenantId,omitempty"`
-	EnableStorageEfficiency   bool                   `structs:"enableStorageEfficiency,omitempty"`
+	EnableStorageEfficiency   bool                   `structs:"enableStorageEfficiency"`
 	VolumeTags                []volumeTag            `structs:"volumeTags,omitempty"`
 	VolumeFSXTags             []volumeTag            `structs:"awsTags,omitempty"`
 	Comment                   string                 `structs:"comment,omitempty"`
@@ -84,33 +84,12 @@ type ExportPolicyInfoResponse struct {
 
 // ExportPolicyRule describes the export policy rule section.
 type ExportPolicyRule struct {
-	// Protocols         []string `structs:"protocols"`
-	// Clients           []string `structs:"clients"`
-	// RoRule            []string `structs:"ro_rule"`
-	// RwRule            []string `structs:"rw_rule"`
 	SuperUser         bool     `structs:"superUser"`
 	Index             int32    `structs:"index,omitempty"`
 	RuleAccessControl string   `structs:"ruleAccessControl"`
 	Ips               []string `structs:"ips"`
 	NfsVersion        []string `structs:"nfsVersion,omitempty"`
 }
-
-type exportPolicyInfoResponse struct {
-	Name       string   `json:"name"`
-	PolicyType string   `json:"policyType"`
-	Ips        []string `json:"ips"`
-	NfsVersion []string `json:"nfsVersion"`
-	// Rules      exportPolicyRule `json:"rules"`
-}
-
-// type exportPolicyRule struct {
-// 	Protocols []string `structs:"protocols"`
-// 	Clients   []string `structs:"clients"`
-// 	RoRule    []string `structs:"ro_rule"`
-// 	RwRule    []string `structs:"rw_rule"`
-// 	Superuser []string `structs:"superuser"`
-// 	Index     int32    `structs:"index"`
-// }
 
 type size struct {
 	Size float64 `structs:"size"`

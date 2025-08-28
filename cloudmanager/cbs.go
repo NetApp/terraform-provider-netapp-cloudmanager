@@ -10,22 +10,19 @@ import (
 )
 
 type cbsRequest struct {
-	Provider string       `structs:"provider"`
-	Region   string       `structs:"region"`
-	Aws      awsDetails   `structs:"aws,omitempty"`
-	Azure    azureDetails `structs:"azure,omitempty"`
-	Gcp      gcpDetails   `structs:"gcp,omitempty"`
-	// Sgws
-	// ontap-s3
+	Provider                string       `structs:"provider"`
+	Region                  string       `structs:"region"`
+	Aws                     awsDetails   `structs:"aws,omitempty"`
+	Azure                   azureDetails `structs:"azure,omitempty"`
+	Gcp                     gcpDetails   `structs:"gcp,omitempty"`
 	Bucket                  string       `structs:"bucket,omitempty"`
 	IPSpace                 string       `structs:"ip-space,omitempty"`
 	BackupPolicy            backupPolicy `structs:"backup-policy"`
-	AutoBackupEnabled       bool         `structs:"auto-backup-enabled,omitempty"`
+	AutoBackupEnabled       bool         `structs:"auto-backup-enabled"`
 	MaxTransferRate         int          `structs:"max-transfer-rate,omitempty"`
-	ExportExistingSnapshots bool         `structs:"export-existing-snapshots,omitempty"`
-
-	WorkingEnvironmentID string `structs:"workingEnvironmentId"`
-	AccountID            string `structs:"account-id"`
+	ExportExistingSnapshots bool         `structs:"export-existing-snapshots"`
+	WorkingEnvironmentID    string       `structs:"workingEnvironmentId"`
+	AccountID               string       `structs:"account-id"`
 }
 
 type cbsVolumeRequest struct {
@@ -162,41 +159,6 @@ type fileDetails struct {
 	FileMtime int    `json:"mtime"`
 }
 
-// cbsStatusResult for creating a cbs
-type cbsStatusResult struct {
-	Name                    string             `json:"name"`
-	ID                      string             `json:"id"`
-	Region                  string             `json:"region"`
-	Status                  string             `json:"status"`
-	OntapVersion            string             `json:"ontap-version"`
-	BackupEnablementStatus  string             `json:"backup-enablement-status"`
-	CBSType                 string             `json:"type"`
-	CloudProvider           string             `json:"provider"`
-	ProviderAccountID       string             `json:"provider-account-id"`
-	ProviderAccountName     string             `json:"provider-account-name"`
-	Bucket                  string             `json:"bucket"`
-	ArchiveStorageClass     string             `json:"archive-storage-class"`
-	ResourceGroup           string             `json:"resource-group"`
-	StorageAccount          string             `json:"storage-account"`
-	StorageServer           string             `json:"storage-server"`
-	UsedCapacityGb          string             `json:"used-capacity-gb"`
-	ChargingCapacity        string             `json:"charging-capacity"`
-	LogicalUsedSize         string             `json:"logical-used-size"`
-	BackedUpVolumeCount     string             `json:"backed-up-volume-count"`
-	TotalVolumesCount       string             `json:"total-volumes-count"`
-	BackupPolicyCount       string             `json:"backup-policy-count"`
-	FailedBackupVolumeCount string             `json:"failed-backup-volume-count"`
-	CatalogEnabled          bool               `json:"catalog-enabled"`
-	AutoBackupEnabled       bool               `json:"auto-backup-enabled"`
-	BackupPolicy            backupPolicyResult `json:"backup-policy"`
-	PrivateEndpointRequired bool               `json:"private-endpoint-required"`
-	License                 licenseResult      `json:"license"`
-	IPSpace                 string             `json:"ip-space"`
-	ProviderAccessKey       string             `json:"provider-access-key"`
-	DeleteYearlySnapshots   bool               `json:"delete-yearly-snapshots"`
-	ExportExistingSnapshots bool               `json:"export-existing-snapshots"`
-}
-
 type backupPolicyResult struct {
 	Name            string       `json:"name"`
 	Rules           []ruleResult `json:"rule"`
@@ -260,15 +222,6 @@ type cbsVolumeResult struct {
 	Name          string `json:"name"`
 	ID            string `json:"file-system-id"`
 	SnapshotCount string `json:"snapshot-count"`
-}
-
-type cbsGetSnapshotVolumeResult struct {
-	Snapshot []cbsSnapshotVolumeResult `json:"snapshot"`
-}
-
-type cbsSnapshotVolumeResult struct {
-	Name string `json:"name"`
-	ID   string `json:"id"`
 }
 
 // Create working environment cloud backup
