@@ -405,9 +405,9 @@ func resourceCVOSnapMirrorImport(d *schema.ResourceData, meta interface{}) ([]*s
 	d.Set("schedule", relationship.Schedule)
 	d.Set("max_transfer_rate", relationship.MaxTransferRate.Size)
 
-	// Set default values for fields that have them in the schema
-	d.Set("deployment_mode", "Standard")
-	d.Set("delete_destination_volume", false)
+	if _, ok := d.GetOk("delete_destination_volume"); !ok {
+		d.Set("delete_destination_volume", false)
+	}
 
 	// Set optional fields if they exist, otherwise set appropriate defaults
 	if relationship.Destination.AggregateName != "" {
