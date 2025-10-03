@@ -1,12 +1,12 @@
 package cloudmanager
 
 import (
+	"context"
 	"log"
 	"strings"
 
-	"github.com/hashicorp/terraform/helper/validation"
-
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceCVOAWS() *schema.Resource {
@@ -676,7 +676,8 @@ func resourceCVOAWSUpdate(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
-func resourceCVOAWSCustomizeDiff(diff *schema.ResourceDiff, v interface{}) error {
+func resourceCVOAWSCustomizeDiff(ctx context.Context, diff *schema.ResourceDiff, v interface{}) error {
+	_ = ctx
 	respErr := checkUserTagDiff(diff, "aws_tag", "tag_key")
 	if respErr != nil {
 		return respErr
