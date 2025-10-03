@@ -1,13 +1,14 @@
 package cloudmanager
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"strings"
 	"time"
 
-	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/hashicorp/terraform/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceCVOVolume() *schema.Resource {
@@ -985,7 +986,8 @@ func resourceVolumeImport(d *schema.ResourceData, meta interface{}) ([]*schema.R
 
 }
 
-func resourceVolumeCustomizeDiff(diff *schema.ResourceDiff, v interface{}) error {
+func resourceVolumeCustomizeDiff(ctx context.Context, diff *schema.ResourceDiff, v interface{}) error {
+	_ = ctx
 	// Check supported modification: Use volume name as an indication to know if this is a creation or modification
 	if !(diff.HasChange("name")) {
 		changeableParams := []string{"volume_protocol", "export_policy_type", "export_policy_ip",

@@ -1,12 +1,12 @@
 package cloudmanager
 
 import (
+	"context"
 	"fmt"
 	"log"
 
-	"github.com/hashicorp/terraform/helper/validation"
-
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAWSFSX() *schema.Resource {
@@ -271,7 +271,8 @@ func resourceAWSFSXDelete(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
-func resourceAWSFSXCustomizeDiff(diff *schema.ResourceDiff, v interface{}) error {
+func resourceAWSFSXCustomizeDiff(ctx context.Context, diff *schema.ResourceDiff, v interface{}) error {
+	_ = ctx
 	respErr := checkUserTagDiff(diff, "tags", "tag_key")
 	if respErr != nil {
 		return respErr

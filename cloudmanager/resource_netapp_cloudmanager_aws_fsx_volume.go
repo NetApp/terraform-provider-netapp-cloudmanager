@@ -1,11 +1,12 @@
 package cloudmanager
 
 import (
+	"context"
 	"fmt"
 	"log"
 
-	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/hashicorp/terraform/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceFsxVolume() *schema.Resource {
@@ -332,7 +333,8 @@ func resourceFSXVolumeUpdate(d *schema.ResourceData, meta interface{}) error {
 	return resourceFSXVolumeRead(d, meta)
 }
 
-func resourceFSXVolumeCustomizeDiff(diff *schema.ResourceDiff, v interface{}) error {
+func resourceFSXVolumeCustomizeDiff(ctx context.Context, diff *schema.ResourceDiff, v interface{}) error {
+	_ = ctx
 	if diff.HasChange("volume_protocol") {
 		currentVolumeType, expectedVolumeType := diff.GetChange("volume_protocol")
 		if currentVolumeType.(string) == "" {

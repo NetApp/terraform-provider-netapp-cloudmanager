@@ -1,11 +1,12 @@
 package cloudmanager
 
 import (
+	"context"
 	"fmt"
 	"log"
 
-	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/hashicorp/terraform/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAggregate() *schema.Resource {
@@ -450,7 +451,8 @@ func resourceAggregateExists(d *schema.ResourceData, meta interface{}) (bool, er
 	return true, nil
 }
 
-func resourceAggregateCustomizeDiff(diff *schema.ResourceDiff, v interface{}) error {
+func resourceAggregateCustomizeDiff(ctx context.Context, diff *schema.ResourceDiff, v interface{}) error {
+	_ = ctx
 	// Validate disk_size_size and disk_size_unit are provided together
 	diskSizeSize := diff.Get("disk_size_size")
 	diskSizeUnit := diff.Get("disk_size_unit")
