@@ -1,3 +1,7 @@
+## 26.1.0
+NEW FEATURES: 
+* resource/cvo_azure: Supports configuration of `storage_account_network_access` while creating Azure SN and HA CVO. 
+
 ## 26.0.0
 BREAKING CHANGE:
 * resource/aggregate: `number_of_disks` and `disk_size_size` default value is removed.

@@ -174,6 +174,7 @@ The naming convention:
 * `retries` - (Optional) The number of attempts to wait for the completion of creating the CVO with 60 seconds apart for each attempt. For HA, this value is incremented by 30. The default is '60'.
 * `worm_retention_period_length` - (Optional, Forces new resource) WORM retention period length. Once specified retention period, the WORM is enabled. When WORM storage is activated, data tiering to object storage can’t be enabled.
 * `worm_retention_period_unit` - (Optional, Forces new resource) WORM retention period unit: ['years','months','days','hours','minutes','seconds'].
+* `storage_account_network_access` - (Optional, Forces new resource) Controls the publicNetworkAccess property of the fabric pool storage account created for the Cloud Volumes ONTAP system. Accepted values: 'Enabled', 'Disabled', 'SecuredByPerimeter'. The default is 'Enabled'. When set to 'Disabled', data tiering is also disabled. 
 
 
 The `azure_encryption_parameters` block supports:

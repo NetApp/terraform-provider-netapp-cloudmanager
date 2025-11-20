@@ -52,6 +52,7 @@ type createCVOAzureDetails struct {
 	VnetForInternal             string
 	SerialNumber                string        `structs:"serialNumber,omitempty"`
 	HAParams                    haParamsAzure `structs:"haParams,omitempty"`
+	StorageAccountNetworkAccess string `structs:"storageAccountNetworkAccess,omitempty"`
 }
 
 type azureEncryptionParameters struct {

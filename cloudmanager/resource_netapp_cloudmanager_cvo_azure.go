@@ -311,6 +311,13 @@ func resourceCVOAzure() *schema.Resource {
 				Optional: true,
 				Default:  60,
 			},
+			"storage_account_network_access": {
+    			Type:         schema.TypeString,
+    			Optional:     true,
+				ForceNew: true,
+    			ValidateFunc: validation.StringInSlice([]string{"Disabled", "Enabled", "SecuredByPerimeter"}, false),
+    			Description:  "Controls network access for the storage account. Accepted values: Enabled, Disabled, SecuredByPerimeter.",
+			},
 		},
 	}
 }
@@ -472,6 +479,11 @@ func resourceCVOAzureCreate(d *schema.ResourceData, meta interface{}) error {
 				resourceGroupPath, cvoDetails.AzureEncryptionParameters.UserAssignedIdentity)
 		}
 	}
+
+	if c, ok := d.GetOk("storage_account_network_access"); ok {
+    cvoDetails.StorageAccountNetworkAccess = c.(string)
+	}
+	
 	if client.GetSimulator() {
 		log.Print("In simulator env...")
 		vnetFormat = "%s/%s"
