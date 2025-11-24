@@ -125,14 +125,7 @@ func resourceCVOAzure() *schema.Resource {
 			},
 			"instance_type": {
 				Type:     schema.TypeString,
-				Optional: true,
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					// Log the values to understand what we're getting
-					log.Printf("DiffSuppressFunc - key: %s, old: %s, new: %s", k, old, new)
-					suppress := old == "Standard_DS4_v2" && new == ""
-					log.Printf("DiffSuppressFunc - suppressing: %t", suppress)
-					return suppress
-				},
+				Required: true,  // specify Standard_E8ds_v5 for default value
 			},
 			"subnet_id": {
 				Type:     schema.TypeString,

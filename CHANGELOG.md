@@ -1,10 +1,10 @@
-## 26.1.0
+## 27.0.0
 NEW FEATURES: 
 * resource/cvo_azure: Supports configuration of `storage_account_network_access` while creating Azure SN and HA CVO. 
 
-IMPROVEMENTS:
-* resource/cvo_azure: Removed the default value of the `instance_type` while creating Azure SN and HA CVO.
-* resource/cvo_gcp: Removed the default value of the `instance_type` while creating GCP SN and HA CVO.
+BREAKING CHANGE:
+* resource/cvo_azure: Removed the default value of the `instance_type` from `Standard_DS4_v2` to `Standard_E8ds_v5` and marked the attribute as `Required`. 
+* resource/cvo_gcp: Removed the default value of the `instance_type` from `n1-standard-8` to `n2-standard-8` while creating GCP SN and HA CVO and marked the attribute as `Required`. 
 
 
 ## 26.0.0

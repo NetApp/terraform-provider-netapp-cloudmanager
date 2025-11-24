@@ -101,14 +101,7 @@ func resourceCVOGCP() *schema.Resource {
 			},
 			"instance_type": {
 				Type:     schema.TypeString,
-				Optional: true,
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					// Log the values to understand what we're getting
-					log.Printf("DiffSuppressFunc - key: %s, old: %s, new: %s", k, old, new)
-					suppress := old == "n1-standard-8" && new == ""
-					log.Printf("DiffSuppressFunc - suppressing: %t", suppress)
-					return suppress
-				},
+				Required: true, // specify n2-standard-8 for default value
 			},
 			"subnet_id": {
 				Type:     schema.TypeString,
@@ -699,7 +692,6 @@ func resourceCVOGCPRead(d *schema.ResourceData, meta interface{}) error {
 	}
 	d.Set("svm_name", resp.SvmName)
 	d.Set("writing_speed_state", resp.OntapClusterProperties.WritingSpeedState)
-	d.Set("instance_type", resp.ProviderProperties.InstanceType)
 
 	return nil
 }
