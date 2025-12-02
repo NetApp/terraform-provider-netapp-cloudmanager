@@ -1290,11 +1290,11 @@ func (c *Client) updateCVOSVMs(d *schema.ResourceData, clientID string, isSaas b
 	// expectList will be used to keep the new SVMs which will be added later.
 	// currentList will be used to keep the SVMs which will be removed later.
 	// But rather than adding and deleting the SVMs, try to do rename/update them first.
-	expectList := make(map[string]bool)
+	expectList := make(map[string]string) // map[svmName]rootVolumeAggregate
 	currentList := make(map[int]string)
 
 	for _, svm := range eSVMs {
-		expectList[svm.SvmName] = true
+		expectList[svm.SvmName] = svm.RootVolumeAggregate
 	}
 
 	i := 0
@@ -1311,7 +1311,7 @@ func (c *Client) updateCVOSVMs(d *schema.ResourceData, clientID string, isSaas b
 	log.Printf("cList: %#v", currentList)
 
 	j := 0
-	for svmName := range expectList {
+	for svmName, rootVolAggregate := range expectList {
 		if len(currentList) > 0 {
 			// update SVM
 			respErr := c.updateCVOSVMName(d, clientID, currentList[j], svmName, isSaas, connectorIP)
@@ -1322,7 +1322,7 @@ func (c *Client) updateCVOSVMs(d *schema.ResourceData, clientID string, isSaas b
 			j++
 		} else {
 			// add SVM
-			respErr := c.addSVMtoCVO(id, clientID, svmName, isSaas, connectorIP)
+			respErr := c.addSVMtoCVO(id, clientID, svmName, isSaas, connectorIP, rootVolAggregate)
 			if respErr != nil {
 				log.Printf("Error adding SVM %v: %v", svmName, respErr)
 				return respErr

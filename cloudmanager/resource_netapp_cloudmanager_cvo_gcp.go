@@ -139,6 +139,14 @@ func resourceCVOGCP() *schema.Resource {
 							Type:     schema.TypeString,
 							Required: true,
 						},
+						"root_volume_aggregate": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
+								// This will be caught by CustomizeDiff which has access to the full resource state
+								return
+							},
+						},
 					},
 				},
 			},
@@ -660,7 +668,7 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 
 	// Add SVMs on GCP CVO HA
 	for _, svm := range svmList {
-		err := client.addSVMtoCVO(res.PublicID, clientID, svm.SvmName, isSaas, connectorIP)
+		err := client.addSVMtoCVO(res.PublicID, clientID, svm.SvmName, isSaas, connectorIP, "")
 		if err != nil {
 			log.Printf("Error adding SVM %v: %v", svm.SvmName, err)
 			return err
@@ -868,6 +876,69 @@ func resourceCVOGCPCustomizeDiff(diff *schema.ResourceDiff, v interface{}) error
 	if respErr != nil {
 		return respErr
 	}
+
+	// Validate root_volume_aggregate cannot be specified during CVO creation
+	if diff.Id() == "" {
+		// This is a new resource (creation)
+		if svmSet, ok := diff.GetOk("svm"); ok {
+			svms := svmSet.(*schema.Set)
+			for _, v := range svms.List() {
+				svm := v.(map[string]interface{})
+				if rootVol, ok := svm["root_volume_aggregate"].(string); ok && rootVol != "" {
+					svmName := svm["svm_name"].(string)
+					return fmt.Errorf("root_volume_aggregate cannot be specified for SVM '%s' during CVO creation. Aggregates do not exist at creation time. You can only specify this parameter when adding SVMs to an existing CVO", svmName)
+				}
+			}
+		}
+	}
+
+	// Custom handling for SVM changes
+	if diff.HasChange("svm") {
+		old, new := diff.GetChange("svm")
+		oldSet := old.(*schema.Set)
+		newSet := new.(*schema.Set)
+
+		// Build maps of SVM name -> root_volume_aggregate for easier comparison
+		oldSVMs := make(map[string]string)
+		for _, v := range oldSet.List() {
+			svm := v.(map[string]interface{})
+			svmName := svm["svm_name"].(string)
+			rootVolAggregate := ""
+			if val, ok := svm["root_volume_aggregate"]; ok {
+				if valStr, ok := val.(string); ok {
+					rootVolAggregate = valStr
+				}
+			}
+			oldSVMs[svmName] = rootVolAggregate
+		}
+
+		newSVMs := make(map[string]string)
+		for _, v := range newSet.List() {
+			svm := v.(map[string]interface{})
+			svmName := svm["svm_name"].(string)
+			rootVolAggregate := ""
+			if val, ok := svm["root_volume_aggregate"]; ok {
+				if valStr, ok := val.(string); ok {
+					rootVolAggregate = valStr
+				}
+			}
+			newSVMs[svmName] = rootVolAggregate
+		}
+
+		// Check if any existing SVM's root_volume_aggregate was modified
+		for svmName, oldRootVol := range oldSVMs {
+			if newRootVol, exists := newSVMs[svmName]; exists {
+				// SVM exists in both old and new
+				// Check if root_volume_aggregate changed
+				if oldRootVol != newRootVol {
+					// root_volume_aggregate was changed for an existing SVM
+					// Return error instead of forcing new to avoid forcing replacement of new SVMs
+					return fmt.Errorf("cannot modify root_volume_aggregate for existing SVM '%s' (from '%s' to '%s'). The root_volume_aggregate is immutable after SVM creation. To change it, you must delete and recreate the entire CVO resource", svmName, oldRootVol, newRootVol)
+				}
+			}
+		}
+	}
+
 	return nil
 }
 

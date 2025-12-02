@@ -216,6 +216,7 @@ The `gcp_label` block supports:
 
 The `svm` block supports:
 * `svm_name` - (Required) The extra SVM name for CVO HA.
+* `root_volume_aggregate` - (Optional) Specifies the aggregate where the root volume of the SVM will be created. This attribute could only be used after CVO creation to add SVM to an existing CVO. 
 
 ## Attributes Reference
 
