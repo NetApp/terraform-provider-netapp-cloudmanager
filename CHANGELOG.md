@@ -1,11 +1,15 @@
 ## 27.0.0
 NEW FEATURES: 
 * resource/cvo_azure: Supports configuration of `storage_account_network_access` while creating Azure SN and HA CVO.
+* resource/aggregate: now supports import.
 * resource/cvo_gcp: Supports configuration of `rootVolumeAggregate` during SVM creation in existing GCP HA CVO 
 
 BREAKING CHANGE: (Please refer to guide website/docs/guides/27.0.0_upgrade_guide.md for guidance on upgrading to 27.0.0 version)
 * resource/cvo_azure: Removed the default value of the `instance_type` and marked the attribute as `Required`. 
-* resource/cvo_gcp: Removed the default value of the `instance_type` and marked the attribute as `Required`. 
+* resource/cvo_gcp: Removed the default value of the `instance_type` and marked the attribute as `Required`.
+
+BUG FIXES:
+resource/connector_gcp: fixed disk not ready issue by waiting on the disk status to be ready.
 
 
 ## 26.0.0

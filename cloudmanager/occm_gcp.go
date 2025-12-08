@@ -529,10 +529,8 @@ func (c *Client) createGCPDisk(occmDetails createOCCMDetails, token, clientID st
 
 	log.Printf("Disk creation initiated: %s", deviceName)
 
-	return nil
-
-	// // Wait for disk to be ready
-	// return c.waitForDiskReady(occmDetails, token, clientID, deviceName)
+	// Wait for disk to be ready
+	return c.waitForDiskReady(occmDetails, token, clientID, deviceName)
 }
 
 // createGCPInstance creates a VM instance using GCP Compute API
@@ -690,6 +688,50 @@ func (c *Client) deleteGCPInstance(request deleteOCCMDetails, token, clientID st
 
 	// // Wait for instance to be deleted
 	// return c.waitForInstanceDeleted(request, token, clientID, instanceName)
+}
+
+// waitForDiskReady waits for a GCP disk to be in READY state
+func (c *Client) waitForDiskReady(occmDetails createOCCMDetails, token, clientID, diskName string) error {
+	log.Printf("Waiting for disk to be ready: %s", diskName)
+
+	baseURL := fmt.Sprintf("/compute/v1/projects/%s/zones/%s/disks/%s", occmDetails.GCPProject, occmDetails.Zone, diskName)
+	hostType := "GCPCompute"
+
+	maxRetries := 30
+	for i := 0; i < maxRetries; i++ {
+		statusCode, response, _, err := c.CallAPIMethod("GET", baseURL, nil, token, hostType, clientID)
+		if err != nil {
+			log.Printf("Error checking disk status: %v", err)
+			time.Sleep(2 * time.Second)
+			continue
+		}
+
+		if statusCode == 200 {
+			var diskStatus map[string]interface{}
+			if err := json.Unmarshal(response, &diskStatus); err != nil {
+				log.Printf("Failed to unmarshal disk status: %v", err)
+				time.Sleep(5 * time.Second)
+				continue
+			}
+
+			status, ok := diskStatus["status"].(string)
+			if !ok {
+				log.Printf("Disk status not found in response")
+				time.Sleep(5 * time.Second)
+				continue
+			}
+
+			log.Printf("Disk %s status: %s", diskName, status)
+			if status == "READY" {
+				log.Printf("Disk %s is ready", diskName)
+				return nil
+			}
+		}
+
+		time.Sleep(5 * time.Second)
+	}
+
+	return fmt.Errorf("timeout waiting for disk %s to be ready", diskName)
 }
 
 // We specify "autoDelete": true in line 576, as a result the disk will be deleted automatically when the instance is deleted.

@@ -103,3 +103,73 @@ The following attributes are exported in addition to the arguments listed above:
 * `total_capacity_unit` - The unit of the total capacity.
 * `available_capacity_size` - The available capacity of the aggregate.
 * `available_capacity_unit` - The unit of the available capacity.
+
+## Import
+
+This resource supports import, which allows you to import existing aggregates into the state of this resource.
+
+#### Standard Mode
+Import requires deployment_mode,client_id,working_environment_name and aggregate name, separated by a comma.
+
+id = `deployment_mode`,`client_id`,`working_environment_name`,`name`
+
+#### Restricted Mode
+Import requires deployment_mode,client_id,working_environment_name,aggregate name,tenant_id and connector_ip separated by a comma.
+
+id = `deployment_mode`,`client_id`,`working_environment_name`,`name`,`tenant_id`,`connector_ip`
+
+### Terraform Import
+
+For example
+
+```shell
+ terraform import netapp-cloudmanager_aggregate.example Standard,xxxxxx,cvo,aggr1
+```
+
+!> The terraform import CLI command can only import resources into the state. Importing via the CLI does not generate configuration. If you want to generate the accompanying configuration for imported resources, use the import block instead.
+
+### Terraform Import Block
+
+This requires Terraform 1.5 or higher, and will auto create the configuration for you
+
+First create the block
+
+```terraform
+import {
+  to = netapp-cloudmanager_aggregate.aggregate_import
+  id = "Standard,xxxxxx,cvo,aggr1"
+}
+```
+
+Next run, this will auto create the configuration for you
+
+```shell
+terraform plan -generate-config-out=generated.tf
+```
+
+This will generate a file called generated.tf, which will contain the configuration for the imported resource
+
+```terraform
+# __generated__ by Terraform
+# Please review these resources and move them into your main configuration files.
+
+# __generated__ by Terraform from "Standard,xxxxxx,cvo,aggr1"
+resource "netapp-cloudmanager_aggregate" "aggregate_import" {
+  available_capacity_size = 100
+  available_capacity_unit = "GB"
+  capacity_tier           = "S3"
+  client_id               = "xxxxxxx"
+  deployment_mode         = "Standard"
+  disk_size_size          = 100
+  disk_size_unit          = "GB"
+  home_node               = "node1"
+  id                      = "aggr1"
+  name                    = "aggr1"
+  number_of_disks         = 6
+  provider_volume_type    = "gp2"
+  total_capacity_size     = 600
+  total_capacity_unit     = "GB"
+  working_environment_id  = "xxxxxx"
+  working_environment_name = "cvo"
+}
+```
