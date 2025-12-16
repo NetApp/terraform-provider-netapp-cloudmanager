@@ -1342,6 +1342,90 @@ func (c *Client) updateCVOSVMs(d *schema.ResourceData, clientID string, isSaas b
 	return nil
 }
 
+// update SVMs on Azure CVO (SN and HA)
+func updateCVOSVMAzure(d *schema.ResourceData, client *Client, clientID string) error {
+	id := d.Id()
+	isHA := d.Get("is_ha").(bool)
+	currentSVMs, expectSVMs := d.GetChange("svm")
+	cSVMs := expandAzureSVMs(currentSVMs.(*schema.Set))
+	eSVMs := expandAzureSVMs(expectSVMs.(*schema.Set))
+
+	// Align with GCP logic: track desired names and their root aggregates
+	expectList := make(map[string]string) // map[svmName]rootVolumeAggregate
+	currentList := make(map[int]string)
+
+	for _, svm := range eSVMs {
+		expectList[svm.SvmName] = svm.RootVolumeAggregate
+	}
+
+	i := 0
+	for _, svm := range cSVMs {
+		svmName := svm.SvmName
+		if _, ok := expectList[svmName]; !ok {
+			currentList[i] = svmName
+			i++
+		} else {
+			delete(expectList, svmName)
+		}
+	}
+
+	j := 0
+	for svmName, rootVolAggregate := range expectList {
+		if len(currentList) > 0 {
+			// update SVM name using rename via common API
+			// Note: Azure uses same path style as GCP for rename
+			respErr := client.updateCVOSVMName(d, clientID, currentList[j], svmName, true, "")
+			if respErr != nil {
+				return respErr
+			}
+			delete(currentList, j)
+			j++
+		} else {
+			// add SVM (include rootVolumeAggregate when specified)
+			respErr := client.addSVMtoCVOAzure(id, clientID, svmName, isHA, rootVolAggregate)
+			if respErr != nil {
+				return respErr
+			}
+		}
+	}
+	if len(currentList) > 0 {
+		for _, svmName := range currentList {
+			respErr := client.deleteSVMfromCVOAzure(id, clientID, svmName, isHA)
+			if respErr != nil {
+				return respErr
+			}
+		}
+	}
+	return nil
+}
+
+// updates the route table IDs for an AWS HA CVO
+// PUT /aws/ha/working-environments/{workingEnvironmentId}/route-tables
+func (c *Client) updateCVORouteTableIds(d *schema.ResourceData, clientID string, isSaas bool, connectorIP string) error {
+	id := d.Id()
+	routeTableIds := d.Get("route_table_ids").(*schema.Set).List()
+
+	log.Print("updateCVORouteTableIds routeTableIds=", routeTableIds)
+
+	var request modifyRouteTableIds
+	request.RouteTableIds = make([]string, 0)
+
+	for _, routeTableID := range routeTableIds {
+		request.RouteTableIds = append(request.RouteTableIds, routeTableID.(string))
+	}
+
+	baseURL := fmt.Sprintf("/working-environments/%s/route-tables", id)
+
+	log.Printf("Update AWS HA CVO Route Table IDs: %#v\n", request)
+	updateErr := c.callCMUpdateAPI("PUT", request, baseURL, id, "callCMUpdateAPI", clientID, isSaas, connectorIP)
+	if updateErr != nil {
+		return updateErr
+	}
+	log.Printf("Updated %s route_table_ids: %v", id, request.RouteTableIds)
+
+	return nil
+}
+
 func (c *Client) waitOnCompletionCVOUpdate(id string, retryCount int, waitInterval int, clientID string, isSaas bool, connectorIP string) error {
 	// check upgrade status
 	log.Print("Check CVO update status")

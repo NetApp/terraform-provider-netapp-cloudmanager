@@ -437,6 +437,17 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 	cvoDetails.VsaMetadata.UseLatestVersion = d.Get("use_latest_version").(bool)
 	cvoDetails.VsaMetadata.LicenseType = d.Get("license_type").(string)
 
+	licenseType := d.Get("license_type").(string)
+	if licenseType != "capacity-paygo" && licenseType != "ha-capacity-paygo" {
+		return fmt.Errorf(
+			"node-based licenses are no longer supported for new CVOs. "+
+				"Please use 'capacity-paygo' for single node or 'ha-capacity-paygo' for HA. "+
+				"Management of existing node-based CVOs created with last provider version is supported. Migration to capacity based licenses from NetApp console is recommended."+
+				"Current license_type: '%s'",
+			licenseType,
+		)
+	}
+
 	if c, ok := d.GetOk("capacity_package_name"); ok {
 		cvoDetails.VsaMetadata.CapacityPackageName = c.(string)
 	} else {

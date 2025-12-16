@@ -168,7 +168,10 @@ The following arguments are supported:
 |Regular HA | `ONTAP-${version}.T1.gcpha` | ONTAP-9.13.0.T1.gcpha|
 
 * `use_latest_version` - (Optional) Indicates whether to use the latest available ONTAP version. The default is 'true'.
-* `license_type` - (Optional) The type of license to use. For single node: (by Capacity): ['capacity-paygo'], (by Node paygo): ['gcp-cot-explore-paygo', 'gcp-cot-standard-paygo', 'gcp-cot-premium-paygo'], (by Node byol): ['gcp-cot-premium-byol'], For HA: (by Capacity): ['ha-capacity-paygo'], (by Node paygo): ['gcp-ha-cot-explore-paygo', 'gcp-ha-cot-standard-paygo', 'gcp-ha-cot-premium-paygo'], (by Node byol): ['gcp-ha-cot-premium-byol']. The default is 'capacity-paygo' for single node, and 'ha-capacity-paygo'for HA.
+* `license_type` - (Optional) The type of license to use. For AWS, use `capacity-paygo` for single node or `ha-capacity-paygo` for HA. Default is `capacity-paygo`. 
+  
+  **Note:** Node-based licenses (`gcp-cot-standard-paygo`, `gcp-cot-premium-paygo`, `gcp-cot-premium-byol`, `gcp-cot-explore-paygo`, and their HA variants) are deprecated for new CVO deployments as of December 31, 2024. Existing provider state CVOs with node-based licenses will continue to function normally and get action required workflow to convert license in Console UI.
+
 * `capacity_package_name` - (Optional) The capacity package name: ['Essential', 'Professional', 'Freemium', 'Edge', 'Optimized']. Default is 'Essential'. 'Edge' and 'Optimized' need ontap version 9.11.1 or above.
 * `instance_type` - (Required) The type of instance to use, which depends on the license type you choose: Explore:['custom-4-16384'], Standard:['n1-standard-8'], Premium:['n1-standard-32'], BYOL: all instance types defined for PayGo. For more supported instance types, refer to Cloud Volumes ONTAP Release Notes. The default is 'n2-standard-8’ but the users will have to specify the default value explicitly during CVO creation. 
 * `serial_number` - (Optional, Forces new resource) The serial number for the system. Required when using 'gcp-cot-premium-byol'.

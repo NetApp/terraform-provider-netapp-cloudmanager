@@ -149,7 +149,10 @@ The naming convention:
 |Regular HA | `ONTAP-${version}.T1.azureha` | ONTAP-9.14.0.T1.azureha|
 
 * `use_latest_version` - (Optional) Indicates whether to use the latest available ONTAP version. The default is 'true'.
-* `license_type` - (Optional) The type of license to be use. For single node: (by Capacity): ['capacity-paygo'], (by Node paygo): ['azure-cot-explore-paygo', 'azure-cot-standard-paygo', 'azure-cot-premium-paygo'], (by Node byol): ['azure-cot-premium-byol']. For HA: (by Capacity): ['ha-capacity-paygo'], (by Node paygo): ['azure-ha-cot-standard-paygo', 'azure-ha-cot-premium-paygo'], (by Node byol): ['azure-ha-cot-premium-byol']. The default is 'capacity-paygo' for single node, and 'ha-capacity-paygo'for HA.
+* `license_type` - (Optional) The type of license to use. For AWS, use `capacity-paygo` for single node or `ha-capacity-paygo` for HA. Default is `capacity-paygo`. 
+  
+  **Note:** Node-based licenses (`azure-cot-standard-paygo`, `azure-cot-premium-paygo`, `azure-cot-premium-byol`, `azure-cot-explore-paygo`, and their HA variants) are deprecated for new CVO deployments as of December 31, 2024. Existing provider state CVOs with node-based licenses will continue to function normally and get action required workflow to convert license in Console UI.
+
 * `capacity_package_name` - (Optional, Forces new resource) The capacity package name: ['Essential', 'Professional', 'Freemium', 'Edge', 'Optimized']. Default is 'Essential'. 'Edge' and 'Optimized' need ontap version 9.11.0 or above.
 * `instance_type` - (Required) The type of instance to use, which depends on the license type you chose: Explore:['Standard_DS3_v2'], Standard:['Standard_DS4_v2,Standard_DS13_v2,Standard_L8s_v2'], Premium:['Standard_DS5_v2','Standard_DS14_v2'], BYOL: all instance types defined for PayGo. For more supported instance types, refer to Cloud Volumes ONTAP Release Notes. The default is 'Standard_E8ds_v5' but users will have to specify the default value explicitly as part of CVO creation. 
 * `serial_number` - (Optional, Forces new resource) The serial number for the cluster. Required when using one of these: ['azure-cot-premium-byol' or 'azure-ha-cot-premium-byol'].
@@ -176,11 +179,15 @@ The naming convention:
 * `worm_retention_period_unit` - (Optional, Forces new resource) WORM retention period unit: ['years','months','days','hours','minutes','seconds'].
 * `storage_account_network_access` - (Optional, Forces new resource) Controls the publicNetworkAccess property of the fabric pool storage account created for the Cloud Volumes ONTAP system. Accepted values: 'Enabled', 'Disabled', 'SecuredByPerimeter'. The default is 'Enabled'. When set to 'Disabled', data tiering is also disabled. 
 
+The `svm` block supports:
+* `svm_name` - (Required) The extra SVM name for CVO SN and HA.
+* `root_volume_aggregate` - (Optional) Specifies the aggregate where the root volume of the SVM will be created. This attribute could only be used after CVO creation to add SVM to an existing CVO. Moreover, it cannot be changed after SVM creation. 
+
 
 The `azure_encryption_parameters` block supports:
 * `key` - (Required, Forces new resource) Customize key name.
 * `vault_name` - (Required, Forces new resource) Azure keyVault name.
-* `user_assigned_identity` - (Optional, Forces new resource) The identity for authorizing access the keyVault.
+* `user_assigned_identity` - (Optional, Forces new resource) The identity for authorizing access the keyVault. Should either be the full path to the UAMI or, if not supplied, the provider will assume that it exists in the same resource group as the virtual network resource group.
 
 The `azure_tag` block supports:
 * `tag_key` - (Required) The key of the tag.

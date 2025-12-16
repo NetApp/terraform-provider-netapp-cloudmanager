@@ -114,6 +114,10 @@ type tenantResult struct {
 	PublicID string `json:"publicId"`
 }
 
+type modifyRouteTableIds struct {
+	RouteTableIds []string `structs:"routeTableIds"`
+}
+
 // cvoStatusResult the users input for creating a cvo
 type cvoStatusResult struct {
 	Status int    `json:"status"`
