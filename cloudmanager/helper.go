@@ -1280,8 +1280,8 @@ func updateCVOSVMPassword(d *schema.ResourceData, meta interface{}, clientID str
 	return nil
 }
 
-// update SVMs on GCP CVO HA
-func (c *Client) updateCVOSVMs(d *schema.ResourceData, clientID string, isSaas bool, connectorIP string) error {
+// update SVMs on GCP CVO (supports single-node and HA)
+func (c *Client) updateCVOSVMs(d *schema.ResourceData, clientID string, isHA bool, isSaas bool, connectorIP string) error {
 	id := d.Id()
 	currentSVMs, expectSVMs := d.GetChange("svm")
 	cSVMs := expandGCPSVMs(currentSVMs.(*schema.Set))
@@ -1322,7 +1322,7 @@ func (c *Client) updateCVOSVMs(d *schema.ResourceData, clientID string, isSaas b
 			j++
 		} else {
 			// add SVM
-			respErr := c.addSVMtoCVO(id, clientID, svmName, isSaas, connectorIP, rootVolAggregate)
+			respErr := c.addSVMtoCVO(id, clientID, svmName, isHA, isSaas, connectorIP, rootVolAggregate)
 			if respErr != nil {
 				log.Printf("Error adding SVM %v: %v", svmName, respErr)
 				return respErr
@@ -1332,7 +1332,7 @@ func (c *Client) updateCVOSVMs(d *schema.ResourceData, clientID string, isSaas b
 	if len(currentList) > 0 {
 		for _, svmName := range currentList {
 			// delete SVM
-			respErr := c.deleteSVMfromCVO(id, clientID, svmName, isSaas, connectorIP)
+			respErr := c.deleteSVMfromCVO(id, clientID, svmName, isHA, isSaas, connectorIP)
 			if respErr != nil {
 				log.Printf("Error deleting SVM %v: %v", svmName, respErr)
 				return respErr

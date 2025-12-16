@@ -219,9 +219,9 @@ func (c *Client) deleteCVOGCP(id string, isHA bool, clientID string, isSaas bool
 	return err
 }
 
-// This is used on GCP CVO HA only
-func (c *Client) addSVMtoCVO(id string, clientID string, svmName string, isSaas bool, connectorIP string, rootVolumeAggregate string) error {
-	log.Printf("addSVMtoCVO: id %s client %s svm %s rootVolumeAggregate %s", id, clientID, svmName, rootVolumeAggregate)
+// Add SVM to GCP CVO (supports both single-node and HA)
+func (c *Client) addSVMtoCVO(id string, clientID string, svmName string, isHA bool, isSaas bool, connectorIP string, rootVolumeAggregate string) error {
+	log.Printf("addSVMtoCVO: id %s client %s svm %s isHA %v rootVolumeAggregate %s", id, clientID, svmName, isHA, rootVolumeAggregate)
 
 	accessTokenResult, err := c.getAccessToken()
 	if err != nil {
@@ -230,8 +230,8 @@ func (c *Client) addSVMtoCVO(id string, clientID string, svmName string, isSaas 
 	}
 	c.Token = accessTokenResult.Token
 
-	// GCP CVO SVM add and deletion only support HA
-	baseURL := getAPIRootForWorkingEnvironment(true, id) + "/svm"
+	// Base URL depends on deployment mode (single-node or HA)
+	baseURL := getAPIRootForWorkingEnvironment(isHA, id) + "/svm"
 	hostType := "CloudManagerHost"
 	if !isSaas {
 		hostType = "http://" + connectorIP
@@ -264,8 +264,9 @@ func (c *Client) addSVMtoCVO(id string, clientID string, svmName string, isSaas 
 	return err
 }
 
-func (c *Client) deleteSVMfromCVO(id string, clientID string, svmName string, isSaas bool, connectorIP string) error {
-	log.Printf("deleteSVMfromCVO: id %s client %s svm %s", id, clientID, svmName)
+// Delete SVM from GCP CVO (supports both single-node and HA)
+func (c *Client) deleteSVMfromCVO(id string, clientID string, svmName string, isHA bool, isSaas bool, connectorIP string) error {
+	log.Printf("deleteSVMfromCVO: id %s client %s svm %s isHA %v", id, clientID, svmName, isHA)
 
 	accessTokenResult, err := c.getAccessToken()
 	if err != nil {
@@ -274,8 +275,8 @@ func (c *Client) deleteSVMfromCVO(id string, clientID string, svmName string, is
 	}
 	c.Token = accessTokenResult.Token
 
-	// GCP CVO SVM add and deletion only support HA
-	baseURL := getAPIRootForWorkingEnvironment(true, id)
+	// Base URL depends on deployment mode (single-node or HA)
+	baseURL := getAPIRootForWorkingEnvironment(isHA, id)
 	baseURL = fmt.Sprintf("%s/svm/%s", baseURL, svmName)
 	log.Print("\tDelete svm url: ", baseURL)
 

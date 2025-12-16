@@ -2,7 +2,7 @@
 NEW FEATURES: 
 * resource/cvo_azure: Supports configuration of `storage_account_network_access` while creating Azure SN and HA CVO.
 * resource/aggregate: now supports import.
-* resource/cvo_gcp: Supports configuration of `rootVolumeAggregate` during SVM creation in existing GCP HA CVO 
+* resource/cvo_gcp: Supports multi-SVM creation for GCP SN CVO and also supports configuration of `rootVolumeAggregate` during SVM creation in existing GCP HA and SN CVO. 
 * resource/cvo_azure: Supports multi-SVM creation for new and existing Azure SN and HA CVOs. 
 
 BREAKING CHANGE: (Please refer to guide website/docs/guides/27.0.0_upgrade_guide.md for guidance on upgrading to 27.0.0 version)

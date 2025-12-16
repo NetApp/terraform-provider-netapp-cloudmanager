@@ -654,10 +654,11 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 		if c, ok := d.GetOk("vpc3_firewall_rule_tag_name"); ok {
 			cvoDetails.HAParams.VPC3FirewallRuleTagName = c.(string)
 		}
-		if c, ok := d.GetOk("svm"); ok {
-			svms := c.(*schema.Set)
-			svmList = expandGCPSVMs(svms)
-		}
+	}
+	// Collect additional SVMs if provided (applies to both single-node and HA)
+	if c, ok := d.GetOk("svm"); ok {
+		svms := c.(*schema.Set)
+		svmList = expandGCPSVMs(svms)
 	}
 
 	err = validateCVOGCPParams(cvoDetails)
@@ -677,9 +678,9 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 	d.Set("writing_speed_state", res.OntapClusterProperties.WritingSpeedState)
 	log.Printf("Created cvo: %v", res)
 
-	// Add SVMs on GCP CVO HA
+	// Add SVMs (supports single-node and HA)
 	for _, svm := range svmList {
-		err := client.addSVMtoCVO(res.PublicID, clientID, svm.SvmName, isSaas, connectorIP, "")
+		err := client.addSVMtoCVO(res.PublicID, clientID, svm.SvmName, cvoDetails.IsHA, isSaas, connectorIP, "")
 		if err != nil {
 			log.Printf("Error adding SVM %v: %v", svm.SvmName, err)
 			return err
@@ -768,9 +769,9 @@ func resourceCVOGCPUpdate(d *schema.ResourceData, meta interface{}) error {
 		}
 	}
 
-	// check if svm list changes
-	if d.Get("is_ha").(bool) && d.HasChange("svm") {
-		respErr := client.updateCVOSVMs(d, clientID, isSaas, connectorIP)
+	// check if svm list changes (supports single-node and HA)
+	if d.HasChange("svm") {
+		respErr := client.updateCVOSVMs(d, clientID, d.Get("is_ha").(bool), isSaas, connectorIP)
 		if respErr != nil {
 			return respErr
 		}
