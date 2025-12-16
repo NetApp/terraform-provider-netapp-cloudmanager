@@ -69,7 +69,7 @@ func (c *configStruct) clientFun() (*Client, error) {
 			GCPDeploymentManager:    "https://www.googleapis.com",
 			GCPCompute:              "https://compute.googleapis.com",
 			GCPImageProject:         "tlv-automation",
-			GCPImageFamily:          "occm-automation",
+			GCPImageFamily:          "occm-automation-dev",
 			AzureEnvironmentForOCCM: "stage",
 			CVSHostName:             "https://dev.api.bluexp.netapp.com/cloud-volumes/cvs",
 		}

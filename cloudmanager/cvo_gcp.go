@@ -58,7 +58,8 @@ type gcpLabels struct {
 
 // gcpSVMs the input for adding SVMs to a CVO HA
 type gcpSVM struct {
-	SvmName string `structs:"svmName"`
+	SvmName             string `structs:"svmName"`
+	RootVolumeAggregate string `structs:"rootVolumeAggregate,omitempty"`
 	// more parameters might be added in the future
 }
 
@@ -219,8 +220,8 @@ func (c *Client) deleteCVOGCP(id string, isHA bool, clientID string, isSaas bool
 }
 
 // This is used on GCP CVO HA only
-func (c *Client) addSVMtoCVO(id string, clientID string, svmName string, isSaas bool, connectorIP string) error {
-	log.Printf("addSVMtoCVO: id %s client %s svm %s", id, clientID, svmName)
+func (c *Client) addSVMtoCVO(id string, clientID string, svmName string, isSaas bool, connectorIP string, rootVolumeAggregate string) error {
+	log.Printf("addSVMtoCVO: id %s client %s svm %s rootVolumeAggregate %s", id, clientID, svmName, rootVolumeAggregate)
 
 	accessTokenResult, err := c.getAccessToken()
 	if err != nil {
@@ -238,6 +239,9 @@ func (c *Client) addSVMtoCVO(id string, clientID string, svmName string, isSaas 
 
 	var svm gcpSVM
 	svm.SvmName = svmName
+	if rootVolumeAggregate != "" {
+		svm.RootVolumeAggregate = rootVolumeAggregate
+	}
 	params := structs.Map(svm)
 	log.Printf("\taddSVMtoCVO params: %#v", params)
 	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("POST", baseURL, params, c.Token, hostType, clientID)
@@ -323,6 +327,11 @@ func expandGCPSVMs(set *schema.Set) []gcpSVM {
 		svm := v.(map[string]interface{})
 		gcpSVM := gcpSVM{}
 		gcpSVM.SvmName = svm["svm_name"].(string)
+		if val, ok := svm["root_volume_aggregate"]; ok {
+			if valStr, ok := val.(string); ok {
+				gcpSVM.RootVolumeAggregate = valStr
+			}
+		}
 		svms = append(svms, gcpSVM)
 	}
 	return svms

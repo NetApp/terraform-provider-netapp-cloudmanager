@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/fatih/structs"
+	"github.com/hashicorp/terraform/helper/schema"
 )
 
 // AzureLicenseTypes is the Azure License types
@@ -52,12 +53,19 @@ type createCVOAzureDetails struct {
 	VnetForInternal             string
 	SerialNumber                string        `structs:"serialNumber,omitempty"`
 	HAParams                    haParamsAzure `structs:"haParams,omitempty"`
+	StorageAccountNetworkAccess string `structs:"storageAccountNetworkAccess,omitempty"`
 }
 
 type azureEncryptionParameters struct {
 	Key                  string `structs:"key"`
 	VaultName            string `structs:"vaultName"`
 	UserAssignedIdentity string `structs:"userAssignedIdentity,omitempty"`
+}
+
+// azureSVMs the input for adding SVMs to a CVO
+type azureSVM struct {
+	SvmName             string `structs:"svmName"`
+	RootVolumeAggregate string `structs:"rootVolumeAggregate,omitempty"`
 }
 
 // haParamsAzure the input for requesting a CVO
@@ -301,6 +309,104 @@ func (c *Client) deleteCVOAzure(id string, isHA bool, clientID string) error {
 	}
 
 	return nil
+}
+
+// addSVMtoCVOAzure adds an SVM to Azure CVO (supports SN and HA)
+func (c *Client) addSVMtoCVOAzure(id string, clientID string, svmName string, isHA bool, rootVolumeAggregate string) error {
+	log.Printf("addSVMtoCVOAzure: id %s client %s svm %s", id, clientID, svmName)
+
+	accessTokenResult, err := c.getAccessToken()
+	if err != nil {
+		log.Print("In addSVMtoCVOAzure request, failed to get AccessToken")
+		return err
+	}
+	c.Token = accessTokenResult.Token
+
+	var baseURL string
+	if !isHA {
+		baseURL = fmt.Sprintf("/occm/api/azure/vsa/working-environments/%s/svm", id)
+	} else {
+		baseURL = fmt.Sprintf("/occm/api/azure/ha/working-environments/%s/svm", id)
+	}
+
+	hostType := "CloudManagerHost"
+
+	var svm azureSVM
+	svm.SvmName = svmName
+	// Include rootVolumeAggregate when provided (for existing CVO only)
+	if rootVolumeAggregate != "" {
+		svm.RootVolumeAggregate = rootVolumeAggregate
+	}
+	params := structs.Map(svm)
+	log.Printf("\taddSVMtoCVOAzure payload: svmName=%s rootVolumeAggregate=%q isHA=%v", svmName, svm.RootVolumeAggregate, isHA)
+	log.Printf("\taddSVMtoCVOAzure params: %#v", params)
+	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("POST", baseURL, params, c.Token, hostType, clientID)
+	if err != nil {
+		log.Print("addSVMtoCVOAzure request failed ", statusCode)
+		return err
+	}
+
+	responseError := apiResponseChecker(statusCode, response, "addSVMtoCVOAzure")
+	if responseError != nil {
+		return responseError
+	}
+
+	err = c.waitOnCompletion(onCloudRequestID, "CVO_SVM", "add", 60, 60, clientID)
+	return err
+}
+
+// deleteSVMfromCVOAzure deletes an SVM from Azure CVO (supports SN and HA)
+func (c *Client) deleteSVMfromCVOAzure(id string, clientID string, svmName string, isHA bool) error {
+	log.Printf("deleteSVMfromCVOAzure: id %s client %s svm %s", id, clientID, svmName)
+
+	accessTokenResult, err := c.getAccessToken()
+	if err != nil {
+		log.Print("In deleteSVMfromCVOAzure request, failed to get AccessToken")
+		return err
+	}
+	c.Token = accessTokenResult.Token
+
+	var baseURL string
+	if !isHA {
+		baseURL = fmt.Sprintf("/occm/api/azure/vsa/working-environments/%s/svm/%s", id, svmName)
+	} else {
+		baseURL = fmt.Sprintf("/occm/api/azure/ha/working-environments/%s/svm/%s", id, svmName)
+	}
+	log.Print("\tDelete svm url: ", baseURL)
+
+	hostType := "CloudManagerHost"
+
+	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("DELETE", baseURL, nil, c.Token, hostType, clientID)
+	if err != nil {
+		log.Printf("deleteSVMfromCVOAzure %s request failed %#v", id, statusCode)
+		return err
+	}
+
+	responseError := apiResponseChecker(statusCode, response, "deleteSVMfromCVOAzure")
+	if responseError != nil {
+		return responseError
+	}
+
+	err = c.waitOnCompletion(onCloudRequestID, "CVO_SVM", "delete", 40, 60, clientID)
+	return err
+}
+
+// expandAzureSVMs converts set to azureSVM struct
+func expandAzureSVMs(set *schema.Set) []azureSVM {
+	svms := []azureSVM{}
+
+	for _, v := range set.List() {
+		svm := v.(map[string]interface{})
+		a := azureSVM{}
+		a.SvmName = svm["svm_name"].(string)
+		if val, ok := svm["root_volume_aggregate"]; ok {
+			if s, ok := val.(string); ok {
+				a.RootVolumeAggregate = s
+			}
+		}
+		svms = append(svms, a)
+	}
+	return svms
 }
 
 // validateCVOParams validates params

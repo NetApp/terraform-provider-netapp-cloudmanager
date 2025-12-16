@@ -3,6 +3,7 @@ package cloudmanager
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
@@ -17,7 +18,7 @@ func resourceAggregate() *schema.Resource {
 		Update:        resourceAggregateUpdate,
 		CustomizeDiff: resourceAggregateCustomizeDiff,
 		Importer: &schema.ResourceImporter{
-			State: schema.ImportStatePassthrough,
+			State: resourceAggregateImport,
 		},
 
 		Schema: map[string]*schema.Schema{
@@ -276,7 +277,16 @@ func resourceAggregateRead(d *schema.ResourceData, meta interface{}) error {
 	}
 	aggregate.WorkingEnvironmentID = workingEnv.PublicID
 
+	importing := false
+	if strings.Contains(d.Id(), ",") {
+		importing = true
+	}
+
 	id := d.Id()
+	if importing {
+		// During import, use the name from the import ID
+		id = d.Get("name").(string)
+	}
 
 	aggr, err := client.getAggregate(aggregate, id, workingEnv.WorkingEnvironmentType, clientID, isSaaS, connectorIP)
 	if err != nil {
@@ -284,7 +294,17 @@ func resourceAggregateRead(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	if aggr.Name != id {
+	if importing {
+		// During import, set the ID to the aggregate name
+		d.SetId(aggr.Name)
+		d.Set("number_of_disks", len(aggr.Disks))
+		d.Set("working_environment_name", workingEnv.Name)
+		d.Set("disk_size_size", aggr.ProviderVolumes[0].Size.Size)
+		d.Set("disk_size_unit", aggr.ProviderVolumes[0].Size.Unit)
+		d.Set("provider_volume_type", aggr.ProviderVolumes[0].DiskType)
+	}
+
+	if aggr.Name != d.Get("name").(string) {
 		return fmt.Errorf("expected aggregate name %v, Response could not find", aggr.Name)
 	}
 
@@ -434,7 +454,18 @@ func resourceAggregateExists(d *schema.ResourceData, meta interface{}) (bool, er
 		return false, fmt.Errorf("cannot find working environment")
 	}
 	aggregate.WorkingEnvironmentID = workingEnv.PublicID
+
+	importing := false
+	if strings.Contains(d.Id(), ",") {
+		importing = true
+	}
+
 	id := d.Id()
+	if importing {
+		// During import, use the name from the import ID
+		id = d.Get("name").(string)
+	}
+
 	res, err := client.getAggregate(aggregate, id, workingEnv.WorkingEnvironmentType, clientID, isSaaS, connectorIP)
 	if err != nil {
 		log.Print("Error getting aggregate")
@@ -442,9 +473,18 @@ func resourceAggregateExists(d *schema.ResourceData, meta interface{}) (bool, er
 		return false, err
 	}
 
-	if res.Name != id {
-		d.SetId("")
-		return false, nil
+	if importing {
+		// During import, compare with name
+		if res.Name != d.Get("name").(string) {
+			d.SetId("")
+			return false, nil
+		}
+	} else {
+		// Normal operation, compare with ID
+		if res.Name != id {
+			d.SetId("")
+			return false, nil
+		}
 	}
 
 	return true, nil
@@ -497,4 +537,31 @@ func resourceAggregateCustomizeDiff(diff *schema.ResourceDiff, v interface{}) er
 	}
 
 	return nil
+}
+
+func resourceAggregateImport(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
+	parts := strings.Split(d.Id(), ",")
+	if parts[0] != "Standard" && parts[0] != "Restricted" {
+		return []*schema.ResourceData{}, fmt.Errorf("wrong option for deployment_mode: %s, options for deployment_mode are 'Standard' and 'Restricted'", parts[0])
+	}
+
+	if parts[0] == "Standard" && len(parts) != 4 {
+		return []*schema.ResourceData{}, fmt.Errorf("wrong format of resource: %s. Please input in the format 'deployment_mode,client_id,working_environment_name,name'", d.Id())
+	}
+
+	if parts[0] == "Restricted" && len(parts) != 6 {
+		return []*schema.ResourceData{}, fmt.Errorf("wrong format of resource: %s. Please input in the format 'deployment_mode,client_id,working_environment_name,name,tenant_id,connector_ip'", d.Id())
+	}
+
+	d.Set("deployment_mode", parts[0])
+	d.Set("client_id", parts[1])
+	d.Set("working_environment_name", parts[2])
+	d.Set("name", parts[3])
+	if parts[0] == "Restricted" {
+		d.Set("tenant_id", parts[4])
+		d.Set("connector_ip", parts[5])
+	}
+
+	return []*schema.ResourceData{d}, nil
+
 }

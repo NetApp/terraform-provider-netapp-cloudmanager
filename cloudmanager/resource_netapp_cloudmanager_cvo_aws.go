@@ -1,6 +1,7 @@
 package cloudmanager
 
 import (
+	"fmt"
 	"log"
 	"strings"
 
@@ -419,6 +420,16 @@ func resourceCVOAWSCreate(d *schema.ResourceData, meta interface{}) error {
 	cvoDetails.VsaMetadata.OntapVersion = d.Get("ontap_version").(string)
 	cvoDetails.VsaMetadata.UseLatestVersion = d.Get("use_latest_version").(bool)
 	cvoDetails.VsaMetadata.LicenseType = d.Get("license_type").(string)
+	licenseType := d.Get("license_type").(string)
+	if licenseType != "capacity-paygo" && licenseType != "ha-capacity-paygo" {
+		return fmt.Errorf(
+			"node-based licenses are no longer supported for new CVOs. "+
+				"Please use 'capacity-paygo' for single node or 'ha-capacity-paygo' for HA. "+
+				"Management of existing node-based CVOs created with last provider version is supported. Migration to capacity based licenses from NetApp console is recommended."+
+				"Current license_type: '%s'",
+			licenseType,
+		)
+	}
 	cvoDetails.VsaMetadata.InstanceType = d.Get("instance_type").(string)
 
 	// by Capacity
@@ -576,9 +587,6 @@ func resourceCVOAWSRead(d *schema.ResourceData, meta interface{}) error {
 			d.Set("writing_speed_state", resp.OntapClusterProperties.WritingSpeedState)
 		}
 	}
-	if _, ok := d.GetOk("route_table_ids"); ok {
-		d.Set("route_table_ids", resp.HAProperties.RouteTables)
-	}
 
 	return nil
 }
@@ -639,6 +647,15 @@ func resourceCVOAWSUpdate(d *schema.ResourceData, meta interface{}) error {
 		if respErr != nil {
 			return respErr
 		}
+	}
+
+	// check if route_table_ids has changes
+	if d.HasChange("route_table_ids") {
+		respErr := client.updateCVORouteTableIds(d, clientID, true, "")
+		if respErr != nil {
+			return respErr
+		}
+		return resourceCVOAWSRead(d, meta)
 	}
 
 	// check if aws_tag has changes

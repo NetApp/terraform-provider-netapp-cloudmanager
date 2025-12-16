@@ -125,8 +125,7 @@ func resourceCVOAzure() *schema.Resource {
 			},
 			"instance_type": {
 				Type:     schema.TypeString,
-				Optional: true,
-				Default:  "Standard_DS4_v2",
+				Required: true, // specify Standard_E8ds_v5 for default value
 			},
 			"subnet_id": {
 				Type:     schema.TypeString,
@@ -301,6 +300,26 @@ func resourceCVOAzure() *schema.Resource {
 					return new == ""
 				},
 			},
+			"svm": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"svm_name": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"root_volume_aggregate": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
+								// Detailed validation performed in CustomizeDiff with full context
+								return
+							},
+						},
+					},
+				},
+			},
 			"upgrade_ontap_version": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -310,6 +329,13 @@ func resourceCVOAzure() *schema.Resource {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Default:  60,
+			},
+			"storage_account_network_access": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Disabled", "Enabled", "SecuredByPerimeter"}, false),
+				Description:  "Controls network access for the storage account. Accepted values: Enabled, Disabled, SecuredByPerimeter.",
 			},
 		},
 	}
@@ -369,6 +395,16 @@ func resourceCVOAzureCreate(d *schema.ResourceData, meta interface{}) error {
 	cvoDetails.VsaMetadata.OntapVersion = d.Get("ontap_version").(string)
 	cvoDetails.VsaMetadata.UseLatestVersion = d.Get("use_latest_version").(bool)
 	cvoDetails.VsaMetadata.LicenseType = d.Get("license_type").(string)
+	licenseType := d.Get("license_type").(string)
+	if licenseType != "capacity-paygo" && licenseType != "ha-capacity-paygo" {
+		return fmt.Errorf(
+			"node-based licenses are no longer supported for new CVOs. "+
+				"Please use 'capacity-paygo' for single node or 'ha-capacity-paygo' for HA. "+
+				"Management of existing node-based CVOs created with last provider version is supported. Migration to capacity based licenses from NetApp console is recommended."+
+				"Current license_type: '%s'",
+			licenseType,
+		)
+	}
 	if c, ok := d.GetOk("capacity_package_name"); ok {
 		cvoDetails.VsaMetadata.CapacityPackageName = c.(string)
 	} else {
@@ -472,6 +508,11 @@ func resourceCVOAzureCreate(d *schema.ResourceData, meta interface{}) error {
 				resourceGroupPath, cvoDetails.AzureEncryptionParameters.UserAssignedIdentity)
 		}
 	}
+
+	if c, ok := d.GetOk("storage_account_network_access"); ok {
+		cvoDetails.StorageAccountNetworkAccess = c.(string)
+	}
+
 	if client.GetSimulator() {
 		log.Print("In simulator env...")
 		vnetFormat = "%s/%s"
@@ -490,6 +531,18 @@ func resourceCVOAzureCreate(d *schema.ResourceData, meta interface{}) error {
 	d.SetId(res.PublicID)
 	d.Set("svm_name", res.SvmName)
 	log.Printf("Created cvo: %v", res)
+
+	// Add SVMs on Azure CVO (supports SN and HA)
+	if c, ok := d.GetOk("svm"); ok {
+		svms := c.(*schema.Set)
+		svmList := expandAzureSVMs(svms)
+		for _, svm := range svmList {
+			if err := client.addSVMtoCVOAzure(res.PublicID, clientID, svm.SvmName, d.Get("is_ha").(bool), svm.RootVolumeAggregate); err != nil {
+				log.Printf("Error adding SVM %v: %v", svm.SvmName, err)
+				return err
+			}
+		}
+	}
 
 	return resourceCVOAzureRead(d, meta)
 }
@@ -571,6 +624,14 @@ func resourceCVOAzureUpdate(d *schema.ResourceData, meta interface{}) error {
 		}
 	}
 
+	// check if svm list changes (supports SN and HA)
+	if d.HasChange("svm") {
+		respErr := updateCVOSVMAzure(d, client, clientID)
+		if respErr != nil {
+			return respErr
+		}
+	}
+
 	// check if tier_level is changed
 	if d.HasChange("tier_level") && d.Get("capacity_tier").(string) == "Blob" {
 		respErr := updateCVOTierLevel(d, meta, clientID, true, "")
@@ -618,6 +679,55 @@ func resourceCVOAzureCustomizeDiff(diff *schema.ResourceDiff, v interface{}) err
 	respErr := checkUserTagDiff(diff, "azure_tag", "tag_key")
 	if respErr != nil {
 		return respErr
+	}
+	// Disallow root_volume_aggregate on creation (aggregates not available yet)
+	if diff.Id() == "" {
+		if svmSet, ok := diff.GetOk("svm"); ok {
+			svms := svmSet.(*schema.Set)
+			for _, v := range svms.List() {
+				svm := v.(map[string]interface{})
+				if rootVol, ok := svm["root_volume_aggregate"].(string); ok && rootVol != "" {
+					svmName := svm["svm_name"].(string)
+					return fmt.Errorf("root_volume_aggregate cannot be specified for SVM '%s' during CVO creation. Aggregates do not exist at creation time. You can only specify this parameter when adding SVMs to an existing CVO", svmName)
+				}
+			}
+		}
+	}
+
+	// Prevent modifying root_volume_aggregate for existing SVMs
+	if diff.HasChange("svm") {
+		oldRaw, newRaw := diff.GetChange("svm")
+		oldSet := oldRaw.(*schema.Set)
+		newSet := newRaw.(*schema.Set)
+
+		oldMap := make(map[string]string)
+		for _, v := range oldSet.List() {
+			svm := v.(map[string]interface{})
+			name := svm["svm_name"].(string)
+			val := ""
+			if x, ok := svm["root_volume_aggregate"].(string); ok {
+				val = x
+			}
+			oldMap[name] = val
+		}
+		newMap := make(map[string]string)
+		for _, v := range newSet.List() {
+			svm := v.(map[string]interface{})
+			name := svm["svm_name"].(string)
+			val := ""
+			if x, ok := svm["root_volume_aggregate"].(string); ok {
+				val = x
+			}
+			newMap[name] = val
+		}
+
+		for name, oldVal := range oldMap {
+			if newVal, exists := newMap[name]; exists {
+				if oldVal != newVal {
+					return fmt.Errorf("cannot modify root_volume_aggregate for existing SVM '%s' (from '%s' to '%s'). The root_volume_aggregate is immutable after SVM creation. To change it, you must delete and recreate the entire CVO resource", name, oldVal, newVal)
+				}
+			}
+		}
 	}
 	return nil
 }

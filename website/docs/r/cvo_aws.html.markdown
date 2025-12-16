@@ -129,7 +129,10 @@ The following arguments are supported:
 |Regular HA | `ONTAP-${version}.T1.ha` | ONTAP-9.14.0.T1.ha|
 
 * `use_latest_version` - (Optional) Indicates whether to use the latest available ONTAP version. The default is 'true'.
-* `license_type` - (Optional) The type of license to use. For single node: (by Capacity): ['capacity-paygo'], (by Node paygo): ['cot-explore-paygo','cot-standard-paygo', 'cot-premium-paygo'], (by Node byol): ['cot-premium-byol']. For HA: (by Capacity): ['ha-capacity-paygo'], (by Node paygo): ['ha-cot-explore-paygo','ha-cot-standard-paygo','ha-cot-premium-paygo'], (by Node byol): 'ha-cot-premium-byol']. The default is 'capacity-paygo' for single node, and 'ha-capacity-paygo' for HA.
+* `license_type` - (Optional) The type of license to use. For AWS, use `capacity-paygo` for single node or `ha-capacity-paygo` for HA. Default is `capacity-paygo`. 
+  
+  **Note:** Node-based licenses (`cot-standard-paygo`, `cot-premium-paygo`, `cot-premium-byol`, `cot-explore-paygo`, and their HA variants) are deprecated for new CVO deployments as of December 31, 2024. Existing provider state CVOs with node-based licenses will continue to function normally and get action required workflow to convert license in Console UI.
+
 * `capacity_package_name` - (Optional) The capacity package name: ['Essential', 'Professional', 'Freemium']. Default is 'Essential'.
 * `instance_type` - (Optional) The instance type to use, which depends on the license type: Explore:['m5.xlarge'], Standard:['m5.2xlarge','r5.xlarge'], Premium:['m5.4xlarge','r5.2xlarge','c4.8xlarge'], BYOL: all instance types defined for PayGo. For more supported instance types, refer to Cloud Volumes ONTAP Release Notes. The default is 'm5.2xlarge'.
 * `platform_serial_number` - (Optional, Forces new resource) The serial number for the cluster. This is required when 'license_type' is set 'cot-premium-byol'.

@@ -1,3 +1,25 @@
+## 27.0.0
+NEW FEATURES: 
+* resource/cvo_azure: Supports configuration of `storage_account_network_access` while creating Azure SN and HA CVO.
+* resource/aggregate: now supports import.
+* resource/cvo_gcp: Supports configuration of `rootVolumeAggregate` during SVM creation in existing GCP HA CVO 
+* resource/cvo_azure: Supports multi-SVM creation for new and existing Azure SN and HA CVOs. 
+
+BREAKING CHANGE: (Please refer to guide website/docs/guides/27.0.0_upgrade_guide.md for guidance on upgrading to 27.0.0 version)
+* resource/cvo_azure: Removed the default value of the `instance_type` and marked the attribute as `Required`. 
+* resource/cvo_gcp: Removed the default value of the `instance_type` and marked the attribute as `Required`.
+
+BUG FIXES:
+* resource/connector_gcp: fixed disk not ready issue by waiting on the disk status to be ready.
+* resource/cvo_azure: updated documentation for `user_assigned_identity`.
+
+ENHANCEMENTS:
+* resource/cvo_azure: Removed the default value of the `instance_type` while creating Azure SN and HA CVO.
+* resource/cvo_gcp: Removed the default value of the `instance_type` while creating GCP SN and HA CVO.
+* resource/cvo for AWS, AZURE and GCP: Node-based licenses are no longer supported for new CVO deployments. Existing CVOs with node-based licenses continue to function normally without requiring configuration changes, till deletion. New CVOs must use capacity-based licensing (`capacity-paygo` or `ha-capacity-paygo` with `capacity_package_name`).
+* resource/cvo for AWS, AZURE and GCP: Schema validation allows node-based licenses for backward compatibility with existing Terraform state files, while CREATE resource validation blocks new node-based CVO deployments per December 31, 2024 EOA.
+* resource/aws_cvo: support update `route_table_ids` on AWS CVO HA
+
 ## 26.0.0
 BREAKING CHANGE:
 * resource/aggregate: `number_of_disks` and `disk_size_size` default value is removed.

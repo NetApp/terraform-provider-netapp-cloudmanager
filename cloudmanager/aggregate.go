@@ -95,6 +95,8 @@ type vmDiskProperties struct {
 
 type aggregateRequest struct {
 	WorkingEnvironmentID string `structs:"workingEnvironmentId"`
+	Name                 string `structs:"name"`
+	ID                   string `structs:"uuid"`
 }
 
 type deleteAggregateRequest struct {
