@@ -210,8 +210,8 @@ The following arguments are supported:
 * `vpc3_firewall_rule_tag_name` - (Optional, Forces new resource) Firewall rule tag name for vpc4.
 * `upgrade_ontap_version` - (Optional) Indicates whether to upgrade ontap image with `ontap_version`. To upgrade ontap image, `ontap_version` cannot be 'latest' and `use_latest_version` needs to be false. The available versions can be found in BlueXP UI. Click the CVO -> click **New Version Available** under **Notifications** -> the latest available version will be shown. The list of available versions can be found in **Select older versions**. Update the `ontap_version` by follow the naming conversion.
 * `retries` - (Optional) The number of attempts to wait for the completion of creating the CVO with 60 seconds apart for each attempt. For HA, this value is incremented by 30. The default is '60'.
-* `worm_retention_period_length` - (Optional, Forces new resource) WORM retention period length. Once specified retention period, the WORM is enabled. When WORM storage is activated, data tiering to object storage can’t be enabled.
-* `worm_retention_period_unit` - (Optional, Forces new resource) WORM retention period unit: ['years','months','days','hours','minutes','seconds'].
+* `worm_retention_period_length` - (Optional) WORM retention period length. Can be set at creation or enabled on existing CVOs via in-place update. Once set, WORM retention cannot be modified (immutable). Must be specified together with `worm_retention_period_unit`. When WORM is enabled, `capacity_tier` must be 'NONE' - data tiering and WORM are mutually exclusive.
+* `worm_retention_period_unit` - (Optional) WORM retention period unit: ['years','months','days','hours','minutes','seconds']. Must be specified together with `worm_retention_period_length`.
 
 The `gcp_label` block supports:
 * `label_key` - (Required) The key of the tag.

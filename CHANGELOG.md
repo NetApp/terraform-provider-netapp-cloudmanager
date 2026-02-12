@@ -1,3 +1,8 @@
+## 27.1.0 
+
+ENHANCEMENTS:
+* resource/cvo_aws, cvo_azure, cvo_gcp: Enable WORM on existing CVOs without recreation. WORM retention parameters (`worm_retention_period_length` and `worm_retention_period_unit`) can now be added to existing CVOs via in-place update instead of forcing resource replacement. Both parameters must be specified together, and once set, WORM retention cannot be modified (immutable). When WORM is enabled, `capacity_tier` must be set to 'NONE' as data tiering and WORM are mutually exclusive.
+
 ## 27.0.0
 NEW FEATURES: 
 * resource/cvo_azure: Supports configuration of `storage_account_network_access` while creating Azure SN and HA CVO.
