@@ -226,6 +226,31 @@ func resourceCVOVolume() *schema.Resource {
 					},
 				},
 			},
+			"avs_integration": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"private_cloud_name": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"resource_group": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"cluster_name": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"datastore_name": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -501,10 +526,31 @@ func resourceCVOVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 		log.Print("Error reading volume after creation")
 		return err
 	}
-	for _, volume := range res {
-		if volume.SvmName == svm && volume.Name == d.Get("name") {
-			d.SetId(volume.ID)
+	var createdVolume volumeResponse
+	for _, vol := range res {
+		if vol.SvmName == svm && vol.Name == d.Get("name") {
+			d.SetId(vol.ID)
+			createdVolume = vol
 			break
+		}
+	}
+
+	// Setup AVS integration if configured
+	if v, ok := d.GetOk("avs_integration"); ok {
+		avsConfigs := v.([]interface{})
+		if len(avsConfigs) > 0 {
+			avsConfig := avsConfigs[0].(map[string]interface{})
+			avsRequest := avsOnVolumeRequest{
+				PrivateCloudName: avsConfig["private_cloud_name"].(string),
+				ResourceGroup:    avsConfig["resource_group"].(string),
+				ClusterName:      avsConfig["cluster_name"].(string),
+				DatastoreName:    avsConfig["datastore_name"].(string),
+			}
+			err = client.setupAvsOnVolume(volume.WorkingEnvironmentID, createdVolume.SvmName, createdVolume.Name, avsRequest, clientID, isSaas, connectorIP)
+			if err != nil {
+				log.Print("Error setting up AVS integration")
+				return err
+			}
 		}
 	}
 
@@ -718,6 +764,7 @@ func resourceCVOVolumeDelete(d *schema.ResourceData, meta interface{}) error {
 	}
 	volume.WorkingEnvironmentID = weInfo.PublicID
 	volume.WorkingEnvironmentType = weInfo.WorkingEnvironmentType
+
 	if svm == "" {
 		if weInfo.SvmName != "" {
 			svm = weInfo.SvmName
@@ -727,6 +774,26 @@ func resourceCVOVolumeDelete(d *schema.ResourceData, meta interface{}) error {
 	}
 	volume.SvmName = svm
 
+	// Remove AVS integration before deleting volume
+	if v, ok := d.GetOk("avs_integration"); ok {
+		avsConfigs := v.([]interface{})
+		if len(avsConfigs) > 0 {
+			log.Print("Removing AVS integration before volume deletion")
+			avsConfig := avsConfigs[0].(map[string]interface{})
+			avsRequest := avsOnVolumeRequest{
+				PrivateCloudName: avsConfig["private_cloud_name"].(string),
+				ResourceGroup:    avsConfig["resource_group"].(string),
+				ClusterName:      avsConfig["cluster_name"].(string),
+				DatastoreName:    avsConfig["datastore_name"].(string),
+			}
+			err = client.removeAvsOnVolume(weInfo.PublicID, svm, d.Get("name").(string), avsRequest, clientID, isSaas, connectorIP)
+			if err != nil {
+				return fmt.Errorf("error removing AVS integration before volume deletion: %s, aborting the request", err)
+			}
+		}
+	}
+
+	volume.WorkingEnvironmentType = weInfo.WorkingEnvironmentType
 	volume.Name = d.Get("name").(string)
 
 	err = client.deleteVolume(volume, clientID, isSaas, connectorIP)
@@ -808,6 +875,71 @@ func resourceCVOVolumeUpdate(d *schema.ResourceData, meta interface{}) error {
 	isSaas, connectorIP, err := client.checkDeploymentMode(d, clientID)
 	if err != nil {
 		return err
+	}
+
+	// Handle AVS integration changes
+	if d.HasChange("avs_integration") {
+		log.Print("AVS integration has changed")
+		old, new := d.GetChange("avs_integration")
+		oldConfigs := old.([]interface{})
+		newConfigs := new.([]interface{})
+
+		// Check if this is a modification (both old and new exist)
+		if len(oldConfigs) > 0 && len(newConfigs) > 0 {
+			return fmt.Errorf("AVS integration modification is not supported. Please remove the existing AVS integration and add a new one")
+		}
+
+		// Get working environment details
+		weInfo, err := client.getWorkingEnvironmentDetail(d, clientID, isSaas, connectorIP)
+		if err != nil {
+			return fmt.Errorf("cannot find working environment")
+		}
+
+		if v, ok := d.GetOk("svm_name"); ok {
+			svm = v.(string)
+		} else {
+			svm = weInfo.SvmName
+		}
+
+		// Handle removal
+		if len(oldConfigs) > 0 && len(newConfigs) == 0 {
+			log.Print("Removing AVS integration")
+			avsConfig := oldConfigs[0].(map[string]interface{})
+			avsRequest := avsOnVolumeRequest{
+				PrivateCloudName: avsConfig["private_cloud_name"].(string),
+				ResourceGroup:    avsConfig["resource_group"].(string),
+				ClusterName:      avsConfig["cluster_name"].(string),
+				DatastoreName:    avsConfig["datastore_name"].(string),
+			}
+			err = client.removeAvsOnVolume(weInfo.PublicID, svm, d.Get("name").(string), avsRequest, clientID, isSaas, connectorIP)
+			if err != nil {
+				return err
+			}
+		}
+
+		// Handle addition
+		if len(oldConfigs) == 0 && len(newConfigs) > 0 {
+			log.Print("Adding AVS integration")
+			avsConfig := newConfigs[0].(map[string]interface{})
+			avsRequest := avsOnVolumeRequest{
+				PrivateCloudName: avsConfig["private_cloud_name"].(string),
+				ResourceGroup:    avsConfig["resource_group"].(string),
+				ClusterName:      avsConfig["cluster_name"].(string),
+				DatastoreName:    avsConfig["datastore_name"].(string),
+			}
+			err = client.setupAvsOnVolume(weInfo.PublicID, svm, d.Get("name").(string), avsRequest, clientID, isSaas, connectorIP)
+			if err != nil {
+				return err
+			}
+		}
+
+		// If only AVS integration changed, return early without calling updateVolume
+		if !d.HasChange("export_policy_ip") && !d.HasChange("export_policy_nfs_version") &&
+			!d.HasChange("export_policy_rule_super_user") && !d.HasChange("export_policy_rule_access_control") &&
+			!d.HasChange("permission") && !d.HasChange("users") && !d.HasChange("snapshot_policy_name") &&
+			!d.HasChange("tiering_policy") && !d.HasChange("comment") {
+			return resourceCVOVolumeRead(d, meta)
+		}
 	}
 
 	volume.Name = d.Get("name").(string)
@@ -986,17 +1118,32 @@ func resourceVolumeImport(d *schema.ResourceData, meta interface{}) ([]*schema.R
 }
 
 func resourceVolumeCustomizeDiff(diff *schema.ResourceDiff, v interface{}) error {
+	// Check if AVS integration is being modified (not added or removed, but changed)
+	if diff.HasChange("avs_integration") {
+		old, new := diff.GetChange("avs_integration")
+		oldList := old.([]interface{})
+		newList := new.([]interface{})
+
+		// If both old and new exist, it's a modification attempt
+		if len(oldList) > 0 && len(newList) > 0 {
+			return fmt.Errorf("AVS integration modification is not supported. Please remove the existing AVS integration first, then add a new one")
+		}
+	}
+
 	// Check supported modification: Use volume name as an indication to know if this is a creation or modification
 	if !(diff.HasChange("name")) {
 		changeableParams := []string{"volume_protocol", "export_policy_type", "export_policy_ip",
 			"export_policy_name", "export_policy_nfs_version", "share_name", "permission", "users",
 			"tiering_policy", "snapshot_policy_name", "export_policy_rule_access_control",
-			"export_policy_rule_super_user", "comment", "deployment_mode", "connector_ip", "tenant_id"}
+			"export_policy_rule_super_user", "comment", "deployment_mode", "connector_ip", "tenant_id",
+			"avs_integration"}
 		changedKeys := diff.GetChangedKeysPrefix("")
 		for _, key := range changedKeys {
 			found := false
 			for _, changeable := range changeableParams {
-				if strings.Contains(key, changeable) {
+				// For nested attributes (e.g., avs_integration.0.field), check if key starts with the param
+				// Otherwise use contains for regular params
+				if strings.HasPrefix(key, changeable+".") || strings.Contains(key, changeable) {
 					found = true
 					break
 				}

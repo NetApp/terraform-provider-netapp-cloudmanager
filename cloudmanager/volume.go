@@ -44,6 +44,22 @@ type volumeRequest struct {
 	Comment                   string                 `structs:"comment,omitempty"`
 }
 
+type avsOnVolumeRequest struct {
+	PrivateCloudName string `json:"privateCloudName"`
+	ResourceGroup    string `json:"resourceGroup"`
+	ClusterName      string `json:"clusterName"`
+	DatastoreName    string `json:"dataStoreName"`
+}
+
+func (r avsOnVolumeRequest) toMap() map[string]interface{} {
+	return map[string]interface{}{
+		"privateCloudName": r.PrivateCloudName,
+		"resourceGroup":    r.ResourceGroup,
+		"clusterName":      r.ClusterName,
+		"dataStoreName":    r.DatastoreName,
+	}
+}
+
 type volumeResponse struct {
 	Name                   string                   `json:"name"`
 	SvmName                string                   `json:"svmName"`
@@ -689,4 +705,60 @@ func (c *Client) findSnapshotPolicy(workingEnviromentID string, snapshotPolicyNa
 	}
 	log.Print("cannot find snapshot policy ", snapshotPolicyName)
 	return false
+}
+
+func (c *Client) setupAvsOnVolume(workingEnvironmentID string, svmName string, volumeName string, avsRequest avsOnVolumeRequest, clientID string, isSaas bool, connectorIP string) error {
+	baseURL, _, err := c.getAPIRoot(workingEnvironmentID, clientID, isSaas, connectorIP)
+	if err != nil {
+		return err
+	}
+	baseURL = fmt.Sprintf("%s/volumes/%s/storage-vms/%s/volumes/%s/setup-avs", baseURL, workingEnvironmentID, svmName, volumeName)
+
+	hostType := "CloudManagerHost"
+	if !isSaas {
+		hostType = "http://" + connectorIP
+	}
+
+	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("PUT", baseURL, avsRequest.toMap(), c.Token, hostType, clientID)
+	if err != nil {
+		log.Print("setupAvsOnVolume request failed ", statusCode)
+		return err
+	}
+	responseError := apiResponseChecker(statusCode, response, "setupAvsOnVolume")
+	if responseError != nil {
+		return responseError
+	}
+
+	if isSaas {
+		return c.waitOnCompletion(onCloudRequestID, "volume", "setup-avs", 40, 10, clientID)
+	}
+	return c.waitOnCompletionForNotSaas(onCloudRequestID, "volume", "setup-avs", 40, 10, clientID, connectorIP)
+}
+
+func (c *Client) removeAvsOnVolume(workingEnvironmentID string, svmName string, volumeName string, avsRequest avsOnVolumeRequest, clientID string, isSaas bool, connectorIP string) error {
+	baseURL, _, err := c.getAPIRoot(workingEnvironmentID, clientID, isSaas, connectorIP)
+	if err != nil {
+		return err
+	}
+	baseURL = fmt.Sprintf("%s/volumes/%s/storage-vms/%s/volumes/%s/remove-avs", baseURL, workingEnvironmentID, svmName, volumeName)
+
+	hostType := "CloudManagerHost"
+	if !isSaas {
+		hostType = "http://" + connectorIP
+	}
+
+	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("DELETE", baseURL, avsRequest.toMap(), c.Token, hostType, clientID)
+	if err != nil {
+		log.Print("removeAvsOnVolume request failed ", statusCode)
+		return err
+	}
+	responseError := apiResponseChecker(statusCode, response, "removeAvsOnVolume")
+	if responseError != nil {
+		return responseError
+	}
+
+	if isSaas {
+		return c.waitOnCompletion(onCloudRequestID, "volume", "remove-avs", 40, 10, clientID)
+	}
+	return c.waitOnCompletionForNotSaas(onCloudRequestID, "volume", "remove-avs", 40, 10, clientID, connectorIP)
 }
