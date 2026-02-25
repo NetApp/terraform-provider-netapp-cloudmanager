@@ -49,6 +49,7 @@ type avsOnVolumeRequest struct {
 	ResourceGroup    string `json:"resourceGroup"`
 	ClusterName      string `json:"clusterName"`
 	DatastoreName    string `json:"dataStoreName"`
+	DatastoreSize    size   `json:"dataStoreSize"`
 }
 
 func (r avsOnVolumeRequest) toMap() map[string]interface{} {
@@ -57,6 +58,24 @@ func (r avsOnVolumeRequest) toMap() map[string]interface{} {
 		"resourceGroup":    r.ResourceGroup,
 		"clusterName":      r.ClusterName,
 		"dataStoreName":    r.DatastoreName,
+		"dataStoreSize": map[string]interface{}{
+			"size": r.DatastoreSize.Size,
+			"unit": r.DatastoreSize.Unit,
+		},
+	}
+}
+
+type syncAvsHostsRequest struct {
+	PrivateCloudName string `json:"privateCloudName"`
+	ResourceGroup    string `json:"resourceGroup"`
+	ClusterName      string `json:"clusterName"`
+}
+
+func (r syncAvsHostsRequest) toMap() map[string]interface{} {
+	return map[string]interface{}{
+		"privateCloudName": r.PrivateCloudName,
+		"resourceGroup":    r.ResourceGroup,
+		"clusterName":      r.ClusterName,
 	}
 }
 
@@ -761,4 +780,32 @@ func (c *Client) removeAvsOnVolume(workingEnvironmentID string, svmName string, 
 		return c.waitOnCompletion(onCloudRequestID, "volume", "remove-avs", 40, 10, clientID)
 	}
 	return c.waitOnCompletionForNotSaas(onCloudRequestID, "volume", "remove-avs", 40, 10, clientID, connectorIP)
+}
+
+func (c *Client) syncAvsHosts(workingEnvironmentID string, svmName string, volumeName string, syncRequest syncAvsHostsRequest, clientID string, isSaas bool, connectorIP string) error {
+	baseURL, _, err := c.getAPIRoot(workingEnvironmentID, clientID, isSaas, connectorIP)
+	if err != nil {
+		return err
+	}
+	baseURL = fmt.Sprintf("%s/volumes/%s/storage-vms/%s/volumes/%s/sync-avs-host", baseURL, workingEnvironmentID, svmName, volumeName)
+
+	hostType := "CloudManagerHost"
+	if !isSaas {
+		hostType = "http://" + connectorIP
+	}
+
+	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("PUT", baseURL, syncRequest.toMap(), c.Token, hostType, clientID)
+	if err != nil {
+		log.Print("syncAvsHosts request failed ", statusCode)
+		return err
+	}
+	responseError := apiResponseChecker(statusCode, response, "syncAvsHosts")
+	if responseError != nil {
+		return responseError
+	}
+
+	if isSaas {
+		return c.waitOnCompletion(onCloudRequestID, "volume", "sync-avs-hosts", 40, 10, clientID)
+	}
+	return c.waitOnCompletionForNotSaas(onCloudRequestID, "volume", "sync-avs-hosts", 40, 10, clientID, connectorIP)
 }

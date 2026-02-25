@@ -248,6 +248,50 @@ func resourceCVOVolume() *schema.Resource {
 							Type:     schema.TypeString,
 							Required: true,
 						},
+						"datastore_size_capacity": {
+							Type:        schema.TypeFloat,
+							Required:    true,
+							Description: "The size of the datastore. Must be equal to the LUN size.",
+						},
+						"datastore_size_unit": {
+							Type:         schema.TypeString,
+							Required:     true,
+							ValidateFunc: validation.StringInSlice([]string{"Byte", "KB", "MB", "GB", "TB"}, false),
+							Description:  "The unit of the datastore size: ['Byte', 'KB', 'MB', 'GB', 'TB'].",
+						},
+					},
+				},
+			},
+			"sync_avs_hosts": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Description: "Sync AVS hosts iSCSI configuration. This is a separate operation from setup-avs/remove-avs. " +
+					"When hosts are added to or removed from the AVS cluster, use this to re-sync iSCSI configuration on the current cluster hosts. " +
+					"The sync is only triggered when field values in this block change. " +
+					"To force a re-sync without changing actual values, update the 'sync_trigger' field (e.g., increment a counter or set a new timestamp or just some dummy value).",
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"private_cloud_name": {
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "The name of the AVS private cloud.",
+						},
+						"resource_group": {
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "The resource group of the AVS private cloud.",
+						},
+						"cluster_name": {
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "The name of the AVS cluster.",
+						},
+						"sync_trigger": {
+							Type:        schema.TypeString,
+							Optional:    true,
+							Description: "An arbitrary value that, when changed, forces a re-sync of AVS hosts. Change this value (e.g., increment a number or set a new timestamp) to trigger a re-sync without modifying other fields.",
+						},
 					},
 				},
 			},
@@ -540,16 +584,27 @@ func resourceCVOVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 		avsConfigs := v.([]interface{})
 		if len(avsConfigs) > 0 {
 			avsConfig := avsConfigs[0].(map[string]interface{})
-			avsRequest := avsOnVolumeRequest{
-				PrivateCloudName: avsConfig["private_cloud_name"].(string),
-				ResourceGroup:    avsConfig["resource_group"].(string),
-				ClusterName:      avsConfig["cluster_name"].(string),
-				DatastoreName:    avsConfig["datastore_name"].(string),
-			}
+			avsRequest := buildAvsOnVolumeRequest(avsConfig)
 			err = client.setupAvsOnVolume(volume.WorkingEnvironmentID, createdVolume.SvmName, createdVolume.Name, avsRequest, clientID, isSaas, connectorIP)
 			if err != nil {
-				log.Print("Error setting up AVS integration")
-				return err
+				return fmt.Errorf("volume '%s' was created successfully, but AVS integration setup failed: %s. Please re-run 'terraform apply' to retry AVS integration", createdVolume.Name, err)
+			}
+		}
+	}
+
+	// Sync AVS hosts if configured
+	if v, ok := d.GetOk("sync_avs_hosts"); ok {
+		syncConfigs := v.([]interface{})
+		if len(syncConfigs) > 0 {
+			syncConfig := syncConfigs[0].(map[string]interface{})
+			syncRequest := syncAvsHostsRequest{
+				PrivateCloudName: syncConfig["private_cloud_name"].(string),
+				ResourceGroup:    syncConfig["resource_group"].(string),
+				ClusterName:      syncConfig["cluster_name"].(string),
+			}
+			err = client.syncAvsHosts(volume.WorkingEnvironmentID, createdVolume.SvmName, createdVolume.Name, syncRequest, clientID, isSaas, connectorIP)
+			if err != nil {
+				return fmt.Errorf("error syncing AVS hosts: %s", err)
 			}
 		}
 	}
@@ -780,12 +835,7 @@ func resourceCVOVolumeDelete(d *schema.ResourceData, meta interface{}) error {
 		if len(avsConfigs) > 0 {
 			log.Print("Removing AVS integration before volume deletion")
 			avsConfig := avsConfigs[0].(map[string]interface{})
-			avsRequest := avsOnVolumeRequest{
-				PrivateCloudName: avsConfig["private_cloud_name"].(string),
-				ResourceGroup:    avsConfig["resource_group"].(string),
-				ClusterName:      avsConfig["cluster_name"].(string),
-				DatastoreName:    avsConfig["datastore_name"].(string),
-			}
+			avsRequest := buildAvsOnVolumeRequest(avsConfig)
 			err = client.removeAvsOnVolume(weInfo.PublicID, svm, d.Get("name").(string), avsRequest, clientID, isSaas, connectorIP)
 			if err != nil {
 				return fmt.Errorf("error removing AVS integration before volume deletion: %s, aborting the request", err)
@@ -905,12 +955,7 @@ func resourceCVOVolumeUpdate(d *schema.ResourceData, meta interface{}) error {
 		if len(oldConfigs) > 0 && len(newConfigs) == 0 {
 			log.Print("Removing AVS integration")
 			avsConfig := oldConfigs[0].(map[string]interface{})
-			avsRequest := avsOnVolumeRequest{
-				PrivateCloudName: avsConfig["private_cloud_name"].(string),
-				ResourceGroup:    avsConfig["resource_group"].(string),
-				ClusterName:      avsConfig["cluster_name"].(string),
-				DatastoreName:    avsConfig["datastore_name"].(string),
-			}
+			avsRequest := buildAvsOnVolumeRequest(avsConfig)
 			err = client.removeAvsOnVolume(weInfo.PublicID, svm, d.Get("name").(string), avsRequest, clientID, isSaas, connectorIP)
 			if err != nil {
 				return err
@@ -921,12 +966,7 @@ func resourceCVOVolumeUpdate(d *schema.ResourceData, meta interface{}) error {
 		if len(oldConfigs) == 0 && len(newConfigs) > 0 {
 			log.Print("Adding AVS integration")
 			avsConfig := newConfigs[0].(map[string]interface{})
-			avsRequest := avsOnVolumeRequest{
-				PrivateCloudName: avsConfig["private_cloud_name"].(string),
-				ResourceGroup:    avsConfig["resource_group"].(string),
-				ClusterName:      avsConfig["cluster_name"].(string),
-				DatastoreName:    avsConfig["datastore_name"].(string),
-			}
+			avsRequest := buildAvsOnVolumeRequest(avsConfig)
 			err = client.setupAvsOnVolume(weInfo.PublicID, svm, d.Get("name").(string), avsRequest, clientID, isSaas, connectorIP)
 			if err != nil {
 				return err
@@ -935,6 +975,46 @@ func resourceCVOVolumeUpdate(d *schema.ResourceData, meta interface{}) error {
 
 		// If only AVS integration changed, return early without calling updateVolume
 		if !d.HasChange("export_policy_ip") && !d.HasChange("export_policy_nfs_version") &&
+			!d.HasChange("export_policy_rule_super_user") && !d.HasChange("export_policy_rule_access_control") &&
+			!d.HasChange("permission") && !d.HasChange("users") && !d.HasChange("snapshot_policy_name") &&
+			!d.HasChange("tiering_policy") && !d.HasChange("comment") && !d.HasChange("sync_avs_hosts") {
+			return resourceCVOVolumeRead(d, meta)
+		}
+	}
+
+	// Handle sync AVS hosts changes (separate from avs_integration)
+	// Sync is a fire-and-forget operation: trigger on add/modify, no-op on removal
+	if d.HasChange("sync_avs_hosts") {
+		_, new := d.GetChange("sync_avs_hosts")
+		newConfigs := new.([]interface{})
+
+		if len(newConfigs) > 0 {
+			log.Print("Triggering sync AVS hosts")
+			weInfo, err := client.getWorkingEnvironmentDetail(d, clientID, isSaas, connectorIP)
+			if err != nil {
+				return fmt.Errorf("cannot find working environment")
+			}
+
+			if v, ok := d.GetOk("svm_name"); ok {
+				svm = v.(string)
+			} else {
+				svm = weInfo.SvmName
+			}
+
+			syncConfig := newConfigs[0].(map[string]interface{})
+			syncRequest := syncAvsHostsRequest{
+				PrivateCloudName: syncConfig["private_cloud_name"].(string),
+				ResourceGroup:    syncConfig["resource_group"].(string),
+				ClusterName:      syncConfig["cluster_name"].(string),
+			}
+			err = client.syncAvsHosts(weInfo.PublicID, svm, d.Get("name").(string), syncRequest, clientID, isSaas, connectorIP)
+			if err != nil {
+				return fmt.Errorf("error syncing AVS hosts: %s", err)
+			}
+		}
+
+		// If only sync_avs_hosts changed, return early without calling updateVolume
+		if !d.HasChange("avs_integration") && !d.HasChange("export_policy_ip") && !d.HasChange("export_policy_nfs_version") &&
 			!d.HasChange("export_policy_rule_super_user") && !d.HasChange("export_policy_rule_access_control") &&
 			!d.HasChange("permission") && !d.HasChange("users") && !d.HasChange("snapshot_policy_name") &&
 			!d.HasChange("tiering_policy") && !d.HasChange("comment") {
@@ -1136,7 +1216,7 @@ func resourceVolumeCustomizeDiff(diff *schema.ResourceDiff, v interface{}) error
 			"export_policy_name", "export_policy_nfs_version", "share_name", "permission", "users",
 			"tiering_policy", "snapshot_policy_name", "export_policy_rule_access_control",
 			"export_policy_rule_super_user", "comment", "deployment_mode", "connector_ip", "tenant_id",
-			"avs_integration"}
+			"avs_integration", "sync_avs_hosts"}
 		changedKeys := diff.GetChangedKeysPrefix("")
 		for _, key := range changedKeys {
 			found := false
@@ -1301,4 +1381,17 @@ func expandInitiator(set *schema.Set) []initiator {
 		initiators = append(initiators, initiator)
 	}
 	return initiators
+}
+
+func buildAvsOnVolumeRequest(avsConfig map[string]interface{}) avsOnVolumeRequest {
+	return avsOnVolumeRequest{
+		PrivateCloudName: avsConfig["private_cloud_name"].(string),
+		ResourceGroup:    avsConfig["resource_group"].(string),
+		ClusterName:      avsConfig["cluster_name"].(string),
+		DatastoreName:    avsConfig["datastore_name"].(string),
+		DatastoreSize: size{
+			Size: avsConfig["datastore_size_capacity"].(float64),
+			Unit: avsConfig["datastore_size_unit"].(string),
+		},
+	}
 }

@@ -63,3 +63,5 @@ The `avs_integration` block - (Optional) Azure VMware Solution (AVS) integration
   * `resource_group` - (Required) The name of the Azure resource group where the AVS private cloud is deployed.
   * `cluster_name` - (Required) The name of the AVS cluster within the private cloud.
   * `datastore_name` - (Required) The name of the datastore to be associated with the AVS integration.
+  * `datastore_size_capacity` - (Required) The size of the datastore. Must be equal to the volume size.
+  * `datastore_size_unit` - (Required) The unit of the datastore size: ['Byte', 'KB', 'MB', 'GB', 'TB'].

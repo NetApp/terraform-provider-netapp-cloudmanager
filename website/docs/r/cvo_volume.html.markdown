@@ -127,6 +127,63 @@ resource "netapp-cloudmanager_volume" "cvo-volume-onprem" {
 }
 ```
 
+**Create netapp-cloudmanager_volume of type ISCSI with AVS integration:**
+
+```
+resource "netapp-cloudmanager_volume" "cvo-volume-avs" {
+  provider = netapp-cloudmanager
+  name = "avs_iscsi_vol"
+  volume_protocol = "iscsi"
+  size = 10
+  unit = "GB"
+  igroups = ["test_igroup"]
+  os_name = "vmware"
+  working_environment_name = "cvo-azure-ha"
+  client_id = netapp-cloudmanager_connector_azure.cm-azure.client_id
+
+  avs_integration {
+    private_cloud_name  = "my-avs-private-cloud"
+    resource_group      = "my-avs-resource-group"
+    cluster_name        = "Cluster-1"
+    datastore_name      = "ds_cvo_vol1"
+    datastore_size_capacity = 10
+    datastore_size_unit = "GB"
+  }
+}
+```
+
+**Sync AVS hosts iSCSI configuration (separate from setup/remove AVS):**
+
+```
+resource "netapp-cloudmanager_volume" "cvo-volume-avs-sync" {
+  provider = netapp-cloudmanager
+  name = "avs_iscsi_vol"
+  volume_protocol = "iscsi"
+  size = 10
+  unit = "GB"
+  igroups = ["test_igroup"]
+  os_name = "vmware"
+  working_environment_name = "cvo-azure-ha"
+  client_id = netapp-cloudmanager_connector_azure.cm-azure.client_id
+
+  avs_integration {
+    private_cloud_name  = "my-avs-private-cloud"
+    resource_group      = "my-avs-resource-group"
+    cluster_name        = "Cluster-1"
+    datastore_name      = "ds_cvo_vol1"
+    datastore_size_capacity = 10
+    datastore_size_unit = "GB"
+  }
+
+  sync_avs_hosts {
+    private_cloud_name = "my-avs-private-cloud"
+    resource_group     = "my-avs-resource-group"
+    cluster_name       = "Cluster-1"
+    sync_trigger       = "1"
+  }
+}
+```
+
 ## Argument Reference
 
 Arguments marked with “Forces new resource” will cause the resource to be recreated if their value is changed after creation.
@@ -168,6 +225,24 @@ The following arguments are supported:
 * `comment` - (Optional) Sets a comment associated with the volume. 
 * `initiator` (Optional) Set of attributes of Initiator. (iSCSI protocol parameters)
 *  `tags` - (Optional) Set tags for the volume during creation. The API doesn't contain any information about tags so the provider doesn't guarantee tags will be added successfully and detect any drift after create.
+* `avs_integration` - (Optional) AVS (Azure VMware Solution) integration configuration for iSCSI volumes. Sets up AVS iSCSI configuration and creates a datastore. Only supported for Azure HA CVO working environments with iSCSI volumes using VMware OS type. **Note:** Import is not supported for this block. AVS integration state is not read from the API, so imported volumes will not include AVS configuration.
+* `sync_avs_hosts` - (Optional) Sync AVS hosts iSCSI configuration. This is a separate operation from `avs_integration` (setup-avs/remove-avs). When hosts are added to or removed from the AVS cluster, use this block to re-sync the iSCSI configuration on the current cluster hosts. Modifying any field in this block will trigger a new sync operation. To force a re-sync without changing actual configuration values (e.g., after a host was added externally), update the `sync_trigger` field (increment a counter or set a new timestamp). **Note:** Import is not supported for this block.
+
+The `avs_integration` block supports:
+* `private_cloud_name` (Required) The name of the AVS private cloud.
+* `resource_group` (Required) The resource group of the AVS private cloud.
+* `cluster_name` (Required) The name of the AVS cluster.
+* `datastore_name` (Required) The name of the datastore to create on the AVS cluster.
+* `datastore_size_capacity` (Required) The size of the datastore. Must be equal to the LUN size.
+* `datastore_size_unit` (Required) The unit of the datastore size: ['Byte', 'KB', 'MB', 'GB', 'TB'].
+
+~> **Note:** If AVS integration setup fails during volume creation, the volume itself will still be created and tracked in Terraform state. Re-run `terraform apply` to retry the AVS integration setup.
+
+The `sync_avs_hosts` block supports:
+* `private_cloud_name` (Required) The name of the AVS private cloud.
+* `resource_group` (Required) The resource group of the AVS private cloud.
+* `cluster_name` (Required) The name of the AVS cluster.
+* `sync_trigger` (Optional) An arbitrary string value that, when changed, forces a re-sync of AVS hosts. Use this to trigger a re-sync without modifying other fields (e.g., increment a counter like `"1"` -> `"2"`, or set a timestamp).
 
 The `initiator` block supports:
 * `alias` (Required) Initiator alias. (iSCSI protocol parameters)
