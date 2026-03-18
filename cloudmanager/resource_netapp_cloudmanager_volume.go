@@ -1304,6 +1304,10 @@ func createIscsiVolumeHelper(d *schema.ResourceData, meta interface{}, isSaas bo
 	igroup.WorkingEnvironmentID = workingEnvDetail.PublicID
 	workingEnvironmentID = workingEnvDetail.PublicID
 	workingEnvironmentType = workingEnvDetail.WorkingEnvironmentType
+	// Use svm_name from resource config when provided (e.g. custom SVM); otherwise default to WE SVM
+	if v, ok := d.GetOk("svm_name"); ok {
+		svm = v.(string)
+	}
 	if svm == "" {
 		if workingEnvDetail.SvmName != "" {
 			svm = workingEnvDetail.SvmName
@@ -1364,6 +1368,9 @@ func createIscsiVolumeHelper(d *schema.ResourceData, meta interface{}, isSaas bo
 		}
 		if isNewInitiator {
 			for _, expectIni := range initiators {
+				expectIni.WorkingEnvironmentID = workingEnvironmentID
+				expectIni.WorkingEnvironmentType = workingEnvironmentType
+				expectIni.SvmName = svm
 				client.createInitiator(expectIni, clientID, isSaas, connectorIP)
 			}
 		}

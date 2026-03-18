@@ -4,6 +4,9 @@ NEW FEATURES:
 * resource/volume: Added support for AVS integration in Azure HA SAZ CVOs. Allows setup and removal of AVS on ISCSI volumes in Azure HA SAZ CVOs. 
 * resource/volume: Added support for SYNC operation on AVS hosts in the cluster. Allows to sync configuration across AVS hosts. 
 
+BUG FIXES:
+* resource/volume: Fixed iSCSI volume creation when using a custom SVM (`svm_name`). The provider now uses the configured `svm_name` for igroup lookups and initiator creation instead of defaulting to the working environment SVM, fixing "SVM does not exist" errors for CVOs with non-default SVM names.
+
 ENHANCEMENTS:
 * resource/cvo_aws, cvo_azure, cvo_gcp: Enable WORM on existing CVOs without recreation. WORM retention parameters (`worm_retention_period_length` and `worm_retention_period_unit`) can now be added to existing CVOs via in-place update instead of forcing resource replacement. Both parameters must be specified together, and once set, WORM retention cannot be modified (immutable). When WORM is enabled, `capacity_tier` must be set to 'NONE' as data tiering and WORM are mutually exclusive.
 
