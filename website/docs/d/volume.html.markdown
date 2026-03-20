@@ -57,3 +57,11 @@ The following attributes are exported in addition to the arguments listed above:
 * `share_name` Share name. (CIFS protocol parameters)
 * `permission` CIFS share permission type. (CIFS protocol parameters)
 * `users` List of users with the permission. (CIFS protocol parameters)
+
+The `avs_integration` block - (Optional) Azure VMware Solution (AVS) integration configuration. Supports the following nested attributes:
+  * `private_cloud_name` - (Required) The name of the AVS private cloud.
+  * `resource_group` - (Required) The name of the Azure resource group where the AVS private cloud is deployed.
+  * `cluster_name` - (Required) The name of the AVS cluster within the private cloud.
+  * `datastore_name` - (Required) The name of the datastore to be associated with the AVS integration.
+  * `datastore_size_capacity` - (Required) The size of the datastore. Must be equal to the volume size.
+  * `datastore_size_unit` - (Required) The unit of the datastore size: ['Byte', 'KB', 'MB', 'GB', 'TB'].

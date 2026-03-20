@@ -226,6 +226,75 @@ func resourceCVOVolume() *schema.Resource {
 					},
 				},
 			},
+			"avs_integration": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"private_cloud_name": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"resource_group": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"cluster_name": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"datastore_name": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"datastore_size_capacity": {
+							Type:        schema.TypeFloat,
+							Required:    true,
+							Description: "The size of the datastore. Must be equal to the LUN size.",
+						},
+						"datastore_size_unit": {
+							Type:         schema.TypeString,
+							Required:     true,
+							ValidateFunc: validation.StringInSlice([]string{"Byte", "KB", "MB", "GB", "TB"}, false),
+							Description:  "The unit of the datastore size: ['Byte', 'KB', 'MB', 'GB', 'TB'].",
+						},
+					},
+				},
+			},
+			"sync_avs_hosts": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Description: "Sync AVS hosts iSCSI configuration. This is a separate operation from setup-avs/remove-avs. " +
+					"When hosts are added to or removed from the AVS cluster, use this to re-sync iSCSI configuration on the current cluster hosts. " +
+					"The sync is only triggered when field values in this block change. " +
+					"To force a re-sync without changing actual values, update the 'sync_trigger' field (e.g., increment a counter or set a new timestamp or just some dummy value).",
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"private_cloud_name": {
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "The name of the AVS private cloud.",
+						},
+						"resource_group": {
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "The resource group of the AVS private cloud.",
+						},
+						"cluster_name": {
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "The name of the AVS cluster.",
+						},
+						"sync_trigger": {
+							Type:        schema.TypeString,
+							Optional:    true,
+							Description: "An arbitrary value that, when changed, forces a re-sync of AVS hosts. Change this value (e.g., increment a number or set a new timestamp) to trigger a re-sync without modifying other fields.",
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -501,10 +570,42 @@ func resourceCVOVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 		log.Print("Error reading volume after creation")
 		return err
 	}
-	for _, volume := range res {
-		if volume.SvmName == svm && volume.Name == d.Get("name") {
-			d.SetId(volume.ID)
+	var createdVolume volumeResponse
+	for _, vol := range res {
+		if vol.SvmName == svm && vol.Name == d.Get("name") {
+			d.SetId(vol.ID)
+			createdVolume = vol
 			break
+		}
+	}
+
+	// Setup AVS integration if configured
+	if v, ok := d.GetOk("avs_integration"); ok {
+		avsConfigs := v.([]interface{})
+		if len(avsConfigs) > 0 {
+			avsConfig := avsConfigs[0].(map[string]interface{})
+			avsRequest := buildAvsOnVolumeRequest(avsConfig)
+			err = client.setupAvsOnVolume(volume.WorkingEnvironmentID, createdVolume.SvmName, createdVolume.Name, avsRequest, clientID, isSaas, connectorIP)
+			if err != nil {
+				return fmt.Errorf("volume '%s' was created successfully, but AVS integration setup failed: %s. Please re-run 'terraform apply' to retry AVS integration", createdVolume.Name, err)
+			}
+		}
+	}
+
+	// Sync AVS hosts if configured
+	if v, ok := d.GetOk("sync_avs_hosts"); ok {
+		syncConfigs := v.([]interface{})
+		if len(syncConfigs) > 0 {
+			syncConfig := syncConfigs[0].(map[string]interface{})
+			syncRequest := syncAvsHostsRequest{
+				PrivateCloudName: syncConfig["private_cloud_name"].(string),
+				ResourceGroup:    syncConfig["resource_group"].(string),
+				ClusterName:      syncConfig["cluster_name"].(string),
+			}
+			err = client.syncAvsHosts(volume.WorkingEnvironmentID, createdVolume.SvmName, createdVolume.Name, syncRequest, clientID, isSaas, connectorIP)
+			if err != nil {
+				return fmt.Errorf("error syncing AVS hosts: %s", err)
+			}
 		}
 	}
 
@@ -718,6 +819,7 @@ func resourceCVOVolumeDelete(d *schema.ResourceData, meta interface{}) error {
 	}
 	volume.WorkingEnvironmentID = weInfo.PublicID
 	volume.WorkingEnvironmentType = weInfo.WorkingEnvironmentType
+
 	if svm == "" {
 		if weInfo.SvmName != "" {
 			svm = weInfo.SvmName
@@ -727,6 +829,21 @@ func resourceCVOVolumeDelete(d *schema.ResourceData, meta interface{}) error {
 	}
 	volume.SvmName = svm
 
+	// Remove AVS integration before deleting volume
+	if v, ok := d.GetOk("avs_integration"); ok {
+		avsConfigs := v.([]interface{})
+		if len(avsConfigs) > 0 {
+			log.Print("Removing AVS integration before volume deletion")
+			avsConfig := avsConfigs[0].(map[string]interface{})
+			avsRequest := buildAvsOnVolumeRequest(avsConfig)
+			err = client.removeAvsOnVolume(weInfo.PublicID, svm, d.Get("name").(string), avsRequest, clientID, isSaas, connectorIP)
+			if err != nil {
+				return fmt.Errorf("error removing AVS integration before volume deletion: %s, aborting the request", err)
+			}
+		}
+	}
+
+	volume.WorkingEnvironmentType = weInfo.WorkingEnvironmentType
 	volume.Name = d.Get("name").(string)
 
 	err = client.deleteVolume(volume, clientID, isSaas, connectorIP)
@@ -808,6 +925,101 @@ func resourceCVOVolumeUpdate(d *schema.ResourceData, meta interface{}) error {
 	isSaas, connectorIP, err := client.checkDeploymentMode(d, clientID)
 	if err != nil {
 		return err
+	}
+
+	// Handle AVS integration changes
+	if d.HasChange("avs_integration") {
+		log.Print("AVS integration has changed")
+		old, new := d.GetChange("avs_integration")
+		oldConfigs := old.([]interface{})
+		newConfigs := new.([]interface{})
+
+		// Check if this is a modification (both old and new exist)
+		if len(oldConfigs) > 0 && len(newConfigs) > 0 {
+			return fmt.Errorf("AVS integration modification is not supported. Please remove the existing AVS integration and add a new one")
+		}
+
+		// Get working environment details
+		weInfo, err := client.getWorkingEnvironmentDetail(d, clientID, isSaas, connectorIP)
+		if err != nil {
+			return fmt.Errorf("cannot find working environment")
+		}
+
+		if v, ok := d.GetOk("svm_name"); ok {
+			svm = v.(string)
+		} else {
+			svm = weInfo.SvmName
+		}
+
+		// Handle removal
+		if len(oldConfigs) > 0 && len(newConfigs) == 0 {
+			log.Print("Removing AVS integration")
+			avsConfig := oldConfigs[0].(map[string]interface{})
+			avsRequest := buildAvsOnVolumeRequest(avsConfig)
+			err = client.removeAvsOnVolume(weInfo.PublicID, svm, d.Get("name").(string), avsRequest, clientID, isSaas, connectorIP)
+			if err != nil {
+				return err
+			}
+		}
+
+		// Handle addition
+		if len(oldConfigs) == 0 && len(newConfigs) > 0 {
+			log.Print("Adding AVS integration")
+			avsConfig := newConfigs[0].(map[string]interface{})
+			avsRequest := buildAvsOnVolumeRequest(avsConfig)
+			err = client.setupAvsOnVolume(weInfo.PublicID, svm, d.Get("name").(string), avsRequest, clientID, isSaas, connectorIP)
+			if err != nil {
+				return err
+			}
+		}
+
+		// If only AVS integration changed, return early without calling updateVolume
+		if !d.HasChange("export_policy_ip") && !d.HasChange("export_policy_nfs_version") &&
+			!d.HasChange("export_policy_rule_super_user") && !d.HasChange("export_policy_rule_access_control") &&
+			!d.HasChange("permission") && !d.HasChange("users") && !d.HasChange("snapshot_policy_name") &&
+			!d.HasChange("tiering_policy") && !d.HasChange("comment") && !d.HasChange("sync_avs_hosts") {
+			return resourceCVOVolumeRead(d, meta)
+		}
+	}
+
+	// Handle sync AVS hosts changes (separate from avs_integration)
+	// Sync is a fire-and-forget operation: trigger on add/modify, no-op on removal
+	if d.HasChange("sync_avs_hosts") {
+		_, new := d.GetChange("sync_avs_hosts")
+		newConfigs := new.([]interface{})
+
+		if len(newConfigs) > 0 {
+			log.Print("Triggering sync AVS hosts")
+			weInfo, err := client.getWorkingEnvironmentDetail(d, clientID, isSaas, connectorIP)
+			if err != nil {
+				return fmt.Errorf("cannot find working environment")
+			}
+
+			if v, ok := d.GetOk("svm_name"); ok {
+				svm = v.(string)
+			} else {
+				svm = weInfo.SvmName
+			}
+
+			syncConfig := newConfigs[0].(map[string]interface{})
+			syncRequest := syncAvsHostsRequest{
+				PrivateCloudName: syncConfig["private_cloud_name"].(string),
+				ResourceGroup:    syncConfig["resource_group"].(string),
+				ClusterName:      syncConfig["cluster_name"].(string),
+			}
+			err = client.syncAvsHosts(weInfo.PublicID, svm, d.Get("name").(string), syncRequest, clientID, isSaas, connectorIP)
+			if err != nil {
+				return fmt.Errorf("error syncing AVS hosts: %s", err)
+			}
+		}
+
+		// If only sync_avs_hosts changed, return early without calling updateVolume
+		if !d.HasChange("avs_integration") && !d.HasChange("export_policy_ip") && !d.HasChange("export_policy_nfs_version") &&
+			!d.HasChange("export_policy_rule_super_user") && !d.HasChange("export_policy_rule_access_control") &&
+			!d.HasChange("permission") && !d.HasChange("users") && !d.HasChange("snapshot_policy_name") &&
+			!d.HasChange("tiering_policy") && !d.HasChange("comment") {
+			return resourceCVOVolumeRead(d, meta)
+		}
 	}
 
 	volume.Name = d.Get("name").(string)
@@ -986,17 +1198,32 @@ func resourceVolumeImport(d *schema.ResourceData, meta interface{}) ([]*schema.R
 }
 
 func resourceVolumeCustomizeDiff(diff *schema.ResourceDiff, v interface{}) error {
+	// Check if AVS integration is being modified (not added or removed, but changed)
+	if diff.HasChange("avs_integration") {
+		old, new := diff.GetChange("avs_integration")
+		oldList := old.([]interface{})
+		newList := new.([]interface{})
+
+		// If both old and new exist, it's a modification attempt
+		if len(oldList) > 0 && len(newList) > 0 {
+			return fmt.Errorf("AVS integration modification is not supported. Please remove the existing AVS integration first, then add a new one")
+		}
+	}
+
 	// Check supported modification: Use volume name as an indication to know if this is a creation or modification
 	if !(diff.HasChange("name")) {
 		changeableParams := []string{"volume_protocol", "export_policy_type", "export_policy_ip",
 			"export_policy_name", "export_policy_nfs_version", "share_name", "permission", "users",
 			"tiering_policy", "snapshot_policy_name", "export_policy_rule_access_control",
-			"export_policy_rule_super_user", "comment", "deployment_mode", "connector_ip", "tenant_id"}
+			"export_policy_rule_super_user", "comment", "deployment_mode", "connector_ip", "tenant_id",
+			"avs_integration", "sync_avs_hosts"}
 		changedKeys := diff.GetChangedKeysPrefix("")
 		for _, key := range changedKeys {
 			found := false
 			for _, changeable := range changeableParams {
-				if strings.Contains(key, changeable) {
+				// For nested attributes (e.g., avs_integration.0.field), check if key starts with the param
+				// Otherwise use contains for regular params
+				if strings.HasPrefix(key, changeable+".") || strings.Contains(key, changeable) {
 					found = true
 					break
 				}
@@ -1077,6 +1304,10 @@ func createIscsiVolumeHelper(d *schema.ResourceData, meta interface{}, isSaas bo
 	igroup.WorkingEnvironmentID = workingEnvDetail.PublicID
 	workingEnvironmentID = workingEnvDetail.PublicID
 	workingEnvironmentType = workingEnvDetail.WorkingEnvironmentType
+	// Use svm_name from resource config when provided (e.g. custom SVM); otherwise default to WE SVM
+	if v, ok := d.GetOk("svm_name"); ok {
+		svm = v.(string)
+	}
 	if svm == "" {
 		if workingEnvDetail.SvmName != "" {
 			svm = workingEnvDetail.SvmName
@@ -1137,6 +1368,9 @@ func createIscsiVolumeHelper(d *schema.ResourceData, meta interface{}, isSaas bo
 		}
 		if isNewInitiator {
 			for _, expectIni := range initiators {
+				expectIni.WorkingEnvironmentID = workingEnvironmentID
+				expectIni.WorkingEnvironmentType = workingEnvironmentType
+				expectIni.SvmName = svm
 				client.createInitiator(expectIni, clientID, isSaas, connectorIP)
 			}
 		}
@@ -1154,4 +1388,17 @@ func expandInitiator(set *schema.Set) []initiator {
 		initiators = append(initiators, initiator)
 	}
 	return initiators
+}
+
+func buildAvsOnVolumeRequest(avsConfig map[string]interface{}) avsOnVolumeRequest {
+	return avsOnVolumeRequest{
+		PrivateCloudName: avsConfig["private_cloud_name"].(string),
+		ResourceGroup:    avsConfig["resource_group"].(string),
+		ClusterName:      avsConfig["cluster_name"].(string),
+		DatastoreName:    avsConfig["datastore_name"].(string),
+		DatastoreSize: size{
+			Size: avsConfig["datastore_size_capacity"].(float64),
+			Unit: avsConfig["datastore_size_unit"].(string),
+		},
+	}
 }

@@ -143,13 +143,11 @@ func resourceCVOAWS() *schema.Resource {
 			"worm_retention_period_length": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				ForceNew: true,
 			},
 			"worm_retention_period_unit": {
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringInSlice([]string{"years", "months", "days", "hours", "minutes", "seconds"}, true),
 				Optional:     true,
-				ForceNew:     true,
 			},
 			"writing_speed_state": {
 				Type:         schema.TypeString,
@@ -690,6 +688,24 @@ func resourceCVOAWSUpdate(d *schema.ResourceData, meta interface{}) error {
 		return upgradeErr
 	}
 
+	// check if WORM parameters are changed
+	if d.HasChange("worm_retention_period_length") || d.HasChange("worm_retention_period_unit") {
+		oldLength, newLength := d.GetChange("worm_retention_period_length")
+		oldUnit, newUnit := d.GetChange("worm_retention_period_unit")
+
+		isEnabling := (oldLength.(int) == 0 && oldUnit.(string) == "") &&
+			(newLength.(int) > 0 && newUnit.(string) != "")
+
+		if isEnabling {
+			respErr := enableCVOWorm(d, meta, clientID, true, "")
+			if respErr != nil {
+				return respErr
+			}
+		} else if oldLength.(int) > 0 || oldUnit.(string) != "" {
+			return fmt.Errorf("WORM retention period cannot be changed once set. WORM is immutable")
+		}
+	}
+
 	return nil
 }
 
@@ -697,6 +713,22 @@ func resourceCVOAWSCustomizeDiff(diff *schema.ResourceDiff, v interface{}) error
 	respErr := checkUserTagDiff(diff, "aws_tag", "tag_key")
 	if respErr != nil {
 		return respErr
+	}
+	// WORM validation
+	wormLength, lengthOk := diff.GetOk("worm_retention_period_length")
+	wormUnit, unitOk := diff.GetOk("worm_retention_period_unit")
+
+	if lengthOk != unitOk {
+		return fmt.Errorf("worm_retention_period_length and worm_retention_period_unit must be specified together")
+	}
+
+	if lengthOk && unitOk && wormLength.(int) > 0 && wormUnit.(string) != "" {
+		if capacityTier, ok := diff.GetOk("capacity_tier"); ok {
+			tier := capacityTier.(string)
+			if tier != "" && tier != "NONE" {
+				return fmt.Errorf("capacity_tier must be 'NONE' when WORM is enabled. WORM and data tiering are mutually exclusive")
+			}
+		}
 	}
 	return nil
 }

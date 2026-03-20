@@ -288,6 +288,10 @@ type accessConfigs struct {
 	NatIP string `json:"natIP"`
 }
 
+type enableWormRequest struct {
+	RetentionPeriod wormRetentionPeriod `structs:"retentionPeriod"`
+}
+
 // check deployment mode and validate the input
 func (c *Client) checkDeploymentMode(d *schema.ResourceData, clientID string) (bool, string, error) {
 	isSaaS := true
@@ -1544,6 +1548,47 @@ func updateCVOWritingSpeedState(d *schema.ResourceData, meta interface{}, client
 		return fmt.Errorf("update CVO failed %v", err)
 	}
 	log.Printf("Updated %s writing_speed_state: %v", id, request)
+	return nil
+}
+
+func enableCVOWorm(d *schema.ResourceData, meta interface{}, clientID string, isSaas bool, connectorIP string) error {
+	client := meta.(*Client)
+
+	// Get the retention period values
+	length, lengthOk := d.GetOk("worm_retention_period_length")
+	unit, unitOk := d.GetOk("worm_retention_period_unit")
+
+	if !lengthOk || !unitOk {
+		return fmt.Errorf("both worm_retention_period_length and worm_retention_period_unit are required")
+	}
+
+	// Build request
+	var request enableWormRequest
+	request.RetentionPeriod.Length = length.(int)
+	request.RetentionPeriod.Unit = unit.(string)
+
+	log.Printf("Enabling WORM with retention: %d %s", request.RetentionPeriod.Length, request.RetentionPeriod.Unit)
+
+	id := d.Id()
+	baseURL := fmt.Sprintf("/working-environments/%s/enable-worm", id)
+
+	// Use the common API caller which handles all cloud providers
+	updateErr := client.callCMUpdateAPI("PUT", request, baseURL, id, "enableCVOWorm", clientID, isSaas, connectorIP)
+	if updateErr != nil {
+		return updateErr
+	}
+
+	retryCount := 40
+	if d.Get("is_ha").(bool) {
+		retryCount = retryCount * 2
+	}
+
+	err := client.waitOnCompletionCVOUpdate(id, retryCount, 60, clientID, isSaas, connectorIP)
+	if err != nil {
+		return fmt.Errorf("enable WORM failed: %v", err)
+	}
+
+	log.Printf("WORM enabled successfully on CVO %s", id)
 	return nil
 }
 
