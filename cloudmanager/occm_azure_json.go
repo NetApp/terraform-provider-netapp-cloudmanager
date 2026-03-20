@@ -178,10 +178,11 @@ func (c *Client) callTemplate() string {
             {
                 "name": "[variables('diagnosticsStorageAccountName')]",
                 "type": "Microsoft.Storage/storageAccounts",
-                "apiVersion": "2015-06-15",
+                "apiVersion": "2021-09-01",
                 "location": "[parameters('location')]",
-                "properties": {
-                  "accountType": "[variables('diagnosticsStorageAccountType')]"
+                "kind": "StorageV2",
+                "sku": {
+                  "name": "[variables('diagnosticsStorageAccountType')]"
                 }
             },
             {
@@ -372,10 +373,11 @@ func (c *Client) callTemplateDisablePublicIP() string {
             {
                 "name": "[variables('diagnosticsStorageAccountName')]",
                 "type": "Microsoft.Storage/storageAccounts",
-                "apiVersion": "2015-06-15",
+                "apiVersion": "2021-09-01",
                 "location": "[parameters('location')]",
-                "properties": {
-                  "accountType": "[variables('diagnosticsStorageAccountType')]"
+                "kind": "StorageV2",
+                "sku": {
+                  "name": "[variables('diagnosticsStorageAccountType')]"
                 }
             },
             {

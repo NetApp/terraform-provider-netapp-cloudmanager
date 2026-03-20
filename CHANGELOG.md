@@ -8,6 +8,7 @@ BUG FIXES:
 * resource/volume: Fixed iSCSI volume creation when using a custom SVM (`svm_name`). The provider now uses the configured `svm_name` for igroup lookups and initiator creation instead of defaulting to the working environment SVM, fixing "SVM does not exist" errors for CVOs with non-default SVM names.
 
 ENHANCEMENTS:
+* resource/connector_azure: Upgraded the diagnostics storage account to `StorageV2` for connector templates.
 * resource/cvo_aws, cvo_azure, cvo_gcp: Enable WORM on existing CVOs without recreation. WORM retention parameters (`worm_retention_period_length` and `worm_retention_period_unit`) can now be added to existing CVOs via in-place update instead of forcing resource replacement. Both parameters must be specified together, and once set, WORM retention cannot be modified (immutable). When WORM is enabled, `capacity_tier` must be set to 'NONE' as data tiering and WORM are mutually exclusive.
 
 ## 27.0.0
