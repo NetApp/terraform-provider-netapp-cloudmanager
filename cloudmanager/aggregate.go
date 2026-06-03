@@ -116,6 +116,13 @@ type increaseAggregateCapacityRequest struct {
 	CapacityToAdd        diskSize `structs:"capacityToAdd"`
 }
 
+type updateAggregateIopsThroughputRequest struct {
+	WorkingEnvironmentID string `structs:"workingEnvironmentId"`
+	Name                 string `structs:"name"`
+	Iops                 int    `structs:"iops,omitempty"`
+	Throughput           int    `structs:"throughput,omitempty"`
+}
+
 // get aggregate by workingEnvironmentId+aggregate name
 func (c *Client) getAggregate(request aggregateRequest, name string, sourceWorkingEnvironmentType string, clientID string, isSaaS bool, connectorIP string) (aggregateResult, error) {
 	log.Printf("getAggregate %s", name)
@@ -362,6 +369,45 @@ func (c *Client) increaseAggregateCapacity(request increaseAggregateCapacityRequ
 		err = c.waitOnCompletion(onCloudRequestID, "Aggregate", "increase capacity", 15, 60, clientID)
 	} else {
 		err = c.waitOnCompletionForNotSaas(onCloudRequestID, "Aggregate", "increase capacity", 15, 60, clientID, connectorIP)
+	}
+
+	return err
+}
+
+func (c *Client) updateAggregateIopsThroughput(request updateAggregateIopsThroughputRequest, clientID string, isSaaS bool, connectorIP string) error {
+	log.Printf("updateAggregateIopsThroughput for aggregate %s (iops: %d, throughput: %d)", request.Name, request.Iops, request.Throughput)
+
+	params := structs.Map(request)
+	hostType := "CloudManagerHost"
+	if !isSaaS {
+		hostType = "http://" + connectorIP
+	}
+
+	var baseURL string
+	rootURL, _, err := c.getAPIRoot(request.WorkingEnvironmentID, clientID, isSaaS, connectorIP)
+	if err != nil {
+		log.Print("updateAggregateIopsThroughput: Cannot get API root.")
+		return err
+	}
+
+	baseURL = fmt.Sprintf("%s/aggregates/%s/%s", rootURL, request.WorkingEnvironmentID, request.Name)
+
+	statusCode, response, onCloudRequestID, err := c.CallAPIMethod("PUT", baseURL, params, c.Token, hostType, clientID)
+	if err != nil {
+		log.Print("updateAggregateIopsThroughput request failed")
+		return err
+	}
+
+	responseError := apiResponseChecker(statusCode, response, "updateAggregateIopsThroughput")
+	if responseError != nil {
+		return responseError
+	}
+
+	log.Print("Wait for aggregate IOPS/throughput update.")
+	if isSaaS {
+		err = c.waitOnCompletion(onCloudRequestID, "Aggregate", "update IOPS/throughput", 15, 60, clientID)
+	} else {
+		err = c.waitOnCompletionForNotSaas(onCloudRequestID, "Aggregate", "update IOPS/throughput", 15, 60, clientID, connectorIP)
 	}
 
 	return err

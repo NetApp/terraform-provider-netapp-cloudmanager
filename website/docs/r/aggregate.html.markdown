@@ -67,6 +67,24 @@ resource "netapp-cloudmanager_aggregate" "cl-aggregate-with-capacity" {
   increase_capacity_unit = "GB"
 }
 ```
+**Create netapp-cloudmanager_aggregate with GCP hyperdisk-balanced and custom IOPS/Throughput (C3 instance only) :**
+
+```
+resource "netapp-cloudmanager_aggregate" "gcp-hyperdisk-aggr" {
+  provider = netapp-cloudmanager
+  name = "aggr_hyperdisk"
+  working_environment_id = netapp-cloudmanager_cvo_gcp.cvo-gcp.id
+  client_id = netapp-cloudmanager_connector_gcp.cm-gcp.client_id
+  number_of_disks = 1
+  provider_volume_type = "hyperdisk-balanced"
+  disk_size_size = 100
+  disk_size_unit = "GB"
+  
+  # IOPS and throughput configuration 
+  iops                 = 5000
+  throughput           = 500
+}
+```
 
 ## Argument Reference
 
@@ -85,10 +103,10 @@ The following arguments are supported:
 * `disk_size_size` - (Optional, Forces new resource) The required size of the disks. The max number depends on the `provider_volume_type`. Details in this document: AWS: [https://docs.netapp.com/us-en/cloud-volumes-ontap-relnotes/reference-limits-aws.html#aggregate-limits] Azure: [https://docs.netapp.com/us-en/cloud-volumes-ontap-relnotes/reference-limits-azure.html#aggregate-limits] GCP: [https://docs.netapp.com/us-en/cloud-volumes-ontap-relnotes/reference-limits-gcp.html#disk-and-tiering-limits] **Note: Must be provided together with `disk_size_unit`**
 * `disk_size_unit` - (Optional, Forces new resource) The disk size unit ['GB' or 'TB']. **Note: Must be provided together with `disk_size_size`**
 * `home_node` - (Optional, Forces new resource) The home node that the new aggregate should belong to. The default is the first node.
-* `provider_volume_type` - (Optional, Forces new resource) The cloud provider volume type. For AWS: ['gp3', 'gp2', 'io1', 'st1', 'sc1']. For Azure: ['Premium_LRS','Standard_LRS','StandardSSD_LRS']. For GCP: ['pd-balanced', 'pd-ssd','pd-standard']
+* `provider_volume_type` - (Optional, Forces new resource) The cloud provider volume type. For AWS: ['gp3', 'gp2', 'io1', 'st1', 'sc1']. For Azure: ['Premium_LRS','Standard_LRS','StandardSSD_LRS']. For GCP: ['pd-balanced', 'pd-ssd','pd-standard', 'hyperdisk-balanced']
 * `capacity_tier` - (Optional, Forces new resource) The aggregate's capacity tier for tiering cold data to object storage: ['S3', 'Blob', 'cloudStorage']. The default values for each cloud provider are as follows: Amazon => 'S3', Azure => 'Blob', GCP => 'cloudStorage'. If NONE, the capacity tier won't be set on aggregate creation.
-* `iops` - (Optional, Forces new resource) Provisioned IOPS. Needed only when 'providerVolumeType' is 'io1' or 'gp3'
-* `throughput` - (Optional, Forces new resource) Required only when 'providerVolumeType' is 'gp3'.
+* `iops` - (Optional) Provisioned IOPS. Applicable when 'providerVolumeType' is 'io1', 'gp3', or 'hyperdisk-balanced'. For 'hyperdisk-balanced', valid range is 3000-160000. Can be updated in-place for 'hyperdisk-balanced'; for other disk types, changing this value requires resource recreation.
+* `throughput` - (Optional) Provisioned throughput in MBps. Applicable when 'providerVolumeType' is 'gp3' or 'hyperdisk-balanced'. For 'hyperdisk-balanced', valid range is 140-2400. Can be updated in-place for 'hyperdisk-balanced'; for other disk types, changing this value requires resource recreation.
 * `initial_ev_aggregate_size` - (Optional, Forces new resource) Initial size for EBS Elastic Volumes aggregate (AWS only). This enables the aggregate to support capacity expansion using Amazon EBS Elastic Volumes. **Creation time only** - cannot be modified after aggregate creation. **Note: Must be provided together with `initial_ev_aggregate_unit`**
 * `initial_ev_aggregate_unit` - (Optional, Forces new resource) Unit for initial EBS Elastic Volumes aggregate size (GB, TB, GiB, or TiB). Only used with `initial_ev_aggregate_size`. Defaults to 'GB' if not specified. **Creation time only** - cannot be modified after aggregate creation. **Note: Must be provided together with `initial_ev_aggregate_size`**
 * `increase_capacity_size` - (Optional, Computed) Additional capacity to add to the aggregate using Amazon EBS Elastic Volumes. **Only supported for AWS aggregates with EBS Elastic Volumes enabled**. **Update operation only** - cannot be used during aggregate creation. The aggregate must be created with `initial_ev_aggregate_size` to support capacity increases. **Important:** After a successful capacity increase operation, remove the parameter from your configuration to prevent unnecessary state changes and achieve idempotency in subsequent Terraform runs. **Note: Must be provided together with `increase_capacity_unit`**

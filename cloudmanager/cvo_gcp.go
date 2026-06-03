@@ -28,6 +28,7 @@ type createCVOGCPDetails struct {
 	VsaMetadata             vsaMetadata             `structs:"vsaMetadata"`
 	GCPVolumeSize           diskSize                `structs:"gcpVolumeSize"`
 	GCPVolumeType           string                  `structs:"gcpVolumeType"`
+	GcpPerformance          gcpPerformance          `structs:"gcpPerformance,omitempty"`
 	SubnetID                string                  `structs:"subnetId"`
 	SubnetPath              string                  `structs:"subnetPath"`
 	Project                 string                  `structs:"project"`
@@ -54,6 +55,12 @@ type createCVOGCPDetails struct {
 type gcpLabels struct {
 	LabelKey   string `structs:"labelKey"`
 	LabelValue string `structs:"labelValue,omitempty"`
+}
+
+// gcpPerformance for setting IOPS and throughput on hyperdisk-balanced
+type gcpPerformance struct {
+	Iops       int `structs:"iops,omitempty"`
+	Throughput int `structs:"throughput,omitempty"`
 }
 
 // gcpSVMs the input for adding SVMs to a CVO HA
