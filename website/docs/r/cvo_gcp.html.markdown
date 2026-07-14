@@ -133,6 +133,28 @@ resource "netapp-cloudmanager_cvo_gcp" "cl-cvo-gcp-ha" {
 }
 ```
 
+**Create netapp-cloudmanager_cvo_gcp with Hyperdisk Balanced and custom IOPS/Throughput:**
+
+```
+resource "netapp-cloudmanager_cvo_gcp" "cl-cvo-gcp-hyperdisk" {
+  provider = netapp-cloudmanager
+  name = "cvohyperdisk"
+  project_id = "occm-project"
+  zone = "us-east1-b"
+  gcp_service_account = "fabric-pool@occm-project.iam.gserviceaccount.com"
+  svm_password = "netapp1!"
+  client_id = netapp-cloudmanager_connector_gcp.cm-gcp.client_id
+  workspace_id = "workspace-******"
+  license_type = "capacity-paygo"
+  instance_type = "c3-standard-8"
+  gcp_volume_type = "hyperdisk-balanced"
+  gcp_volume_size = 100
+  gcp_volume_size_unit = "GB"
+  iops = 5000
+  throughput = 500
+}
+```
+
 ## Argument Reference
 
 Arguments marked with “Forces new resource” will cause the resource to be recreated if their value is changed after creation.
@@ -152,12 +174,14 @@ The following arguments are supported:
 * `workspace_id` - (Optional, Forces new resource) The ID of the Cloud Manager workspace where you want to deploy Cloud Volumes ONTAP. If not provided, Cloud Manager uses the first workspace. You can find the ID from the Workspace tab on [https://console.bluexp.netapp.com/](https://console.bluexp.netapp.com/).
 * `data_encryption_type` - (Optional, Forces new resource) The type of data encryption to use for the working environment: ['GCP', 'NONE']. The default is 'GCP'.
 * `gcp_encryption_parameters` - (Optional, Forces new resource) Required if using gcp encryption with custom key. Key format is 'projects/default-project/locations/global/keyRings/test/cryptoKeys/key1'.
-* `gcp_volume_type` - (Optional, Forces new resource) The type of the storage for the first data aggregate: ['pd-balanced', 'pd-standard', 'pd-ssd']. The default is 'pd-ssd'
+* `gcp_volume_type` - (Optional, Forces new resource) The type of the storage for the first data aggregate: ['pd-balanced', 'pd-standard', 'pd-ssd', 'hyperdisk-balanced']. The default is 'pd-ssd'
 * `subnet_id` - (Optional, Forces new resource) The name of the subnet for Cloud Volumes ONTAP. The default is: 'default'.
 * `network_project_id` - (Optional, Forces new resource) The project id in GCP associated with the Subnet. If not provided, it’s assumed that the Subnet is within the previously specified project id.
 * `vpc_id` - (Optional, Forces new resource) The name of the VPC.
 * `gcp_volume_size` - (Optional, Forces new resource) The GCP volume size for the first data aggregate. For GB, the unit can be: [100 or 500]. For TB, the unit can be: [1,2,4,8]. The default is '1' .
 * `gcp_volume_size_unit` - (Optional, Forces new resource) ['GB' or 'TB']. The default is 'TB'.
+* `iops` - (Optional, Forces new resource) Provisioned IOPS for the initial aggregate. Only applicable when 'gcp_volume_type' is 'hyperdisk-balanced'. Valid range is 3000-160000. To update IOPS after CVO creation, use the netapp-cloudmanager_aggregate resource.
+* `throughput` - (Optional, Forces new resource) Provisioned throughput for the initial aggregate. Only applicable when 'gcp_volume_type' is 'hyperdisk-balanced'. Valid range is 140-2400. To update throughput after CVO creation, use the netapp-cloudmanager_aggregate resource.
 * `ontap_version` - (Optional) The required ONTAP version. Ignored if `use_latest_version` is set to true. The default is to use the latest version. The naming convention: 
 
 |Release|Naming convention|Example|

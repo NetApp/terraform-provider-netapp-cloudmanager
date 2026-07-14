@@ -1,3 +1,15 @@
+## 27.2.0
+
+NEW FEATURES:
+* resource/cvo_gcp: Added support for `iops` and `throughput` parameters during GCP CVO creation with `hyperdisk-balanced` volume type.
+* resource/aggregate: Added support for `iops` and `throughput` parameters during aggregate creation with `hyperdisk-balanced` provider volume type.
+* resource/aggregate: Added support for in-place update of `iops` and `throughput` on existing `hyperdisk-balanced` aggregates without requiring resource recreation.
+
+ENHANCEMENTS:
+* resource/aggregate: Added `Computed` attribute for `iops` and `throughput` to support import and drift detection by reading actual values from the API.
+* resource/aggregate: Added conditional `ForceNew` via `CustomizeDiff` for `iops` and `throughput` — in-place update for `hyperdisk-balanced`, destroy+recreate for other volume types (backward compatible).
+* resource/aggregate: Updated import to populate `iops` and `throughput` from the API response.
+
 ## 27.1.0 
 
 NEW FEATURES: 

@@ -59,7 +59,7 @@ func resourceCVOGCP() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Default:      "pd-ssd",
-				ValidateFunc: validation.StringInSlice([]string{"pd-balanced", "pd-standard", "pd-ssd"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"pd-balanced", "pd-standard", "pd-ssd", "hyperdisk-balanced"}, false),
 			},
 			"gcp_volume_size": {
 				Type:     schema.TypeInt,
@@ -73,6 +73,18 @@ func resourceCVOGCP() *schema.Resource {
 				ForceNew:     true,
 				Default:      "TB",
 				ValidateFunc: validation.StringInSlice([]string{"GB", "TB"}, false),
+			},
+			"iops": {
+				Type:        schema.TypeInt,
+				Optional:    true,
+				ForceNew:    true,
+				Description: "Provisioned IOPS for the initial aggregate. Only applicable when gcp_volume_type is 'hyperdisk-balanced'. Valid range is 3000-160000. To update IOPS after creation, use the netapp-cloudmanager_aggregate resource.",
+			},
+			"throughput": {
+				Type:        schema.TypeInt,
+				Optional:    true,
+				ForceNew:    true,
+				Description: "Provisioned throughput for the initial aggregate. Only applicable when gcp_volume_type is 'hyperdisk-balanced'. Valid range is 140-2400. To update throughput after creation, use the netapp-cloudmanager_aggregate resource.",
 			},
 			"ontap_version": {
 				Type:     schema.TypeString,
@@ -416,6 +428,14 @@ func resourceCVOGCPCreate(d *schema.ResourceData, meta interface{}) error {
 	cvoDetails.DataEncryptionType = d.Get("data_encryption_type").(string)
 	cvoDetails.WorkspaceID = d.Get("workspace_id").(string)
 	cvoDetails.GCPVolumeType = d.Get("gcp_volume_type").(string)
+	if cvoDetails.GCPVolumeType == "hyperdisk-balanced" {
+		if c, ok := d.GetOk("iops"); ok {
+			cvoDetails.GcpPerformance.Iops = c.(int)
+		}
+		if c, ok := d.GetOk("throughput"); ok {
+			cvoDetails.GcpPerformance.Throughput = c.(int)
+		}
+	}
 	cvoDetails.SvmPassword = d.Get("svm_password").(string)
 	if c, ok := d.GetOk("svm_name"); ok {
 		cvoDetails.SvmName = c.(string)
@@ -965,6 +985,14 @@ func resourceCVOGCPCustomizeDiff(diff *schema.ResourceDiff, v interface{}) error
 				}
 			}
 		}
+	}
+
+	//Validate iops/throughput only allowed for hyperdisk-balanced
+	gcpVolumeType := diff.Get("gcp_volume_type").(string)
+	_, hasIops := diff.GetOk("iops")
+	_, hasThroughput := diff.GetOk("throughput")
+	if (hasIops || hasThroughput) && gcpVolumeType != "hyperdisk-balanced" {
+		return fmt.Errorf("performance parameters (iops, throughput) can only be specified when gcp_volume_type is 'hyperdisk-balanced', current type is '%s'", gcpVolumeType)
 	}
 
 	// WORM validation

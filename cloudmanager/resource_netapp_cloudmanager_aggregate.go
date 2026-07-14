@@ -75,14 +75,16 @@ func resourceAggregate() *schema.Resource {
 				ValidateFunc: validation.StringInSlice([]string{"NONE", "S3", "Blob", "cloudStorage"}, true),
 			},
 			"iops": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				ForceNew: true,
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Computed:    true,
+				Description: "Provisioned IOPS. Applicable when provider_volume_type is 'io1', 'gp3', or 'hyperdisk-balanced'. For 'hyperdisk-balanced', valid range is 3000-160000.",
 			},
 			"throughput": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				ForceNew: true,
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Computed:    true,
+				Description: "Provisioned throughput in MBps. Applicable when provider_volume_type is 'gp3' or 'hyperdisk-balanced'. For 'hyperdisk-balanced', valid range is 140-2400.",
 			},
 			"connector_ip": {
 				Type:     schema.TypeString,
@@ -215,6 +217,18 @@ func resourceAggregateCreate(d *schema.ResourceData, meta interface{}) error {
 				log.Printf("CreateAggregate: provider_volume_type is gp3, but throughput is not configured.")
 			}
 		}
+		if aggregate.ProviderVolumeType == "hyperdisk-balanced" {
+			if a, ok := d.GetOk("iops"); ok {
+				aggregate.Iops = a.(int)
+			} else {
+				log.Printf("CreateAggregate: provider_volume_type is hyperdisk-balanced, but iops is not configured.")
+			}
+			if a, ok := d.GetOk("throughput"); ok {
+				aggregate.Throughput = a.(int)
+			} else {
+				log.Printf("CreateAggregate: provider_volume_type is hyperdisk-balanced, but throughput is not configured.")
+			}
+		}
 	}
 	if a, ok := d.GetOk("capacity_tier"); ok {
 		if a.(string) != "NONE" {
@@ -299,9 +313,13 @@ func resourceAggregateRead(d *schema.ResourceData, meta interface{}) error {
 		d.SetId(aggr.Name)
 		d.Set("number_of_disks", len(aggr.Disks))
 		d.Set("working_environment_name", workingEnv.Name)
-		d.Set("disk_size_size", aggr.ProviderVolumes[0].Size.Size)
-		d.Set("disk_size_unit", aggr.ProviderVolumes[0].Size.Unit)
-		d.Set("provider_volume_type", aggr.ProviderVolumes[0].DiskType)
+		if len(aggr.ProviderVolumes) > 0 {
+			d.Set("disk_size_size", aggr.ProviderVolumes[0].Size.Size)
+			d.Set("disk_size_unit", aggr.ProviderVolumes[0].Size.Unit)
+			d.Set("provider_volume_type", aggr.ProviderVolumes[0].DiskType)
+			d.Set("iops", aggr.ProviderVolumes[0].Iops)
+			d.Set("throughput", aggr.ProviderVolumes[0].Throughput)
+		}
 	}
 
 	if aggr.Name != d.Get("name").(string) {
@@ -313,6 +331,10 @@ func resourceAggregateRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("total_capacity_unit", aggr.TotalCapacity.Unit)
 	d.Set("available_capacity_size", aggr.AvailableCapacity.Size)
 	d.Set("available_capacity_unit", aggr.AvailableCapacity.Unit)
+	if len(aggr.ProviderVolumes) > 0 {
+		d.Set("iops", aggr.ProviderVolumes[0].Iops)
+		d.Set("throughput", aggr.ProviderVolumes[0].Throughput)
+	}
 
 	return nil
 }
@@ -411,6 +433,26 @@ func resourceAggregateUpdate(d *schema.ResourceData, meta interface{}) error {
 			d.Set("increase_capacity_size", 0)
 			d.Set("increase_capacity_unit", "")
 		}
+	}
+
+	// Handle IOPS/Throughput update (hyperdisk-balanced only, enforced by CustomizeDiff)
+	if d.HasChange("iops") || d.HasChange("throughput") {
+		updateRequest := updateAggregateIopsThroughputRequest{
+			WorkingEnvironmentID: workingEnvDetail.PublicID,
+			Name:                 request.Name,
+		}
+		if d.HasChange("iops") {
+			updateRequest.Iops = d.Get("iops").(int)
+		}
+		if d.HasChange("throughput") {
+			updateRequest.Throughput = d.Get("throughput").(int)
+		}
+
+		err := client.updateAggregateIopsThroughput(updateRequest, clientID, isSaaS, connectorIP)
+		if err != nil {
+			return fmt.Errorf("failed to update aggregate IOPS/throughput: %v", err)
+		}
+		log.Printf("Successfully updated IOPS/throughput for aggregate %s", request.Name)
 	}
 
 	// Handle disk count update
@@ -534,6 +576,18 @@ func resourceAggregateCustomizeDiff(diff *schema.ResourceDiff, v interface{}) er
 
 	if hasIncreaseUnit && !hasIncreaseSize {
 		return fmt.Errorf("increase_capacity_size is required when increase_capacity_unit is specified")
+	}
+
+	// For non-hyperdisk-balanced volume types, force replacement on iops/throughput changes
+	// to preserve backward compatibility (gp3, io1, etc. previously had ForceNew: true)
+	providerVolumeType := diff.Get("provider_volume_type").(string)
+	if providerVolumeType != "hyperdisk-balanced" {
+		if diff.HasChange("iops") {
+			diff.ForceNew("iops")
+		}
+		if diff.HasChange("throughput") {
+			diff.ForceNew("throughput")
+		}
 	}
 
 	return nil
